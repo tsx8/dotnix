@@ -1,0 +1,36 @@
+global {
+  wan_interface: auto
+  log_level: info
+  allow_insecure: false
+  auto_config_kernel_parameter: true
+  dial_mode: domain
+}
+
+dns {
+  ipversion_prefer: 4
+
+  routing {
+    request {
+      qtype(https) -> reject
+      fallback: asis
+    }
+    response {
+      fallback: accept
+    }
+  }
+}
+
+group {
+  proxy {
+    policy: fixed(0)
+  }
+}
+
+routing {
+  pname(NetworkManager) -> direct
+
+  dip(224.0.0.0/3, geoip:private, geoip:cn) -> direct
+  domain(geosite:cn) -> direct
+
+  fallback: proxy
+}

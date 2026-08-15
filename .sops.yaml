@@ -1,0 +1,8 @@
+keys:
+  - &recovery age1uzgxelk0ks3h56a4u3msfc9hyaj4jkkfljwr7gm88dv4gysm7duqjq8mhu
+
+creation_rules:
+  - path_regex: secrets\.yaml$
+    key_groups:
+      - age:
+          - *recovery

@@ -1,0 +1,2 @@
+edit:
+  sops secrets.yaml
