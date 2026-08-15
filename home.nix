@@ -18,14 +18,23 @@
     config.lib.file.mkOutOfStoreSymlink
       osConfig.sops.templates."dsh-credentials.yaml".path;
 
-  home.file.".gitconfig".text = ''
-    [user]
-      name = tsx8
-      email = tangsongxiaoba@163.com
-  '';
-
   home.file.".config/sops/age/keys.txt".source =
     config.lib.file.mkOutOfStoreSymlink "/var/lib/sops-nix/key.txt";
+
+  programs.git = {
+    enable = true;
+    package = null;
+
+    settings = {
+      user = {
+        name = "tsx8";
+        email = "tangsongxiaoba@163.com";
+      };
+
+      credential."https://github.com".helper =
+        "!gh auth git-credential";
+    };
+  };
 
   programs.zed-editor = {
     enable = true;

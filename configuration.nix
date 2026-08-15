@@ -225,6 +225,7 @@ in
     fd
     ripgrep
 
+    gh
     neovim
     zed-editor
 
