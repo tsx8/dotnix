@@ -82,10 +82,17 @@ in
 
   i18n.defaultLocale = "en_US.UTF-8";
 
-  fonts.packages = with pkgs; [
-    noto-fonts-cjk-sans
-    noto-fonts-cjk-serif
-  ];
+  fonts = {
+    packages = with pkgs; [
+      noto-fonts-cjk-sans
+      noto-fonts-cjk-serif
+    ];
+
+    fontconfig.defaultFonts = {
+      sansSerif = lib.mkAfter [ "Noto Sans CJK SC" ];
+      serif = lib.mkAfter [ "Noto Serif CJK SC" ];
+    };
+  };
 
   # Secrets
   sops = {
