@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+export NIX_CONFIG="$(printf '%s\n%s\n' \
+  "${NIX_CONFIG:-}" \
+  'experimental-features = nix-command flakes')"
+
 if [[ $# -ne 0 ]]; then
   echo "usage: $0" >&2
   exit 2

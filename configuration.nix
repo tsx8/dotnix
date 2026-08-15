@@ -14,10 +14,18 @@ let
     runtimeInputs = [
       pkgs.nodejs_24
       pkgs.bubblewrap
+      pkgs.python3
+      pkgs.gnumake
+      pkgs.stdenv.cc
+      pkgs.coreutils
+      pkgs.bash
     ];
 
     text = ''
-      exec npx --yes @deepseek-ai/dsh@0.1.0-rc.6 "$@"
+      exec npx --yes \
+        --package=@deepseek-ai/dsh@0.1.0-rc.6 \
+        -- bash -c "entry=\$(readlink -f \"\$(command -v dsh)\"); exec node --expose-internals \"\$entry\" \"\$@\"" \
+        bash "$@"
     '';
   };
 
@@ -198,6 +206,11 @@ in
     InputMethod=${config.i18n.inputMethod.package}/share/applications/fcitx5-wayland-launcher.desktop
   '';
 
+  environment.variables = {
+    EDITOR = "nvim";
+    VISUAL = "nvim";
+  };
+
   # Useful immediately after first boot.
   programs.firefox.enable = true;
 
@@ -213,7 +226,9 @@ in
     ripgrep
 
     neovim
-    zed-editor.fhs
+    zed-editor
+
+    nixd
 
     dsh
   ];

@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+export NIX_CONFIG="$(printf '%s\n%s\n' \
+  "${NIX_CONFIG:-}" \
+  'experimental-features = nix-command flakes')"
+
 if [[ $# -ne 0 ]]; then
   echo "usage: $0" >&2
   exit 2
@@ -102,16 +106,6 @@ sudo env \
   SOPS_AGE_KEY_FILE="$machine_key" \
   "$sops" decrypt "$repo_root/secrets.yaml" >/dev/null
 
-echo "Checking Flake..."
-
-nix flake check --no-build
-
-echo "Evaluating NixOS configuration..."
-
-nix eval \
-  .#nixosConfigurations.maco.config.system.build.toplevel.drvPath \
-  >/dev/null
-
 nixos_install="$(
   nix build \
     --no-link \
@@ -128,8 +122,3 @@ sudo "$nixos_install" \
   --flake "$repo_root#maco" \
   --no-channel-copy \
   --no-root-password
-
-echo
-echo "NixOS installation completed."
-echo
-echo "Do not reboot until the repository changes have been reviewed."

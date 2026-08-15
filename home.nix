@@ -27,16 +27,6 @@
   home.file.".config/sops/age/keys.txt".source =
     config.lib.file.mkOutOfStoreSymlink "/var/lib/sops-nix/key.txt";
 
-  xdg.configFile."fish/conf.d/editor.fish".text = ''
-    if not set -q EDITOR
-      set -gx EDITOR nvim
-    end
-
-    if not set -q VISUAL
-      set -gx VISUAL nvim
-    end
-  '';
-
   programs.zed-editor = {
     enable = true;
     package = null;
@@ -46,6 +36,15 @@
         env = {
           EDITOR = "zeditor --wait";
           VISUAL = "zeditor --wait";
+        };
+      };
+
+      languages = {
+        Nix = {
+          language_servers = [
+            "nixd"
+            "!nil"
+          ];
         };
       };
     };

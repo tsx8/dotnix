@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+export NIX_CONFIG="$(printf '%s\n%s\n' \
+  "${NIX_CONFIG:-}" \
+  'experimental-features = nix-command flakes')"
+
 repo_root="$(
   cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
   pwd
