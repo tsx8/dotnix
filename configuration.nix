@@ -8,26 +8,7 @@
 }:
 
 let
-  dsh = pkgs.writeShellApplication {
-    name = "dsh";
-
-    runtimeInputs = [
-      pkgs.nodejs_24
-      pkgs.bubblewrap
-      pkgs.python3
-      pkgs.gnumake
-      pkgs.stdenv.cc
-      pkgs.coreutils
-      pkgs.bash
-    ];
-
-    text = ''
-      exec npx --yes \
-        --package=@deepseek-ai/dsh@0.1.0-rc.6 \
-        -- bash -c "entry=\$(readlink -f \"\$(command -v dsh)\"); exec node --expose-internals \"\$entry\" \"\$@\"" \
-        bash "$@"
-    '';
-  };
+  deepseekHarness = pkgs.callPackage ./packages/deepseek-harness/package.nix { };
 
   rimeFrostData = pkgs.runCommand "rime-frost-data" { } ''
     mkdir -p "$out/share/rime-data"
@@ -238,7 +219,7 @@ in
 
     nixd
 
-    dsh
+    deepseekHarness
   ];
 
   zramSwap.enable = true;

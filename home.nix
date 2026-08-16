@@ -31,8 +31,7 @@
         email = "tangsongxiaoba@163.com";
       };
 
-      credential."https://github.com".helper =
-        "!gh auth git-credential";
+      credential."https://github.com".helper = "!gh auth git-credential";
     };
   };
 
