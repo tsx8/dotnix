@@ -29,6 +29,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    helium-browser = {
+      url = "github:oxcl/nix-flake-helium-browser";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     rime-frost = {
       url = "github:gaboolic/rime-frost";
       flake = false;
@@ -43,6 +48,7 @@
       buaa-login,
       daeuniverse,
       home-manager,
+      helium-browser,
       rime-frost,
       ...
     }:
@@ -64,6 +70,7 @@
           buaa-login.nixosModules.default
           daeuniverse.nixosModules.dae
           home-manager.nixosModules.home-manager
+          helium-browser.nixosModules.default
         ];
       };
 

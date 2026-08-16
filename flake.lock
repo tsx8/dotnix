@@ -79,6 +79,26 @@
         "type": "github"
       }
     },
+    "helium-browser": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1786868845,
+        "narHash": "sha256-ktzKyht1QFdcJFu4rOFO5N4XLf2WjZn5v2wbk0LxBCo=",
+        "owner": "oxcl",
+        "repo": "nix-flake-helium-browser",
+        "rev": "5add9c88c877d1bf3bdcaf51688f75249cba27c5",
+        "type": "github"
+      },
+      "original": {
+        "owner": "oxcl",
+        "repo": "nix-flake-helium-browser",
+        "type": "github"
+      }
+    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -151,6 +171,7 @@
         "buaa-login": "buaa-login",
         "daeuniverse": "daeuniverse",
         "disko": "disko",
+        "helium-browser": "helium-browser",
         "home-manager": "home-manager",
         "nixpkgs": "nixpkgs",
         "rime-frost": "rime-frost",
