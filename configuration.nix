@@ -112,6 +112,29 @@ in
   services.displayManager.sddm.enable = true;
   services.desktopManager.plasma6.enable = true;
 
+  # Keyboard: macOS-like layout, remapped at evdev level by keyd (applies to X11/Wayland/TTY)
+  services.keyd = {
+    enable = true;
+
+    keyboards.default = {
+      ids = [ "*" ];
+
+      settings = {
+        main = {
+          leftalt = "leftmeta"; # Cmd lands on the thumb key left of space
+          leftmeta = "leftalt"; # Option lands where Win used to be
+          rightalt = "rightmeta";
+          rightmeta = "rightalt";
+
+          # macOS: tap CapsLock switches Chinese/English input, hold enables Caps Lock
+          capslock = "overload(capslock, C-space)";
+        };
+
+        capslock.capslock = "capslock";
+      };
+    };
+  };
+
   # Audio
   security.rtkit.enable = true;
 
@@ -185,6 +208,12 @@ in
         GroupOrder = {
           "0" = "Default";
         };
+      };
+
+      settings.globalOptions."Hotkey" = {
+        # keyd translates a CapsLock tap into this chord, toggling keyboard-us <-> rime
+        "TriggerKeys" = "Control+space";
+        "EnumerateWithTriggerKeys" = "False";
       };
     };
   };
