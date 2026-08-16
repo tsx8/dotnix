@@ -210,10 +210,16 @@ in
         };
       };
 
-      settings.globalOptions."Hotkey" = {
-        # keyd translates a CapsLock tap into this chord, toggling keyboard-us <-> rime
-        "TriggerKeys" = "Control+space";
-        "EnumerateWithTriggerKeys" = "False";
+      settings.globalOptions = {
+        "Hotkey" = {
+          # keyd translates a CapsLock tap into this chord, toggling keyboard-us <-> rime
+          "EnumerateWithTriggerKeys" = "False";
+        };
+
+        # fcitx5 key lists use indexed sub-sections; a scalar TriggerKeys value is silently ignored
+        "Hotkey/TriggerKeys" = {
+          "0" = "Control+space";
+        };
       };
     };
   };
