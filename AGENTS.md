@@ -10,17 +10,7 @@
 
 ## 常用命令
 
-```bash
-just os build     # nixos-rebuild build（构建验证，需 sudo）
-just os test      # nixos-rebuild test（临时切换，需 sudo）
-just os switch    # nixos-rebuild switch（应用配置，需 sudo）
-
-just repo fmt     # nix fmt（nixfmt-tree）
-just repo check   # nix flake check --no-build
-just repo update  # nix flake update + check
-
-just secrets edit # sops 编辑 secrets.yaml
-```
+仓库使用 just 管理日常运维命令，使用 `just --list` 查看所有常用命令。
 
 ## 验证规则
 
@@ -51,4 +41,3 @@ just secrets edit # sops 编辑 secrets.yaml
 - 只收录几乎每个会话都需要的通用规范；不重复代码已表达的内容，指向权威文件（README、脚本、justfile）。
 - 优先改写、精简旧条目，而不是追加新条目。
 - 学到新的维护教训（新工具、新坑）时，把它追加进来。
-- `CLAUDE.md` 通过 `@AGENTS.md` 引用本文件，编辑时只改本文件。
