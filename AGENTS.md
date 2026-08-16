@@ -6,7 +6,13 @@
 
 - 单机 NixOS 配置，flake 管理；`nixosConfigurations` 是系统的唯一入口，所有配置最终由 `flake.nix` 组织。
 - 仓库处于活跃开发状态：允许破坏性变更，无需兼容历史版本；但破坏性变更（重构、删除、改名、行为变化）必须在提交信息中说明动机与影响。
-- 本文件只收录通用的维护规范，不预先固化具体配置决策；具体决策的理由记录在代码注释与提交信息中。
+
+## 配置原则
+
+- 软件来源优先级：默认 `官方 flake > nixpkgs-unstable > 第三方/自建 flake`。例外——当 nixpkgs-unstable 已满足版本与配置需求、且软件无官方集成诉求时（典型：简单 CLI 工具，如 just），取 `nixpkgs-unstable > 官方 flake > 第三方/自建 flake`。
+- 注释极简：只写该配置项基于需求背景所做的决策及原因，不写代码显而易见的行为；非常规、易被误改的配置必须注明原因。
+- 应用层级：应用只有系统级与项目级两级——系统级由 NixOS 管理（`configuration.nix`），项目级由各项目 devShell 管理，不存在用户级应用；用户级配置（dotfiles、编辑器设置、凭据等）由 Home Manager 管理，Home Manager 不管理应用。
+- flake 输入的 nixpkgs 跟随：默认 inputs.X.nixpkgs.follows = "nixpkgs"，共享一份 nixpkgs，避免重复实例与重复构建；当上游明确要求不 follow（如 home-manager 发行分支须与 nixpkgs 发行分支配对）、或需要其锁定 nixpkgs 的构建产物与二进制缓存时，不 follow，并在 flake.nix 中注明原因。每次 nix flake update 后复查上游要求。
 
 ## 常用命令
 
@@ -32,9 +38,7 @@
 
 - 统一使用 `nix fmt`（nixfmt-tree）格式化，不手工对齐。
 - 包列表沿用 `with pkgs; [...]`。
-- 层次职责保持清晰：应用与服务归 NixOS（`configuration.nix`），用户级配置归 home-manager（`home.nix`），项目工具归各自 devShell。
 - 模块沿用现有扁平组织；新增较大子系统时拆成独立 `.nix` 模块再 import。
-- 新增 flake 输入前确认必要性，并保持 `inputs.nixpkgs.follows = "nixpkgs"` 一致。
 
 ## 维护本文件
 
