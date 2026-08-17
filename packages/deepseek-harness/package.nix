@@ -1,4 +1,5 @@
-# Local port of nixpkgs PR #553134 (deepseek-harness: init at 0.1.0-rc.6).
+# Local port of nixpkgs PR #553134 (deepseek-harness: init at 0.1.0-rc.6,
+# upstream PR still unmerged at that version; this port tracks 0.1.0-rc.7).
 # Keep in sync with the upstream expression; delete this directory and use
 # pkgs.deepseek-harness once it lands in the tracked nixpkgs revision.
 # meta.maintainers is omitted: the locked nixpkgs predates that PR's maintainer.
@@ -16,6 +17,14 @@
 }:
 
 let
+  # node-pty prebuild directories use Node's process.arch naming.
+  nodePtyArch =
+    {
+      x86_64 = "x64";
+      aarch64 = "arm64";
+    }
+    .${stdenv.hostPlatform.uname.processor} or stdenv.hostPlatform.uname.processor;
+
   runtimePath = lib.makeBinPath (
     [
       bash
@@ -26,18 +35,18 @@ let
 in
 buildNpmPackage (finalAttrs: {
   pname = "deepseek-harness";
-  version = "0.1.0-rc.6";
+  version = "0.1.0-rc.7";
 
   __structuredAttrs = true;
 
   src = fetchurl {
     url = "https://registry.npmjs.org/@deepseek-ai/dsh/-/dsh-${finalAttrs.version}.tgz";
-    hash = "sha256-G4qaCtPH/q7OR5JuC9N8oVHHzPqZeVOvpf0BJheE6tw=";
+    hash = "sha256-L48Ldj1hGsU296lBHuQ8CvwGfBuHMsMQLATb45i8rMU=";
   };
 
   nodejs = nodejs_24;
 
-  npmDepsHash = "sha256-6u74xRbLATQu0aLwAZCHRtHXXaZgn6dKB6i03jZohaI=";
+  npmDepsHash = "sha256-Y+Y1f1V7+1sXkezKAeqEOW8GZeScERo/+gWXU4Qjqho=";
 
   # The npm tarball retains development-only workspace packages, which npm
   # would otherwise install because the tarball is the derivation's root.
@@ -63,6 +72,9 @@ buildNpmPackage (finalAttrs: {
 
   nativeBuildInputs = [ makeWrapper ];
 
+  # node-pty 1.2 ships per-platform prebuilds and loads the current
+  # platform's pty.node from them at runtime (its install script skips
+  # node-gyp when a matching prebuild exists), so keep only that directory.
   postInstall = ''
     # HMR needs Node's internal ESM loader, which its native fallback cannot
     # resolve with Node 24.
@@ -74,7 +86,7 @@ buildNpmPackage (finalAttrs: {
   ''
   + lib.optionalString stdenv.hostPlatform.isGnu ''
     find $out/lib/node_modules/@deepseek-ai/dsh/node_modules/node-pty/prebuilds \
-      -mindepth 1 -maxdepth 1 -type d -exec rm -r {} +
+      -mindepth 1 -maxdepth 1 -type d ! -name "linux-${nodePtyArch}" -exec rm -r {} +
     find $out/lib/node_modules/@deepseek-ai/dsh/node_modules/@koromix \
       -type d -name 'musl_*' -prune -exec rm -r {} +
     find $out/lib/node_modules/@deepseek-ai/dsh/node_modules/@img \
@@ -82,7 +94,8 @@ buildNpmPackage (finalAttrs: {
   ''
   + lib.optionalString stdenv.hostPlatform.isDarwin ''
     find $out/lib/node_modules/@deepseek-ai/dsh/node_modules/node-pty/prebuilds \
-      -mindepth 1 -maxdepth 1 -type d -name 'win32-*' -exec rm -r {} +
+      -mindepth 1 -maxdepth 1 -type d ! -name "darwin-${nodePtyArch}" -exec rm -r {} +
+    # npm does not reliably preserve the helper's executable bit.
     find $out/lib/node_modules/@deepseek-ai/dsh/node_modules/node-pty \
       -type f -name spawn-helper -exec chmod +x {} +
   ''
@@ -92,6 +105,12 @@ buildNpmPackage (finalAttrs: {
     find $out/lib/node_modules/@deepseek-ai/dsh/node_modules/@img \
       -mindepth 1 -maxdepth 1 -type d -name '*linux-*' -exec rm -r {} +
   '';
+
+  # node-pty's prebuilds are glibc-only; on musl its own build-from-source
+  # switch makes prebuild.js drop the prebuilds and rebuild with node-gyp.
+  env = lib.optionalAttrs stdenv.hostPlatform.isMusl {
+    npm_config_build_from_source = "true";
+  };
 
   nativeInstallCheckInputs = [ versionCheckHook ];
   doInstallCheck = true;
