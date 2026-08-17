@@ -234,6 +234,8 @@ in
     VISUAL = "nvim";
   };
 
+  programs.nix-ld.enable = true;
+
   programs.helium = {
     enable = true;
     flags = [
