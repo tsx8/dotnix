@@ -18,6 +18,8 @@
 
 仓库使用 just 管理日常运维命令，使用 `just --list` 查看所有常用命令。
 
+For AI Agents：禁止自动使用 `just os switch` 及其对应的 `nixos-rebuild` 命令，除非得到用户提前的明确的许可。
+
 ## 验证规则
 
 - 提交前必须通过 `just repo check`。
