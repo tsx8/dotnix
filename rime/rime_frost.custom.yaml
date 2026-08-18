@@ -1,0 +1,67 @@
+# macOS 简体拼音行为对齐（对 rime_frost.schema.yaml 的补丁）。
+#
+# 与上游差异：
+# - 去掉 ; 选择第二候选（; 作为普通标点直接上屏）
+# - 去掉 ` 前缀的单字反查、/ 前缀的符号输入（` / 作为普通标点直接上屏）
+# - 去掉 [ ] 以词定字（[ ] 作为普通标点，组合中键入时上屏候选并追加符号）
+# - 去掉 ' 的分词作用（' 作为普通标点，组合中键入时上屏候选并追加符号）
+# - 去掉所有前缀/关键词触发模式：u 拆字反查、U Unicode 字符、
+#   R 数字大写、N 公历转农历、V/v 计算器、rq/sj/xq/dt/ts/nl 日期时间农历
+# - direct_uppercase.lua：Shift/CapsLock + 字母，有组合时纳入组合，无组合时直接上屏大写
+patch:
+  engine/processors:
+    - lua_processor@*direct_uppercase
+    - ascii_composer
+    - recognizer
+    - key_binder
+    - speller
+    - punctuator
+    - selector
+    - navigator
+    - express_editor
+
+  engine/segmentors:
+    - ascii_segmentor
+    - matcher
+    - abc_segmentor
+    - punct_segmentor
+    - fallback_segmentor
+
+  engine/translators:
+    - punct_translator
+    - script_translator
+    - table_translator@custom_phrase
+    - table_translator@melt_eng
+    - table_translator@cn_en
+    - lua_translator@*force_gc
+
+  engine/filters:
+    - lua_filter@*is_in_user_dict
+    - lua_filter@*corrector
+    - lua_filter@*autocap_filter
+    - lua_filter@*pin_cand_filter
+    - lua_filter@*reduce_english_filter
+    - simplifier@emoji
+    - simplifier@chaifen
+    - simplifier@chaifen_all
+    - simplifier@chinese_english
+    - simplifier@traditionalize
+    - simplifier@mars
+    - uniquifier
+
+  recognizer/patterns: {}
+
+  # ascii_composer 运行时读原始 default.yaml（预设路径不经编译补丁），
+  # 所以 Shift 的 noop 必须写进方案本身才生效。
+  ascii_composer/switch_key:
+    Caps_Lock: clear
+    Control_L: noop
+    Control_R: noop
+    Shift_L: noop
+    Shift_R: noop
+
+  key_binder/bindings: []
+
+  speller/alphabet: zyxwvutsrqponmlkjihgfedcbaZYXWVUTSRQPONMLKJIHGFEDCBA
+
+  speller/delimiter: " "

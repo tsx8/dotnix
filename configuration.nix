@@ -15,9 +15,36 @@ let
     cp -r ${rimeFrostSource}/. "$out/share/rime-data/"
   '';
 
-  fcitx5RimeFrost = pkgs.fcitx5-rime.override {
-    rimeDataPkgs = [ rimeFrostData ];
-  };
+  # 对齐 macOS 简体拼音习惯：翻页键、标点、Shift/CapsLock 大写直上屏、切换时上屏拼音原码
+  rimeMacosCompat = pkgs.runCommand "rime-macos-compat" { } ''
+    mkdir -p "$out/share/rime-data/lua"
+    cp ${./rime/default.custom.yaml} "$out/share/rime-data/default.custom.yaml"
+    cp ${./rime/rime_frost.custom.yaml} "$out/share/rime-data/rime_frost.custom.yaml"
+    cp ${./rime/lua/direct_uppercase.lua} "$out/share/rime-data/lua/direct_uppercase.lua"
+  '';
+
+  fcitx5RimeFrost =
+    (pkgs.fcitx5-rime.override {
+      rimeDataPkgs = [
+        rimeFrostData
+        rimeMacosCompat
+      ];
+    }).overrideAttrs
+      (old: {
+        postPatch = (old.postPatch or "") + ''
+          # 托盘右键菜单不再暴露运行时配置入口（方案切换、开关选项、部署、同步）
+          sed -i \
+            -e '/imAction_->setMenu/d' \
+            -e '/registerAction("fcitx-rime-separator"/,/);/d' \
+            -e '/registerAction("fcitx-rime-deploy"/,/);/d' \
+            -e '/registerAction("fcitx-rime-sync"/,/);/d' \
+            -e '/updateSchemaMenu();/d' \
+            src/rimeengine.cpp
+          # 输入法与插件标记为不可配置，菜单中不再出现"配置"入口
+          substituteInPlace src/rime.conf.in --replace 'Configurable=True' 'Configurable=False'
+          substituteInPlace src/rime-addon.conf.in.in --replace 'Configurable=True' 'Configurable=False'
+        '';
+      });
 in
 {
   nix.settings.experimental-features = [
@@ -275,9 +302,34 @@ in
         "Hotkey/TriggerKeys" = {
           "0" = "Control+space";
         };
+
+        # fcitx5 默认用 Shift_L 临时切换上一个输入法（AltTrigger），清空禁用
+        "Hotkey/AltTriggerKeys" = {
+          "0" = "";
+        };
+      };
+
+      settings.addons = {
+        # macOS 拼音习惯：CapsLock(→Ctrl+Space) 切走时上屏原始拼音编码，默认上屏转换后的中文
+        rime.globalSection.SwitchInputMethodBehavior = "Commit raw input";
       };
     };
   };
+
+  # rime 部署器按文件时间戳判断是否重编译，而 nix store 文件时间戳固定为 epoch，
+  # 内容变化不会触发重编译；每次激活时清掉编译缓存并以用户身份全量部署。
+  system.activationScripts.rimeDeploy = ''
+    if getent passwd tsxb >/dev/null; then
+      echo "deploying rime data ..."
+      rm -rf /home/tsxb/.local/share/fcitx5/rime/build \
+        /home/tsxb/.local/share/fcitx5/rime/installation.yaml
+      runuser -u tsxb -- env HOME=/home/tsxb \
+        ${pkgs.librime}/bin/rime_deployer --build \
+        /home/tsxb/.local/share/fcitx5/rime \
+        ${fcitx5RimeFrost}/share/rime-data
+      echo "rime data deployed"
+    fi
+  '';
 
   environment.etc."xdg/kwinrc".text = ''
     [Wayland]
