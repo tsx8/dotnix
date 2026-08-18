@@ -3,12 +3,14 @@
   lib,
   pkgs,
   daeuniverse,
+  dsh-nix,
   rimeFrostSource,
   ...
 }:
 
 let
-  deepseekHarness = pkgs.callPackage ./packages/deepseek-harness/package.nix { };
+  # dsh 的打包由 dsh-nix flake 提供，此处只负责系统级安装
+  deepseekHarness = dsh-nix.packages.${pkgs.stdenv.hostPlatform.system}.deepseek-harness;
 
   rimeFrostData = pkgs.runCommand "rime-frost-data" { } ''
     mkdir -p "$out/share/rime-data"
@@ -233,6 +235,8 @@ in
   home-manager = {
     useGlobalPkgs = true;
     useUserPackages = false;
+
+    sharedModules = [ dsh-nix.homeModules.default ];
 
     users.tsxb = import ./home.nix;
   };

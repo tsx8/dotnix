@@ -29,6 +29,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    dsh-nix = {
+      url = "github:tsx8/dsh-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
+    };
+
     helium-browser = {
       url = "github:oxcl/nix-flake-helium-browser";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -48,6 +54,7 @@
       buaa-login,
       daeuniverse,
       home-manager,
+      dsh-nix,
       helium-browser,
       rime-frost,
       ...
@@ -57,7 +64,7 @@
         system = "x86_64-linux";
 
         specialArgs = {
-          inherit daeuniverse;
+          inherit daeuniverse dsh-nix;
           rimeFrostSource = rime-frost;
         };
 

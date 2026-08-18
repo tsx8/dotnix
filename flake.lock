@@ -61,6 +61,29 @@
         "type": "github"
       }
     },
+    "dsh-nix": {
+      "inputs": {
+        "home-manager": [
+          "home-manager"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1787080466,
+        "narHash": "sha256-te9fO6bQInUmPd8WJg7G6IXDvJBD4S897Ec8oVjK9os=",
+        "owner": "tsx8",
+        "repo": "dsh-nix",
+        "rev": "e2fd21a303fe460322f9799f8a54db8ea48c641b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "tsx8",
+        "repo": "dsh-nix",
+        "type": "github"
+      }
+    },
     "flake-parts": {
       "inputs": {
         "nixpkgs-lib": "nixpkgs-lib"
@@ -171,6 +194,7 @@
         "buaa-login": "buaa-login",
         "daeuniverse": "daeuniverse",
         "disko": "disko",
+        "dsh-nix": "dsh-nix",
         "helium-browser": "helium-browser",
         "home-manager": "home-manager",
         "nixpkgs": "nixpkgs",
