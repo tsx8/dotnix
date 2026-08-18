@@ -45,32 +45,6 @@ let
         '';
       });
 
-  # 未登录时 DBus 重载失败属正常（脚本内 || true）
-  rimeDeployScript = pkgs.writeShellScript "rime-deploy" ''
-    export PATH=${
-      lib.makeBinPath [
-        pkgs.coreutils
-        pkgs.util-linux
-        pkgs.getent
-      ]
-    }
-    if getent passwd tsxb >/dev/null; then
-      echo "deploying rime data..."
-      rm -rf /home/tsxb/.local/share/fcitx5/rime/build \
-        /home/tsxb/.local/share/fcitx5/rime/installation.yaml
-      runuser -u tsxb -- env HOME=/home/tsxb \
-        ${pkgs.librime}/bin/rime_deployer --build \
-        /home/tsxb/.local/share/fcitx5/rime \
-        ${fcitx5RimeFrost}/share/rime-data
-      echo "rime data deployed"
-      runuser -u tsxb -- env \
-        HOME=/home/tsxb \
-        XDG_RUNTIME_DIR=/run/user/$(id -u tsxb) \
-        DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u tsxb)/bus \
-        ${pkgs.systemd}/bin/busctl --user call org.fcitx.Fcitx5 /controller \
-          org.fcitx.Fcitx.Controller1 ReloadAddonConfig s rime || true
-    fi
-  '';
 in
 {
   nix.settings.experimental-features = [
@@ -325,21 +299,6 @@ in
       };
     };
   };
-
-  # rime 部署器按文件时间戳判断重编译，而 nix store 文件时间戳固定为 epoch，
-  # 内容变化不会触发重编译，须每次激活清缓存并全量部署。
-  # 正常激活经 systemd-run 异步派发，避免阻塞 switch；chroot 安装时派发会落到
-  # 安装器的 systemd，且 nixos-rebuild-ng 普通 switch 也置 NIXOS_INSTALL_BOOTLOADER=0，
-  # 因此按值判断，仅安装时同步执行。
-  system.activationScripts.rimeDeploy = ''
-    if [ "''${NIXOS_INSTALL_BOOTLOADER:-}" = "1" ]; then
-      ${rimeDeployScript}
-    else
-      ${pkgs.systemd}/bin/systemd-run --collect --unit=rime-deploy \
-        --description="deploy rime data" -- ${rimeDeployScript} \
-        || ${rimeDeployScript}
-    fi
-  '';
 
   environment.etc."xdg/kwinrc".text = ''
     [Wayland]
