@@ -8,6 +8,14 @@
 {
   home.stateVersion = "26.05";
 
+  programs.deepseek-harness = {
+    enable = true;
+    # 应用由 NixOS 系统级安装，Home Manager 只管理用户级配置
+    package = null;
+
+    agentsFile.source = ./dsh/AGENTS.md;
+  };
+
   # Home Manager only manages user configuration.
   # Applications belong to NixOS; project tools belong to project devShells.
   home.packages = lib.mkForce [
