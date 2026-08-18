@@ -10,14 +10,13 @@
 
   programs.deepseek-harness = {
     enable = true;
-    # 应用由 NixOS 系统级安装，Home Manager 只管理用户级配置
+    # 应用由 NixOS 系统级安装
     package = null;
 
     agentsFile.source = ./dsh/AGENTS.md;
   };
 
-  # Home Manager only manages user configuration.
-  # Applications belong to NixOS; project tools belong to project devShells.
+  # 仓库原则：应用不进用户环境
   home.packages = lib.mkForce [
     config.home.sessionVariablesPackage
   ];

@@ -9,7 +9,6 @@
 }:
 
 let
-  # dsh 的打包由 dsh-nix flake 提供，此处只负责系统级安装
   deepseekHarness = dsh-nix.packages.${pkgs.stdenv.hostPlatform.system}.deepseek-harness;
 
   rimeFrostData = pkgs.runCommand "rime-frost-data" { } ''
@@ -17,7 +16,6 @@ let
     cp -r ${rimeFrostSource}/. "$out/share/rime-data/"
   '';
 
-  # 对齐 macOS 简体拼音习惯：翻页键、标点、Shift/CapsLock 大写直上屏、切换时上屏拼音原码
   rimeMacosCompat = pkgs.runCommand "rime-macos-compat" { } ''
     mkdir -p "$out/share/rime-data/lua"
     cp ${./rime/default.custom.yaml} "$out/share/rime-data/default.custom.yaml"
@@ -34,7 +32,7 @@ let
     }).overrideAttrs
       (old: {
         postPatch = (old.postPatch or "") + ''
-          # 托盘右键菜单不再暴露运行时配置入口（方案切换、开关选项、部署、同步）
+          # 托盘菜单不暴露运行时配置入口
           sed -i \
             -e '/imAction_->setMenu/d' \
             -e '/registerAction("fcitx-rime-separator"/,/);/d' \
@@ -42,14 +40,12 @@ let
             -e '/registerAction("fcitx-rime-sync"/,/);/d' \
             -e '/updateSchemaMenu();/d' \
             src/rimeengine.cpp
-          # 输入法与插件标记为不可配置，菜单中不再出现"配置"入口
           substituteInPlace src/rime.conf.in --replace 'Configurable=True' 'Configurable=False'
           substituteInPlace src/rime-addon.conf.in.in --replace 'Configurable=True' 'Configurable=False'
         '';
       });
 
-  # 每次激活以用户身份全量部署 rime 数据；完成后经 DBus 重载 rime 插件配置，
-  # 让运行中的 fcitx5 重建引擎并加载新数据（未登录时重载失败属正常）。
+  # 未登录时 DBus 重载失败属正常（脚本内 || true）
   rimeDeployScript = pkgs.writeShellScript "rime-deploy" ''
     export PATH=${
       lib.makeBinPath [
@@ -132,7 +128,6 @@ in
     };
   };
 
-  # Secrets
   sops = {
     defaultSopsFile = ./secrets.yaml;
 
@@ -164,12 +159,11 @@ in
     };
   };
 
-  # Desktop
   services.xserver.enable = true;
   services.displayManager.sddm.enable = true;
   services.desktopManager.plasma6.enable = true;
 
-  # Keyboard: macOS-like layout, remapped at evdev level by keyd (applies to X11/Wayland/TTY)
+  # macOS 键位：keyd 在 evdev 层重映射（X11/Wayland/TTY 均生效）
   services.keyd = {
     enable = true;
 
@@ -178,68 +172,43 @@ in
 
       settings = {
         main = {
-          # macOS Command:
-          # physical Alt beside Space becomes the Cmd layer.
           leftalt = "layer(meta_mac)";
           rightalt = "layer(meta_mac)";
-
-          # macOS Option:
-          # move Alt to the physical Meta/Win positions.
           leftmeta = "alt";
           rightmeta = "rightalt";
 
-          # Existing behavior:
-          # tap CapsLock -> Ctrl+Space -> switch IME
-          # hold CapsLock -> CapsLock
           capslock = "overload(capslock, C-space)";
         };
 
-        # Based on keyd v2.6.0 examples/macos.conf.
-        #
-        # ":C" makes unspecified Cmd combinations behave like Ctrl.
+        # 基于 keyd v2.6.0 examples/macos.conf。
+        # ":C" 让未显式定义的 Cmd 组合按 Ctrl 处理。
         "meta_mac:C" = {
-          # macOS Cmd+Space -> Spotlight-like launcher.
-          # Plasma's KRunner uses Alt+Space.
+          # Plasma 的 KRunner 用 Alt+Space
           space = "A-space";
 
-          # Keep upstream keyd clipboard mappings.
-          #
-          # Qt/KDE recognizes:
-          # Ctrl+Insert  -> Copy
-          # Shift+Insert -> Paste
-          # Shift+Delete -> Cut
+          # Qt/KDE 仅识别 Insert/Delete 形式的剪贴板快捷键
           c = "C-insert";
           v = "S-insert";
           x = "S-delete";
 
-          # macOS Cmd+Left/Right -> beginning/end of line.
           left = "home";
           right = "end";
 
-          # macOS Cmd+Tab -> KWin Task Switcher.
-          #
-          # swapm keeps Alt held while Cmd remains physically held,
-          # so repeated Tab presses continue cycling.
+          # swapm：Cmd 按住期间维持 Alt，Tab 可连续切换
           tab = "swapm(app_switch_state, A-tab)";
 
-          # macOS Cmd+` -> next window of current application.
-          #
-          # KWin provides Alt+` for this action.
+          # KWin 用 Alt+` 切换当前应用窗口
           grave = "A-grave";
         };
 
-        # Active after Cmd+Tab until Cmd is released.
         "app_switch_state:A" = {
-          # Forward through applications/windows.
           tab = "A-tab";
           right = "A-tab";
-
-          # Backward through applications/windows.
           grave = "A-S-tab";
           left = "A-S-tab";
         };
 
-        # Preserve the existing CapsLock hold layer.
+        # overload 的 hold 动作：长按保持 CapsLock
         capslock = {
           capslock = "capslock";
         };
@@ -247,7 +216,6 @@ in
     };
   };
 
-  # Audio
   security.rtkit.enable = true;
 
   services.pipewire = {
@@ -257,7 +225,6 @@ in
     pulse.enable = true;
   };
 
-  # Shell
   programs.fish.enable = true;
 
   home-manager = {
@@ -276,7 +243,6 @@ in
     "z /var/lib/sops-nix/key.txt 0440 root sops -"
   ];
 
-  # Sudo
   security.sudo.extraRules = [
     {
       groups = [ "wheel" ];
@@ -289,7 +255,6 @@ in
     }
   ];
 
-  # User
   users.users.tsxb = {
     isNormalUser = true;
 
@@ -339,33 +304,33 @@ in
 
       settings.globalOptions = {
         "Hotkey" = {
-          # keyd translates a CapsLock tap into this chord, toggling keyboard-us <-> rime
+          # 点按 CapsLock 由 keyd 转为该组合键，切换 keyboard-us ↔ rime
           "EnumerateWithTriggerKeys" = "False";
         };
 
-        # fcitx5 key lists use indexed sub-sections; a scalar TriggerKeys value is silently ignored
+        # 键列表用编号子节，写成标量会被静默忽略
         "Hotkey/TriggerKeys" = {
           "0" = "Control+space";
         };
 
-        # fcitx5 默认用 Shift_L 临时切换上一个输入法（AltTrigger），清空禁用
+        # Shift 已用于大写直上屏，禁用 AltTrigger 的临时切换
         "Hotkey/AltTriggerKeys" = {
           "0" = "";
         };
       };
 
       settings.addons = {
-        # macOS 拼音习惯：CapsLock(→Ctrl+Space) 切走时上屏原始拼音编码，默认上屏转换后的中文
+        # 对齐 macOS：切走时上屏原始拼音（默认上屏中文）
         rime.globalSection.SwitchInputMethodBehavior = "Commit raw input";
       };
     };
   };
 
-  # rime 部署器按文件时间戳判断是否重编译，而 nix store 文件时间戳固定为 epoch，
-  # 内容变化不会触发重编译；每次激活时清掉编译缓存并以用户身份全量部署。
-  # 正常激活经 systemd-run 异步派发，避免阻塞 switch；nixos-install 的 chroot 里
-  # systemd-run 会派发到安装器的 systemd，因此安装时同步执行。
-  # nixos-rebuild-ng 在普通 switch 时也会把 NIXOS_INSTALL_BOOTLOADER 置为 "0"，须按值判断。
+  # rime 部署器按文件时间戳判断重编译，而 nix store 文件时间戳固定为 epoch，
+  # 内容变化不会触发重编译，须每次激活清缓存并全量部署。
+  # 正常激活经 systemd-run 异步派发，避免阻塞 switch；chroot 安装时派发会落到
+  # 安装器的 systemd，且 nixos-rebuild-ng 普通 switch 也置 NIXOS_INSTALL_BOOTLOADER=0，
+  # 因此按值判断，仅安装时同步执行。
   system.activationScripts.rimeDeploy = ''
     if [ "''${NIXOS_INSTALL_BOOTLOADER:-}" = "1" ]; then
       ${rimeDeployScript}
