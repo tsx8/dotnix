@@ -248,6 +248,19 @@ in
     "z /var/lib/sops-nix/key.txt 0440 root sops -"
   ];
 
+  # Sudo
+  security.sudo.extraRules = [
+    {
+      groups = [ "wheel" ];
+      commands = [
+        {
+          command = "ALL";
+          options = [ "NOPASSWD" ];
+        }
+      ];
+    }
+  ];
+
   # User
   users.users.tsxb = {
     isNormalUser = true;
