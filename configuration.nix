@@ -121,16 +121,71 @@ in
 
       settings = {
         main = {
-          leftalt = "leftmeta"; # Cmd lands on the thumb key left of space
-          leftmeta = "leftalt"; # Option lands where Win used to be
-          rightalt = "rightmeta";
+          # macOS Command:
+          # physical Alt beside Space becomes the Cmd layer.
+          leftalt = "layer(meta_mac)";
+          rightalt = "layer(meta_mac)";
+
+          # macOS Option:
+          # move Alt to the physical Meta/Win positions.
+          leftmeta = "alt";
           rightmeta = "rightalt";
 
-          # macOS: tap CapsLock switches Chinese/English input, hold enables Caps Lock
+          # Existing behavior:
+          # tap CapsLock -> Ctrl+Space -> switch IME
+          # hold CapsLock -> CapsLock
           capslock = "overload(capslock, C-space)";
         };
 
-        capslock.capslock = "capslock";
+        # Based on keyd v2.6.0 examples/macos.conf.
+        #
+        # ":C" makes unspecified Cmd combinations behave like Ctrl.
+        "meta_mac:C" = {
+          # macOS Cmd+Space -> Spotlight-like launcher.
+          # Plasma's KRunner uses Alt+Space.
+          space = "A-space";
+
+          # Keep upstream keyd clipboard mappings.
+          #
+          # Qt/KDE recognizes:
+          # Ctrl+Insert  -> Copy
+          # Shift+Insert -> Paste
+          # Shift+Delete -> Cut
+          c = "C-insert";
+          v = "S-insert";
+          x = "S-delete";
+
+          # macOS Cmd+Left/Right -> beginning/end of line.
+          left = "home";
+          right = "end";
+
+          # macOS Cmd+Tab -> KWin Task Switcher.
+          #
+          # swapm keeps Alt held while Cmd remains physically held,
+          # so repeated Tab presses continue cycling.
+          tab = "swapm(app_switch_state, A-tab)";
+
+          # macOS Cmd+` -> next window of current application.
+          #
+          # KWin provides Alt+` for this action.
+          grave = "A-grave";
+        };
+
+        # Active after Cmd+Tab until Cmd is released.
+        "app_switch_state:A" = {
+          # Forward through applications/windows.
+          tab = "A-tab";
+          right = "A-tab";
+
+          # Backward through applications/windows.
+          grave = "A-S-tab";
+          left = "A-S-tab";
+        };
+
+        # Preserve the existing CapsLock hold layer.
+        capslock = {
+          capslock = "capslock";
+        };
       };
     };
   };
@@ -227,6 +282,9 @@ in
   environment.etc."xdg/kwinrc".text = ''
     [Wayland]
     InputMethod=${config.i18n.inputMethod.package}/share/applications/fcitx5-wayland-launcher.desktop
+
+    [TabBox]
+    ApplicationsMode=1
   '';
 
   environment.variables = {
