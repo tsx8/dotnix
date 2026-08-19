@@ -11,40 +11,21 @@
 let
   deepseekHarness = dsh-nix.packages.${pkgs.stdenv.hostPlatform.system}.deepseek-harness;
 
-  rimeFrostData = pkgs.runCommand "rime-frost-data" { } ''
-    mkdir -p "$out/share/rime-data"
-    cp -r ${rimeFrostSource}/. "$out/share/rime-data/"
-  '';
+  fcitx5Rime = pkgs.fcitx5-rime.overrideAttrs (old: {
+    postPatch = (old.postPatch or "") + ''
+      # 保留声明式配置入口，但不在托盘菜单暴露 Rime 运行时操作。
+      sed -i \
+        -e '/imAction_->setMenu/d' \
+        -e '/registerAction("fcitx-rime-separator"/,/);/d' \
+        -e '/registerAction("fcitx-rime-deploy"/,/);/d' \
+        -e '/registerAction("fcitx-rime-sync"/,/);/d' \
+        -e '/updateSchemaMenu();/d' \
+        src/rimeengine.cpp
 
-  rimeMacosCompat = pkgs.runCommand "rime-macos-compat" { } ''
-    mkdir -p "$out/share/rime-data/lua"
-    cp ${./rime/default.custom.yaml} "$out/share/rime-data/default.custom.yaml"
-    cp ${./rime/rime_frost.custom.yaml} "$out/share/rime-data/rime_frost.custom.yaml"
-    cp ${./rime/lua/direct_uppercase.lua} "$out/share/rime-data/lua/direct_uppercase.lua"
-  '';
-
-  fcitx5RimeFrost =
-    (pkgs.fcitx5-rime.override {
-      rimeDataPkgs = [
-        rimeFrostData
-        rimeMacosCompat
-      ];
-    }).overrideAttrs
-      (old: {
-        postPatch = (old.postPatch or "") + ''
-          # 托盘菜单不暴露运行时配置入口
-          sed -i \
-            -e '/imAction_->setMenu/d' \
-            -e '/registerAction("fcitx-rime-separator"/,/);/d' \
-            -e '/registerAction("fcitx-rime-deploy"/,/);/d' \
-            -e '/registerAction("fcitx-rime-sync"/,/);/d' \
-            -e '/updateSchemaMenu();/d' \
-            src/rimeengine.cpp
-          substituteInPlace src/rime.conf.in --replace 'Configurable=True' 'Configurable=False'
-          substituteInPlace src/rime-addon.conf.in.in --replace 'Configurable=True' 'Configurable=False'
-        '';
-      });
-
+      substituteInPlace src/rime.conf.in \
+        --replace-fail 'Configurable=True' 'Configurable=False'
+    '';
+  });
 in
 {
   nix.settings.experimental-features = [
@@ -205,6 +186,10 @@ in
     useGlobalPkgs = true;
     useUserPackages = false;
 
+    extraSpecialArgs = {
+      inherit rimeFrostSource;
+    };
+
     sharedModules = [ dsh-nix.homeModules.default ];
 
     users.tsxb = import ./home.nix;
@@ -251,7 +236,7 @@ in
       waylandFrontend = true;
 
       addons = [
-        fcitx5RimeFrost
+        fcitx5Rime
       ];
 
       settings.inputMethod = {

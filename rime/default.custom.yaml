@@ -1,10 +1,10 @@
-# macOS 简体拼音行为对齐（对 rime-frost default.yaml 的补丁）。
+# macOS 简体拼音行为对齐
 #
 # 与上游差异：
-# - 清空 email/url/underscore 识别模式（@ _ 等作为普通标点，组合中键入时上屏候选并追加符号）
+# - 清空 email/url/underscore 识别模式
 # - / 直接上屏半角 /，不再显示候选
-# - 补齐 Apple 简体拼音的半角标点映射（上游刻意保留的差异）
-# - 清空方案选单热键（Ctrl+` 释放给编辑器快捷键）
+# - 补齐 Apple 简体拼音的半角标点映射
+# - 清空方案选单热键
 patch:
   recognizer/patterns: {}
 
