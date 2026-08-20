@@ -48,8 +48,43 @@ in
     # 应用由 NixOS 系统级安装
     package = null;
 
-    agentsFile.source = ./dsh/AGENTS.md;
+    agentsFile = ./dsh/AGENTS.md;
+
+    profiles.next = {
+      dependencies = {
+        "dsh-context" = "0.19.2";
+        "@chaoset/sandbox-extra-roots" = "0.2.6";
+        "dsh-llm-codex" = "github:NOirBRight/dsh-llm-codex#ac5866543ccd44c75a96ba779629ac7a47fc1f50";
+      };
+      bundles = [
+        "@deepseek-ai/dsh-base"
+        "@deepseek-ai/dsh-web-app"
+        "dsh-context"
+        "@chaoset/sandbox-extra-roots"
+        "dsh-llm-codex"
+      ];
+      cordisPatch = [ ];
+      pnpmDepsHash = "sha256-iTVoEArOTzyKlrORqy+i6SqVZ5C6eYCoFKql7bQ77KI=";
+    };
   };
+
+  programs.fish = {
+    enable = true;
+    # dsh 内置的 `web` 是 --profile web 的别名，这里给 next profile 一个
+    # 等价快捷命令：dsh next ≡ dsh --profile next，其余参数照常转发
+    functions.dsh = ''
+      if test "$argv[1]" = "next"
+        set -e argv[1]
+        command dsh --profile next $argv
+      else
+        command dsh $argv
+      end
+    '';
+  };
+
+  # fish 模块默认开启 man 缓存（供 apropos 补全），但 home.packages 不含
+  # man pages（仓库原则），mandb 对空目录不产出导致构建失败，显式关闭
+  programs.man.generateCaches = false;
 
   # 仓库原则：应用不进用户环境
   home.packages = lib.mkForce [

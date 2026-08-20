@@ -78,6 +78,7 @@
           daeuniverse.nixosModules.dae
           home-manager.nixosModules.home-manager
           helium-browser.nixosModules.default
+          dsh-nix.nixosModules.default
         ];
       };
 

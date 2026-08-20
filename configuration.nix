@@ -9,8 +9,6 @@
 }:
 
 let
-  deepseekHarness = dsh-nix.packages.${pkgs.stdenv.hostPlatform.system}.deepseek-harness;
-
   fcitx5Rime = pkgs.fcitx5-rime.overrideAttrs (old: {
     postPatch = (old.postPatch or "") + ''
       # 保留声明式配置入口，但不在托盘菜单暴露 Rime 运行时操作。
@@ -181,6 +179,7 @@ in
   };
 
   programs.fish.enable = true;
+  programs.deepseek-harness.enable = true;
 
   home-manager = {
     useGlobalPkgs = true;
@@ -329,8 +328,6 @@ in
     zed-editor
 
     nixd
-
-    deepseekHarness
   ];
 
   zramSwap.enable = true;
