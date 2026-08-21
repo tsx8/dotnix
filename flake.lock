@@ -71,11 +71,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1787255735,
-        "narHash": "sha256-J/93XSjL7irMki5td7Z2jtBtROsF0zYCc2xWVFBefWY=",
+        "lastModified": 1787320692,
+        "narHash": "sha256-wpACO+7W4QPWXHbsJyAGoL9OqC3J1VH3gCU7pUs8XnA=",
         "owner": "tsx8",
         "repo": "dsh-nix",
-        "rev": "22dae86354b21eebc29b46f51a7804616360d46b",
+        "rev": "35058799c1b8c978500dea586a0c85dd4d662259",
         "type": "github"
       },
       "original": {

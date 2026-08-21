@@ -51,20 +51,25 @@ in
     agentsFile = ./dsh/AGENTS.md;
 
     profiles.next = {
+      # 这些插件只为补官方预置未覆盖的能力而存在；每次上游 dsh 更新后
+      # 逐一复查：官方是否已覆盖其能力、是否需要升级跟随、是否需要暂时禁用。
       dependencies = {
-        "dsh-context" = "0.19.2";
-        "@chaoset/sandbox-extra-roots" = "0.2.6";
-        "dsh-llm-codex" = "github:NOirBRight/dsh-llm-codex#ac5866543ccd44c75a96ba779629ac7a47fc1f50";
+        # 上下文统计展示，官方预置无此能力，难以替代
+        "dsh-context" = "0.21.0";
+        # Turn 级对话与工作树回退，官方预置无此能力
+        "@anionex/dsh-turn-rewind" = "0.1.1";
+        # 自动权限策略（Auto preset），官方预置无此能力
+        "@nanmicoder/dsh-auto-mode" = "0.1.4";
       };
       bundles = [
         "@deepseek-ai/dsh-base"
         "@deepseek-ai/dsh-web-app"
         "dsh-context"
-        "@chaoset/sandbox-extra-roots"
-        "dsh-llm-codex"
+        "@anionex/dsh-turn-rewind"
+        "@nanmicoder/dsh-auto-mode"
       ];
       cordisPatch = [ ];
-      pnpmDepsHash = "sha256-iTVoEArOTzyKlrORqy+i6SqVZ5C6eYCoFKql7bQ77KI=";
+      pnpmDepsHash = "sha256-VAgMov9wI2Z/spdFz/ZrEG0HAythY1jdYT/vsVNy2K0=";
     };
   };
 

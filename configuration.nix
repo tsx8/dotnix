@@ -106,7 +106,9 @@ in
         mode = "0400";
 
         content = ''
-          DEEPSEEK_API_KEY: ${config.sops.placeholder.deepseek-api-key}
+          version: 1
+          refs:
+            DEEPSEEK_API_KEY: ${config.sops.placeholder.deepseek-api-key}
         '';
       };
     };
