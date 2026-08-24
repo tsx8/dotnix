@@ -54,22 +54,16 @@ in
       # 这些插件只为补官方预置未覆盖的能力而存在；每次上游 dsh 更新后
       # 逐一复查：官方是否已覆盖其能力、是否需要升级跟随、是否需要暂时禁用。
       dependencies = {
-        # 上下文统计展示，官方预置无此能力，难以替代
+        # 上下文统计展示，官方预置无此能力
         "dsh-context" = "0.21.0";
-        # Turn 级对话与工作树回退，官方预置无此能力
-        "@anionex/dsh-turn-rewind" = "0.1.1";
-        # 自动权限策略（Auto preset），官方预置无此能力
-        "@nanmicoder/dsh-auto-mode" = "0.1.4";
       };
       bundles = [
         "@deepseek-ai/dsh-base"
         "@deepseek-ai/dsh-web-app"
         "dsh-context"
-        "@anionex/dsh-turn-rewind"
-        "@nanmicoder/dsh-auto-mode"
       ];
       cordisPatch = [ ];
-      pnpmDepsHash = "sha256-VAgMov9wI2Z/spdFz/ZrEG0HAythY1jdYT/vsVNy2K0=";
+      pnpmDepsHash = "sha256-zFkjpTRrd7B/lUxmqEv0O3AZ0vxJQBxCetr42p7m2pY=";
     };
   };
 
