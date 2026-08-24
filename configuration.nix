@@ -182,6 +182,7 @@ in
 
   programs.fish.enable = true;
   programs.deepseek-harness.enable = true;
+  programs.direnv.enable = true;
 
   home-manager = {
     useGlobalPkgs = true;
