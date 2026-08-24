@@ -203,18 +203,6 @@ in
     "z /var/lib/sops-nix/key.txt 0440 root sops -"
   ];
 
-  security.sudo.extraRules = [
-    {
-      groups = [ "wheel" ];
-      commands = [
-        {
-          command = "ALL";
-          options = [ "NOPASSWD" ];
-        }
-      ];
-    }
-  ];
-
   users.users.tsxb = {
     isNormalUser = true;
 
