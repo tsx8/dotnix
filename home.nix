@@ -156,20 +156,29 @@ in
     enable = true;
     package = null;
 
+    mutableUserSettings = false;
+
+    extensions = [
+      "nix"
+    ];
+
     userSettings = {
+      autosave.after_delay.milliseconds = 0;
+
+      auto_update = false;
+      base_keymap = "VSCode";
+
+      languages.Nix.language_servers = [
+        "nixd"
+        "!nil"
+      ];
+
+      session.trust_all_worktrees = true;
+
       terminal = {
         env = {
           EDITOR = "zeditor --wait";
           VISUAL = "zeditor --wait";
-        };
-      };
-
-      languages = {
-        Nix = {
-          language_servers = [
-            "nixd"
-            "!nil"
-          ];
         };
       };
     };
