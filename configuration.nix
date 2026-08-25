@@ -2,7 +2,6 @@
   config,
   lib,
   pkgs,
-  daeuniverse,
   dsh-nix,
   rimeFrostSource,
   ...
@@ -26,6 +25,8 @@ let
   });
 in
 {
+  imports = [ ./network.nix ];
+
   nix.settings.experimental-features = [
     "nix-command"
     "flakes"
@@ -33,32 +34,14 @@ in
 
   networking = {
     hostName = "maco";
-    networkmanager.enable = true;
   };
-
-  services.buaa-login = {
-    enable = true;
-    credentialsFile = config.sops.secrets.buaa-login.path;
-  };
-
-  services.dae = {
-    enable = true;
-
-    package = daeuniverse.packages.${pkgs.stdenv.hostPlatform.system}.dae-unstable;
-
-    configFile = config.sops.templates."dae.dae".path;
-  };
-
-  systemd.services.buaa-login.unitConfig.OnSuccess = [
-    "dae.service"
-  ];
-
-  systemd.services.dae.wantedBy = lib.mkForce [ ];
 
   boot.loader = {
     systemd-boot.enable = true;
     efi.canTouchEfiVariables = true;
   };
+
+  boot.kernelPackages = pkgs.linuxPackages_latest;
 
   hardware.facter = {
     reportPath = ./facter.json;
@@ -93,6 +76,7 @@ in
       deepseek-api-key = { };
       dae-nodes = { };
       buaa-login = { };
+      wifi-hotspot-password = { };
       user-passwd-hash = {
         neededForUsers = true;
       };
@@ -208,7 +192,6 @@ in
     isNormalUser = true;
 
     extraGroups = [
-      "networkmanager"
       "wheel"
       "sops"
     ];
@@ -317,6 +300,9 @@ in
     gh
     neovim
     zed-editor
+
+    # hostapd/802.11 排障：查看 wiphy 能力、信道与工作带宽
+    iw
 
     nixd
   ];

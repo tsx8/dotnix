@@ -1,5 +1,6 @@
 global {
-  wan_interface: auto
+  lan_interface: br-lan
+  wan_interface: eno1
   log_level: info
   allow_insecure: false
   auto_config_kernel_parameter: true
@@ -27,8 +28,6 @@ group {
 }
 
 routing {
-  pname(NetworkManager) -> direct
-
   dip(224.0.0.0/3, geoip:private, geoip:cn) -> direct
   domain(geosite:cn) -> direct
 

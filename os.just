@@ -1,5 +1,5 @@
 build:
-  sudo nixos-rebuild build --flake .#maco
+  nixos-rebuild build --flake .#maco --no-link
 
 test:
   sudo nixos-rebuild test --flake .#maco
