@@ -37,8 +37,18 @@ in
   };
 
   boot.loader = {
-    systemd-boot.enable = true;
+    systemd-boot = {
+      enable = true;
+      configurationLimit = 10;
+      editor = false;
+    };
     efi.canTouchEfiVariables = true;
+  };
+
+  nix.gc = {
+    automatic = true;
+    dates = "weekly";
+    options = "--delete-older-than 30d";
   };
 
   boot.kernelPackages = pkgs.linuxPackages_latest;
@@ -46,6 +56,15 @@ in
   hardware.facter = {
     reportPath = ./facter.json;
     detected.dhcp.enable = false;
+  };
+
+  services.btrfs.autoScrub.enable = true;
+
+  systemd.sleep.settings.Sleep = {
+    AllowSuspend = false;
+    AllowHibernation = false;
+    AllowHybridSleep = false;
+    AllowSuspendThenHibernate = false;
   };
 
   time.timeZone = "Asia/Shanghai";
