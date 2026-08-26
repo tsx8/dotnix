@@ -151,6 +151,7 @@
     enable = true;
     credentialsFile = config.sops.secrets.buaa-login.path;
     interval = "15min";
+    interface = "eno1";
   };
 
   systemd.services.buaa-login.unitConfig.OnSuccess = [ "dae.service" ];

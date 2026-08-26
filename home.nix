@@ -173,6 +173,8 @@ in
         "!nil"
       ];
 
+      lsp.gopls.binary.path_lookup = true;
+
       session.trust_all_worktrees = true;
 
       terminal = {
