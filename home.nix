@@ -55,7 +55,7 @@ in
       # 逐一复查：官方是否已覆盖其能力、是否需要升级跟随、是否需要暂时禁用。
       dependencies = {
         # 上下文统计展示，官方预置无此能力
-        "dsh-context" = "0.21.0";
+        "dsh-context" = "0.33.1";
       };
       bundles = [
         "@deepseek-ai/dsh-base"
@@ -63,7 +63,7 @@ in
         "dsh-context"
       ];
       cordisPatch = [ ];
-      pnpmDepsHash = "sha256-zFkjpTRrd7B/lUxmqEv0O3AZ0vxJQBxCetr42p7m2pY=";
+      pnpmDepsHash = "sha256-Qim39Yvc3goDY8366phImZMSQ1AkDGt/YktVK0a34k8=";
     };
   };
 
