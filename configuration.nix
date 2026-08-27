@@ -45,6 +45,8 @@ in
     efi.canTouchEfiVariables = true;
   };
 
+  # system.nixos.label = "nixos"; donot enable this, use NIXOS_LABEL instead
+
   nix.gc = {
     automatic = true;
     dates = "weekly";

@@ -4,5 +4,5 @@ build:
 test:
   sudo nixos-rebuild test --flake .#maco
 
-switch:
-  sudo nixos-rebuild switch --flake .#maco
+switch label="":
+  @if [ -n "{{label}}" ]; then L="{{label}}"; else L="$(git write-tree | cut -c1-7)"; fi; echo "label: $L"; sudo NIXOS_LABEL="$L" nixos-rebuild switch --impure --flake .#maco
