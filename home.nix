@@ -24,6 +24,9 @@ let
 
     cp ${./rime/lua/direct_uppercase.lua} \
       "$out/share/rime-data/lua/direct_uppercase.lua"
+
+    cp ${./rime/lua/post_commit_reject.lua} \
+      "$out/share/rime-data/lua/post_commit_reject.lua"
   '';
 
   rimeData = pkgs.symlinkJoin {

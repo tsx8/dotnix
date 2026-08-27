@@ -8,8 +8,11 @@
 # - 去掉所有前缀/关键词触发模式：u 拆字反查、U Unicode 字符、
 #   R 数字大写、N 公历转农历、V/v 计算器、rq/sj/xq/dt/ts/nl 日期时间农历
 # - direct_uppercase.lua：Shift/CapsLock + 字母，有组合时纳入组合，无组合时直接上屏大写
+# - post_commit_reject.lua：候选上屏后连续 Backspace 完整删除，下次相同编码
+#   时将该候选后移一位（一次性）；processor 须位于首位以观察所有按键
 patch:
   engine/processors:
+    - lua_processor@*post_commit_reject*processor
     - lua_processor@*direct_uppercase
     - ascii_composer
     - recognizer
@@ -47,6 +50,7 @@ patch:
     - simplifier@chinese_english
     - simplifier@traditionalize
     - simplifier@mars
+    - lua_filter@*post_commit_reject*reorder
     - uniquifier
 
   recognizer/patterns: {}
