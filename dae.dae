@@ -10,12 +10,18 @@ global {
 dns {
   ipversion_prefer: 4
 
+  upstream {
+    buaadns: 'udp://202.112.128.50:53'
+    googledns: 'tcp+udp://dns.google.com:53'
+  }
+
   routing {
     request {
-      qtype(https) -> reject
-      fallback: asis
+      fallback: buaadns
     }
     response {
+      upstream(googledns) -> accept
+      ip(geoip:private) && !qname(geosite:cn) -> googledns
       fallback: accept
     }
   }
@@ -28,8 +34,11 @@ group {
 }
 
 routing {
-  dip(224.0.0.0/3, geoip:private, geoip:cn) -> direct
+  dip(224.0.0.0/3) -> direct
+  dip(202.112.128.50) && l4proto(udp) && dport(53) -> must_direct
+  l4proto(udp) && dport(443) -> block
+  dip(geoip:private) -> direct
+  dip(geoip:cn) -> direct
   domain(geosite:cn) -> direct
-
   fallback: proxy
 }
