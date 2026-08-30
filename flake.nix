@@ -29,14 +29,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    dsh-nix = {
-      url = "github:tsx8/dsh-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.home-manager.follows = "home-manager";
-    };
-
     helium-browser = {
       url = "github:oxcl/nix-flake-helium-browser";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    llm-agents = {
+      url = "github:numtide/llm-agents.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -54,9 +53,9 @@
       buaa-login,
       daeuniverse,
       home-manager,
-      dsh-nix,
       helium-browser,
       rime-frost,
+      llm-agents,
       ...
     }:
     {
@@ -64,7 +63,7 @@
         system = "x86_64-linux";
 
         specialArgs = {
-          inherit daeuniverse dsh-nix;
+          inherit daeuniverse llm-agents;
           rimeFrostSource = rime-frost;
         };
 
@@ -78,7 +77,6 @@
           daeuniverse.nixosModules.dae
           home-manager.nixosModules.home-manager
           helium-browser.nixosModules.default
-          dsh-nix.nixosModules.default
         ];
       };
 

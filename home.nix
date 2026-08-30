@@ -46,42 +46,8 @@ in
 {
   home.stateVersion = "26.05";
 
-  programs.deepseek-harness = {
-    enable = true;
-    # 应用由 NixOS 系统级安装
-    package = null;
-
-    agentsFile = ./dsh/AGENTS.md;
-
-    profiles.next = {
-      # 这些插件只为补官方预置未覆盖的能力而存在；每次上游 dsh 更新后
-      # 逐一复查：官方是否已覆盖其能力、是否需要升级跟随、是否需要暂时禁用。
-      dependencies = {
-        # 上下文统计展示，官方预置无此能力
-        "dsh-context" = "0.34.0";
-      };
-      bundles = [
-        "@deepseek-ai/dsh-base"
-        "@deepseek-ai/dsh-web-app"
-        "dsh-context"
-      ];
-      cordisPatch = [ ];
-      pnpmDepsHash = "sha256-YHf6ILWUt4Ad4RcSVI8F834gj7EIhuFyz6sWUe4M9oY=";
-    };
-  };
-
   programs.fish = {
     enable = true;
-    # dsh 内置的 `web` 是 --profile web 的别名，这里给 next profile 一个
-    # 等价快捷命令：dsh next ≡ dsh --profile next，其余参数照常转发
-    functions.dsh = ''
-      if test "$argv[1]" = "next"
-        set -e argv[1]
-        command dsh --profile next $argv
-      else
-        command dsh $argv
-      end
-    '';
   };
 
   # fish 模块默认开启 man 缓存（供 apropos 补全），但 home.packages 不含
@@ -92,10 +58,6 @@ in
   home.packages = lib.mkForce [
     config.home.sessionVariablesPackage
   ];
-
-  home.file.".dsh/.credentials.yaml".source =
-    config.lib.file.mkOutOfStoreSymlink
-      osConfig.sops.templates."dsh-credentials.yaml".path;
 
   home.file.".config/sops/age/keys.txt".source =
     config.lib.file.mkOutOfStoreSymlink "/var/lib/sops-nix/key.txt";
@@ -140,6 +102,8 @@ in
       fi
     fi
   '';
+
+  home.file.".zcode/AGENTS.md".source = ./zcode/AGENTS-md.txt;
 
   programs.git = {
     enable = true;

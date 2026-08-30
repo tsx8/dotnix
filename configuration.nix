@@ -2,8 +2,8 @@
   config,
   lib,
   pkgs,
-  dsh-nix,
   rimeFrostSource,
+  llm-agents,
   ...
 }:
 
@@ -94,7 +94,6 @@ in
     };
 
     secrets = {
-      deepseek-api-key = { };
       dae-nodes = { };
       buaa-login = { };
       wifi-hotspot-password = { };
@@ -105,17 +104,6 @@ in
 
     templates = {
       "dae.dae".content = builtins.readFile ./dae.dae + "\n" + config.sops.placeholder.dae-nodes;
-
-      "dsh-credentials.yaml" = {
-        owner = config.users.users.tsxb.name;
-        mode = "0400";
-
-        content = ''
-          version: 1
-          refs:
-            DEEPSEEK_API_KEY: ${config.sops.placeholder.deepseek-api-key}
-        '';
-      };
     };
   };
 
@@ -186,7 +174,6 @@ in
   };
 
   programs.fish.enable = true;
-  programs.deepseek-harness.enable = true;
   programs.direnv.enable = true;
 
   home-manager = {
@@ -196,8 +183,6 @@ in
     extraSpecialArgs = {
       inherit rimeFrostSource;
     };
-
-    sharedModules = [ dsh-nix.homeModules.default ];
 
     users.tsxb = import ./home.nix;
   };
@@ -317,13 +302,13 @@ in
     jq
     fd
     ripgrep
+    iw
 
     gh
     neovim
     zed-editor
 
-    # hostapd/802.11 排障：查看 wiphy 能力、信道与工作带宽
-    iw
+    llm-agents.packages.${pkgs.system}.zcode
 
     nixd
   ];
