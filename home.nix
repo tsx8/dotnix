@@ -103,7 +103,68 @@ in
     fi
   '';
 
-  home.file.".zcode/AGENTS.md".source = ./zcode/AGENTS-md.txt;
+  home.file.".codex/models.json".text = ''
+    {
+      "models": [
+        {
+          "slug": "glm-5.3",
+          "display_name": "glm-5.3",
+          "description": "Z.ai's latest flagship model",
+          "default_reasoning_level": "max",
+          "supported_reasoning_levels": [
+            { "effort": "low",  "description": "Light reasoning" },
+            { "effort": "high", "description": "Enhanced reasoning" },
+            { "effort": "max",  "description": "Deep reasoning" }
+          ],
+          "shell_type": "shell_command",
+          "visibility": "list",
+          "supported_in_api": true,
+          "priority": 0,
+          "base_instructions": "",
+          "supports_reasoning_summaries": true,
+          "default_reasoning_summary": "none",
+          "support_verbosity": false,
+          "apply_patch_tool_type": "freeform",
+          "truncation_policy": { "mode": "bytes", "limit": 10000 },
+          "context_window": 1048576,
+          "max_context_window": 1048576,
+          "effective_context_window_percent": 95,
+          "supports_parallel_tool_calls": true,
+          "experimental_supported_tools": [],
+          "input_modalities": [ "text" ]
+        },
+        {
+          "slug": "glm-5.3-flash",
+          "display_name": "glm-5.3-flash",
+          "description": "GLM-5 series first native multimodal model",
+          "default_reasoning_level": "max",
+          "supported_reasoning_levels": [
+            { "effort": "low",  "description": "Light reasoning" },
+            { "effort": "high", "description": "Enhanced reasoning" },
+            { "effort": "max",  "description": "Deep reasoning" }
+          ],
+          "shell_type": "shell_command",
+          "visibility": "list",
+          "supported_in_api": true,
+          "priority": 1,
+          "base_instructions": "",
+          "supports_reasoning_summaries": true,
+          "default_reasoning_summary": "none",
+          "support_verbosity": false,
+          "apply_patch_tool_type": "freeform",
+          "truncation_policy": { "mode": "bytes", "limit": 10000 },
+          "context_window": 1048576,
+          "max_context_window": 1048576,
+          "effective_context_window_percent": 95,
+          "supports_parallel_tool_calls": false,
+          "experimental_supported_tools": [],
+          "input_modalities": [ "text", "image" ]
+        }
+      ]
+    }
+  '';
+
+  home.file.".codex/AGENTS.md".source = ./codex/AGENTS-md.txt;
 
   programs.git = {
     enable = true;
@@ -130,10 +191,13 @@ in
     ];
 
     userSettings = {
+      agent.button = false;
       autosave.after_delay.milliseconds = 0;
 
       auto_update = false;
       base_keymap = "VSCode";
+
+      edit_predictions.provider = "none";
 
       languages.Nix.language_servers = [
         "nixd"

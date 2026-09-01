@@ -100,6 +100,10 @@ in
       user-passwd-hash = {
         neededForUsers = true;
       };
+      zai-api-key = {
+        owner = config.users.users.tsxb.name;
+        mode = "0400";
+      };
     };
 
     templates = {
@@ -272,6 +276,36 @@ in
     ApplicationsMode=1
   '';
 
+  environment.etc."codex/config.toml".text = ''
+    model_provider = "ZAI"
+    model = "glm-5.3"
+    model_reasoning_effort = "max"
+    approval_policy = "on-request"
+    sandbox_mode = "danger-full-access"
+    web_search = "live"
+    model_verbosity = "low"
+    model_reasoning_summary = "concise"
+    model_catalog_json = "/home/tsxb/.codex/models.json"
+
+    [desktop]
+    localeOverride = "zh-CN"
+    preventSleepWhileRunning = true
+    composerEnterBehavior = "cmdAlways"
+    followUpQueueMode = "queue"
+
+    [sandbox_workspace_write]
+    network_access = true
+
+    [model_providers.ZAI]
+    name = "ZAI"
+    base_url = "https://open.bigmodel.cn/api/v1"
+    wire_api = "responses"
+
+    [model_providers.ZAI.auth]
+    command = "/run/current-system/sw/bin/cat"
+    args = ["/run/secrets/zai-api-key"]
+  '';
+
   environment.variables = {
     EDITOR = "nvim";
     VISUAL = "nvim";
@@ -308,7 +342,7 @@ in
     neovim
     zed-editor
 
-    llm-agents.packages.${pkgs.system}.zcode
+    llm-agents.packages.${pkgs.system}.chatgpt
 
     nixd
   ];
