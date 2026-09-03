@@ -110,7 +110,7 @@ in
           "slug": "glm-5.3",
           "display_name": "glm-5.3",
           "description": "Z.ai's latest flagship model",
-          "default_reasoning_level": "max",
+          "default_reasoning_level": "high",
           "supported_reasoning_levels": [
             { "effort": "low",  "description": "Light reasoning" },
             { "effort": "high", "description": "Enhanced reasoning" },
@@ -137,7 +137,7 @@ in
           "slug": "glm-5.3-flash",
           "display_name": "glm-5.3-flash",
           "description": "GLM-5 series first native multimodal model",
-          "default_reasoning_level": "max",
+          "default_reasoning_level": "low",
           "supported_reasoning_levels": [
             { "effort": "low",  "description": "Light reasoning" },
             { "effort": "high", "description": "Enhanced reasoning" },

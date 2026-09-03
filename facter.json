@@ -27,8 +27,8 @@
     },
     "bluetooth": [
       {
-        "index": 80,
-        "attached_to": 76,
+        "index": 81,
+        "attached_to": 77,
         "class_list": [
           "usb",
           "bluetooth"
@@ -130,7 +130,7 @@
       },
       {
         "index": 83,
-        "attached_to": 76,
+        "attached_to": 77,
         "class_list": [
           "usb",
           "bluetooth"
@@ -231,8 +231,8 @@
         "module_alias": "usb:v2C7Cp7009d0100dcEFdsc02dp01icE0isc01ip01in00"
       },
       {
-        "index": 90,
-        "attached_to": 76,
+        "index": 91,
+        "attached_to": 77,
         "class_list": [
           "usb",
           "bluetooth"
@@ -1102,6 +1102,9 @@
         "sysfs_id": "/devices/pci0000:00/0000:00:08.1",
         "sysfs_bus_id": "0000:00:08.1",
         "sysfs_iommu_group_id": 11,
+        "unix_device_names": [
+          "/dev/input/event0"
+        ],
         "detail": {
           "function": 1,
           "command": 1031,
@@ -1960,14 +1963,14 @@
         "sysfs_id": "/class/block/zram0",
         "unix_device_names": [
           "/dev/disk/by-label/zram0",
-          "/dev/disk/by-uuid/0543acae-817b-46af-87b7-9a766851e569",
+          "/dev/disk/by-uuid/b6c4e623-d7eb-42ef-8c43-85e402c4c6a0",
           "/dev/zram0"
         ],
         "resources": [
           {
             "type": "size",
             "unit": "sectors",
-            "value_1": 3803264,
+            "value_1": 3802752,
             "value_2": 4096
           }
         ]
@@ -2056,7 +2059,7 @@
     "hub": [
       {
         "index": 73,
-        "attached_to": 76,
+        "attached_to": 77,
         "class_list": [
           "usb",
           "hub"
@@ -2162,7 +2165,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 6.18.44 xhci-hcd",
+          "name": "Linux 7.2.2 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -2172,11 +2175,11 @@
         },
         "revision": {
           "hex": "0000",
-          "name": "6.18",
+          "name": "7.02",
           "value": 0
         },
         "serial": "0000:c7:00.3",
-        "model": "Linux 6.18.44 xhci-hcd xHCI Host Controller",
+        "model": "Linux 7.2.2 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.3/usb6/6-0:1.0",
         "sysfs_bus_id": "6-0:1.0",
         "detail": {
@@ -2214,10 +2217,10 @@
         "driver_modules": [
           "usbcore"
         ],
-        "module_alias": "usb:v1D6Bp0003d0618dc09dsc00dp03ic09isc00ip00in00"
+        "module_alias": "usb:v1D6Bp0003d0702dc09dsc00dp03ic09isc00ip00in00"
       },
       {
-        "index": 76,
+        "index": 77,
         "attached_to": 45,
         "class_list": [
           "usb",
@@ -2239,7 +2242,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 6.18.44 xhci-hcd",
+          "name": "Linux 7.2.2 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -2249,11 +2252,11 @@
         },
         "revision": {
           "hex": "0000",
-          "name": "6.18",
+          "name": "7.02",
           "value": 0
         },
         "serial": "0000:c7:00.0",
-        "model": "Linux 6.18.44 xhci-hcd xHCI Host Controller",
+        "model": "Linux 7.2.2 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.0/usb3/3-0:1.0",
         "sysfs_bus_id": "3-0:1.0",
         "resources": [
@@ -2301,10 +2304,10 @@
         "driver_modules": [
           "usbcore"
         ],
-        "module_alias": "usb:v1D6Bp0002d0618dc09dsc00dp01ic09isc00ip00in00"
+        "module_alias": "usb:v1D6Bp0002d0702dc09dsc00dp01ic09isc00ip00in00"
       },
       {
-        "index": 78,
+        "index": 79,
         "attached_to": 39,
         "class_list": [
           "usb",
@@ -2326,7 +2329,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 6.18.44 xhci-hcd",
+          "name": "Linux 7.2.2 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -2336,11 +2339,11 @@
         },
         "revision": {
           "hex": "0000",
-          "name": "6.18",
+          "name": "7.02",
           "value": 0
         },
         "serial": "0000:c7:00.4",
-        "model": "Linux 6.18.44 xhci-hcd xHCI Host Controller",
+        "model": "Linux 7.2.2 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.4/usb7/7-0:1.0",
         "sysfs_bus_id": "7-0:1.0",
         "resources": [
@@ -2388,7 +2391,7 @@
         "driver_modules": [
           "usbcore"
         ],
-        "module_alias": "usb:v1D6Bp0002d0618dc09dsc00dp01ic09isc00ip00in00"
+        "module_alias": "usb:v1D6Bp0002d0702dc09dsc00dp01ic09isc00ip00in00"
       },
       {
         "index": 82,
@@ -2413,7 +2416,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 6.18.44 xhci-hcd",
+          "name": "Linux 7.2.2 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -2423,11 +2426,11 @@
         },
         "revision": {
           "hex": "0000",
-          "name": "6.18",
+          "name": "7.02",
           "value": 0
         },
         "serial": "0000:c7:00.0",
-        "model": "Linux 6.18.44 xhci-hcd xHCI Host Controller",
+        "model": "Linux 7.2.2 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.0/usb4/4-0:1.0",
         "sysfs_bus_id": "4-0:1.0",
         "detail": {
@@ -2465,7 +2468,7 @@
         "driver_modules": [
           "usbcore"
         ],
-        "module_alias": "usb:v1D6Bp0003d0618dc09dsc00dp03ic09isc00ip00in00"
+        "module_alias": "usb:v1D6Bp0003d0702dc09dsc00dp03ic09isc00ip00in00"
       },
       {
         "index": 84,
@@ -2490,7 +2493,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 6.18.44 xhci-hcd",
+          "name": "Linux 7.2.2 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -2500,11 +2503,11 @@
         },
         "revision": {
           "hex": "0000",
-          "name": "6.18",
+          "name": "7.02",
           "value": 0
         },
         "serial": "0000:c7:00.4",
-        "model": "Linux 6.18.44 xhci-hcd xHCI Host Controller",
+        "model": "Linux 7.2.2 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.4/usb8/8-0:1.0",
         "sysfs_bus_id": "8-0:1.0",
         "detail": {
@@ -2542,10 +2545,10 @@
         "driver_modules": [
           "usbcore"
         ],
-        "module_alias": "usb:v1D6Bp0003d0618dc09dsc00dp03ic09isc00ip00in00"
+        "module_alias": "usb:v1D6Bp0003d0702dc09dsc00dp03ic09isc00ip00in00"
       },
       {
-        "index": 85,
+        "index": 86,
         "attached_to": 51,
         "class_list": [
           "usb",
@@ -2567,7 +2570,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 6.18.44 xhci-hcd",
+          "name": "Linux 7.2.2 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -2577,11 +2580,11 @@
         },
         "revision": {
           "hex": "0000",
-          "name": "6.18",
+          "name": "7.02",
           "value": 0
         },
         "serial": "0000:c5:00.4",
-        "model": "Linux 6.18.44 xhci-hcd xHCI Host Controller",
+        "model": "Linux 7.2.2 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:08.1/0000:c5:00.4/usb1/1-0:1.0",
         "sysfs_bus_id": "1-0:1.0",
         "resources": [
@@ -2629,10 +2632,10 @@
         "driver_modules": [
           "usbcore"
         ],
-        "module_alias": "usb:v1D6Bp0002d0618dc09dsc00dp01ic09isc00ip00in00"
+        "module_alias": "usb:v1D6Bp0002d0702dc09dsc00dp01ic09isc00ip00in00"
       },
       {
-        "index": 87,
+        "index": 89,
         "attached_to": 62,
         "class_list": [
           "usb",
@@ -2654,7 +2657,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 6.18.44 xhci-hcd",
+          "name": "Linux 7.2.2 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -2664,11 +2667,11 @@
         },
         "revision": {
           "hex": "0000",
-          "name": "6.18",
+          "name": "7.02",
           "value": 0
         },
         "serial": "0000:c7:00.3",
-        "model": "Linux 6.18.44 xhci-hcd xHCI Host Controller",
+        "model": "Linux 7.2.2 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.3/usb5/5-0:1.0",
         "sysfs_bus_id": "5-0:1.0",
         "resources": [
@@ -2716,10 +2719,10 @@
         "driver_modules": [
           "usbcore"
         ],
-        "module_alias": "usb:v1D6Bp0002d0618dc09dsc00dp01ic09isc00ip00in00"
+        "module_alias": "usb:v1D6Bp0002d0702dc09dsc00dp01ic09isc00ip00in00"
       },
       {
-        "index": 89,
+        "index": 90,
         "attached_to": 51,
         "class_list": [
           "usb",
@@ -2741,7 +2744,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 6.18.44 xhci-hcd",
+          "name": "Linux 7.2.2 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -2751,11 +2754,11 @@
         },
         "revision": {
           "hex": "0000",
-          "name": "6.18",
+          "name": "7.02",
           "value": 0
         },
         "serial": "0000:c5:00.4",
-        "model": "Linux 6.18.44 xhci-hcd xHCI Host Controller",
+        "model": "Linux 7.2.2 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:08.1/0000:c5:00.4/usb2/2-0:1.0",
         "sysfs_bus_id": "2-0:1.0",
         "detail": {
@@ -2793,115 +2796,13 @@
         "driver_modules": [
           "usbcore"
         ],
-        "module_alias": "usb:v1D6Bp0003d0618dc09dsc00dp03ic09isc00ip00in00"
+        "module_alias": "usb:v1D6Bp0003d0702dc09dsc00dp03ic09isc00ip00in00"
       }
     ],
     "keyboard": [
       {
-        "index": 81,
-        "attached_to": 76,
-        "class_list": [
-          "keyboard",
-          "usb"
-        ],
-        "bus_type": {
-          "hex": "0086",
-          "name": "USB",
-          "value": 134
-        },
-        "slot": {
-          "bus": 0,
-          "number": 0
-        },
-        "base_class": {
-          "hex": "0108",
-          "name": "Keyboard",
-          "value": 264
-        },
-        "sub_class": {
-          "hex": "0000",
-          "name": "Keyboard",
-          "value": 0
-        },
-        "vendor": {
-          "hex": "3554",
-          "name": "VGN",
-          "value": 13652
-        },
-        "device": {
-          "hex": "fb50",
-          "name": "VGN DragonFly F1 SE",
-          "value": 64336
-        },
-        "revision": {
-          "hex": "0000",
-          "name": "1.10",
-          "value": 0
-        },
-        "model": "VGN DragonFly F1 SE",
-        "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.0/usb3/3-1/3-1:1.0",
-        "sysfs_bus_id": "3-1:1.0",
-        "unix_device_names": [
-          "/dev/input/by-id/usb-VGN_VGN_DragonFly_F1_SE-event-kbd",
-          "/dev/input/by-path/pci-0000:c7:00.0-usb-0:1:1.0-event-kbd",
-          "/dev/input/by-path/pci-0000:c7:00.0-usbv2-0:1:1.0-event-kbd",
-          "/dev/input/event1"
-        ],
-        "resources": [
-          {
-            "type": "baud",
-            "speed": 12000000,
-            "bits": 0,
-            "stop_bits": 0,
-            "parity": 0,
-            "handshake": 0
-          }
-        ],
-        "detail": {
-          "device_class": {
-            "hex": "0000",
-            "name": "per_interface",
-            "value": 0
-          },
-          "device_subclass": {
-            "hex": "0000",
-            "name": "per_interface",
-            "value": 0
-          },
-          "device_protocol": 0,
-          "interface_class": {
-            "hex": "0003",
-            "name": "hid",
-            "value": 3
-          },
-          "interface_subclass": {
-            "hex": "0001",
-            "name": "audio",
-            "value": 1
-          },
-          "interface_protocol": 1,
-          "interface_number": 0,
-          "interface_alternate_setting": 0
-        },
-        "hotplug": "usb",
-        "driver": "usbhid",
-        "driver_module": "usbhid",
-        "drivers": [
-          "usbhid"
-        ],
-        "driver_modules": [
-          "usbhid"
-        ],
-        "driver_info": {
-          "type": "keyboard",
-          "xkb_rules": "xfree86",
-          "xkb_model": "pc104"
-        },
-        "module_alias": "usb:v3554pFB50d0110dc00dsc00dp00ic03isc01ip01in00"
-      },
-      {
-        "index": 86,
-        "attached_to": 76,
+        "index": 87,
+        "attached_to": 77,
         "class_list": [
           "keyboard",
           "usb"
@@ -2947,7 +2848,7 @@
           "/dev/input/by-id/usb-CHERRY_K37_Dongle-if01-event-kbd",
           "/dev/input/by-path/pci-0000:c7:00.0-usb-0:4:1.1-event-kbd",
           "/dev/input/by-path/pci-0000:c7:00.0-usbv2-0:4:1.1-event-kbd",
-          "/dev/input/event10"
+          "/dev/input/event11"
         ],
         "resources": [
           {
@@ -3000,6 +2901,109 @@
           "xkb_model": "pc104"
         },
         "module_alias": "usb:v046Ap013Bd0109dc00dsc00dp00ic03isc01ip01in01"
+      },
+      {
+        "index": 88,
+        "attached_to": 77,
+        "class_list": [
+          "keyboard",
+          "usb"
+        ],
+        "bus_type": {
+          "hex": "0086",
+          "name": "USB",
+          "value": 134
+        },
+        "slot": {
+          "bus": 0,
+          "number": 0
+        },
+        "base_class": {
+          "hex": "0108",
+          "name": "Keyboard",
+          "value": 264
+        },
+        "sub_class": {
+          "hex": "0000",
+          "name": "Keyboard",
+          "value": 0
+        },
+        "vendor": {
+          "hex": "3554",
+          "name": "Compx",
+          "value": 13652
+        },
+        "device": {
+          "hex": "fb51",
+          "name": "VGN DragonFly F1 SE",
+          "value": 64337
+        },
+        "revision": {
+          "hex": "0000",
+          "name": "3.13",
+          "value": 0
+        },
+        "serial": "528502505529",
+        "model": "Compx VGN DragonFly F1 SE",
+        "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.0/usb3/3-2/3-2:1.0",
+        "sysfs_bus_id": "3-2:1.0",
+        "unix_device_names": [
+          "/dev/input/by-id/usb-Compx_VGN_DragonFly_F1_SE_528502505529-event-kbd",
+          "/dev/input/by-path/pci-0000:c7:00.0-usb-0:2:1.0-event-kbd",
+          "/dev/input/by-path/pci-0000:c7:00.0-usbv2-0:2:1.0-event-kbd",
+          "/dev/input/event1"
+        ],
+        "resources": [
+          {
+            "type": "baud",
+            "speed": 12000000,
+            "bits": 0,
+            "stop_bits": 0,
+            "parity": 0,
+            "handshake": 0
+          }
+        ],
+        "detail": {
+          "device_class": {
+            "hex": "0000",
+            "name": "per_interface",
+            "value": 0
+          },
+          "device_subclass": {
+            "hex": "0000",
+            "name": "per_interface",
+            "value": 0
+          },
+          "device_protocol": 0,
+          "interface_class": {
+            "hex": "0003",
+            "name": "hid",
+            "value": 3
+          },
+          "interface_subclass": {
+            "hex": "0001",
+            "name": "audio",
+            "value": 1
+          },
+          "interface_protocol": 1,
+          "interface_number": 0,
+          "interface_alternate_setting": 0
+        },
+        "hotplug": "usb",
+        "driver": "usbhid",
+        "driver_module": "usbhid",
+        "drivers": [
+          "usbhid"
+        ],
+        "driver_modules": [
+          "usbhid"
+        ],
+        "driver_info": {
+          "type": "keyboard",
+          "xkb_rules": "xfree86",
+          "xkb_model": "pc104"
+        },
+        "module_alias": "usb:v3554pFB51d0313dc00dsc00dp00ic03isc01ip01in00"
       }
     ],
     "memory": [
@@ -3256,8 +3260,8 @@
     ],
     "mouse": [
       {
-        "index": 77,
-        "attached_to": 76,
+        "index": 78,
+        "attached_to": 77,
         "class_list": [
           "mouse",
           "usb"
@@ -3363,8 +3367,8 @@
         "module_alias": "usb:v046Ap013Bd0109dc00dsc00dp00ic03isc01ip02in00"
       },
       {
-        "index": 88,
-        "attached_to": 76,
+        "index": 85,
+        "attached_to": 77,
         "class_list": [
           "mouse",
           "usb"
@@ -3390,24 +3394,25 @@
         },
         "vendor": {
           "hex": "3554",
-          "name": "VGN",
+          "name": "Compx",
           "value": 13652
         },
         "device": {
-          "hex": "fb50",
+          "hex": "fb51",
           "name": "VGN DragonFly F1 SE",
-          "value": 64336
+          "value": 64337
         },
         "revision": {
           "hex": "0000",
-          "name": "1.10",
+          "name": "3.13",
           "value": 0
         },
+        "serial": "528502505529",
         "compat_vendor": "Unknown",
         "compat_device": "Generic USB Mouse",
-        "model": "VGN DragonFly F1 SE",
-        "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.0/usb3/3-1/3-1:1.1",
-        "sysfs_bus_id": "3-1:1.1",
+        "model": "Compx VGN DragonFly F1 SE",
+        "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.0/usb3/3-2/3-2:1.2",
+        "sysfs_bus_id": "3-2:1.2",
         "unix_device_names": [
           "/dev/input/mice"
         ],
@@ -3445,7 +3450,7 @@
             "value": 1
           },
           "interface_protocol": 2,
-          "interface_number": 1,
+          "interface_number": 2,
           "interface_alternate_setting": 0
         },
         "hotplug": "usb",
@@ -3468,7 +3473,7 @@
           "buttons": -1,
           "wheels": -1
         },
-        "module_alias": "usb:v3554pFB50d0110dc00dsc00dp00ic03isc01ip02in01"
+        "module_alias": "usb:v3554pFB51d0313dc00dsc00dp00ic03isc01ip02in02"
       }
     ],
     "network_controller": [
@@ -3607,7 +3612,7 @@
         "resources": [
           {
             "type": "hwaddr",
-            "address": 97
+            "address": 101
           },
           {
             "type": "phwaddr",
@@ -3716,8 +3721,8 @@
     ],
     "network_interface": [
       {
-        "index": 91,
-        "attached_to": 38,
+        "index": 92,
+        "attached_to": 0,
         "class_list": [
           "network_interface"
         ],
@@ -3727,37 +3732,18 @@
           "value": 263
         },
         "sub_class": {
-          "hex": "0001",
-          "name": "Ethernet",
-          "value": 1
+          "hex": "0000",
+          "name": "Loopback",
+          "value": 0
         },
-        "model": "Ethernet network interface",
-        "sysfs_id": "/class/net/wlp194s0",
-        "sysfs_device_link": "/devices/pci0000:00/0000:00:02.3/0000:c2:00.0",
+        "model": "Loopback network interface",
+        "sysfs_id": "/class/net/lo",
         "unix_device_names": [
-          "wlp194s0"
-        ],
-        "resources": [
-          {
-            "type": "hwaddr",
-            "address": 97
-          },
-          {
-            "type": "phwaddr",
-            "address": 101
-          }
-        ],
-        "driver": "mt7925e",
-        "driver_module": "mt7925e",
-        "drivers": [
-          "mt7925e"
-        ],
-        "driver_modules": [
-          "mt7925e"
+          "lo"
         ]
       },
       {
-        "index": 92,
+        "index": 93,
         "attached_to": 29,
         "class_list": [
           "network_interface"
@@ -3798,7 +3784,48 @@
         ]
       },
       {
-        "index": 93,
+        "index": 94,
+        "attached_to": 38,
+        "class_list": [
+          "network_interface"
+        ],
+        "base_class": {
+          "hex": "0107",
+          "name": "Network Interface",
+          "value": 263
+        },
+        "sub_class": {
+          "hex": "0001",
+          "name": "Ethernet",
+          "value": 1
+        },
+        "model": "Ethernet network interface",
+        "sysfs_id": "/class/net/wlp194s0",
+        "sysfs_device_link": "/devices/pci0000:00/0000:00:02.3/0000:c2:00.0",
+        "unix_device_names": [
+          "wlp194s0"
+        ],
+        "resources": [
+          {
+            "type": "hwaddr",
+            "address": 101
+          },
+          {
+            "type": "phwaddr",
+            "address": 101
+          }
+        ],
+        "driver": "mt7925e",
+        "driver_module": "mt7925e",
+        "drivers": [
+          "mt7925e"
+        ],
+        "driver_modules": [
+          "mt7925e"
+        ]
+      },
+      {
+        "index": 95,
         "attached_to": 0,
         "class_list": [
           "network_interface"
@@ -3830,7 +3857,7 @@
         ]
       },
       {
-        "index": 94,
+        "index": 97,
         "attached_to": 63,
         "class_list": [
           "network_interface"
@@ -3868,28 +3895,6 @@
         ],
         "driver_modules": [
           "igc"
-        ]
-      },
-      {
-        "index": 95,
-        "attached_to": 0,
-        "class_list": [
-          "network_interface"
-        ],
-        "base_class": {
-          "hex": "0107",
-          "name": "Network Interface",
-          "value": 263
-        },
-        "sub_class": {
-          "hex": "0000",
-          "name": "Loopback",
-          "value": 0
-        },
-        "model": "Loopback network interface",
-        "sysfs_id": "/class/net/lo",
-        "unix_device_names": [
-          "lo"
         ]
       }
     ],
@@ -4479,7 +4484,7 @@
     "usb": [
       {
         "index": 75,
-        "attached_to": 76,
+        "attached_to": 77,
         "class_list": [
           "usb",
           "unknown"
@@ -4569,7 +4574,102 @@
         "module_alias": "usb:v046Ap013Bd0109dc00dsc00dp00ic03isc00ip00in02"
       },
       {
-        "index": 79,
+        "index": 76,
+        "attached_to": 77,
+        "class_list": [
+          "usb",
+          "unknown"
+        ],
+        "bus_type": {
+          "hex": "0086",
+          "name": "USB",
+          "value": 134
+        },
+        "slot": {
+          "bus": 0,
+          "number": 0
+        },
+        "base_class": {
+          "hex": "0000",
+          "name": "Unclassified device",
+          "value": 0
+        },
+        "sub_class": {
+          "hex": "0000",
+          "name": "Unclassified device",
+          "value": 0
+        },
+        "vendor": {
+          "hex": "3554",
+          "name": "Compx",
+          "value": 13652
+        },
+        "device": {
+          "hex": "fb51",
+          "name": "VGN DragonFly F1 SE",
+          "value": 64337
+        },
+        "revision": {
+          "hex": "0000",
+          "name": "3.13",
+          "value": 0
+        },
+        "serial": "528502505529",
+        "model": "Compx VGN DragonFly F1 SE",
+        "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.0/usb3/3-2/3-2:1.1",
+        "sysfs_bus_id": "3-2:1.1",
+        "unix_device_names": [
+          "/dev/input/event5"
+        ],
+        "resources": [
+          {
+            "type": "baud",
+            "speed": 12000000,
+            "bits": 0,
+            "stop_bits": 0,
+            "parity": 0,
+            "handshake": 0
+          }
+        ],
+        "detail": {
+          "device_class": {
+            "hex": "0000",
+            "name": "per_interface",
+            "value": 0
+          },
+          "device_subclass": {
+            "hex": "0000",
+            "name": "per_interface",
+            "value": 0
+          },
+          "device_protocol": 0,
+          "interface_class": {
+            "hex": "0003",
+            "name": "hid",
+            "value": 3
+          },
+          "interface_subclass": {
+            "hex": "0000",
+            "name": "per_interface",
+            "value": 0
+          },
+          "interface_protocol": 0,
+          "interface_number": 1,
+          "interface_alternate_setting": 0
+        },
+        "hotplug": "usb",
+        "driver": "usbhid",
+        "driver_module": "usbhid",
+        "drivers": [
+          "usbhid"
+        ],
+        "driver_modules": [
+          "usbhid"
+        ],
+        "module_alias": "usb:v3554pFB51d0313dc00dsc00dp00ic03isc00ip00in01"
+      },
+      {
+        "index": 80,
         "attached_to": 73,
         "class_list": [
           "usb",
@@ -5951,9 +6051,9 @@
       "product": "MACO",
       "version": "Default string",
       "wake_up": {
-        "hex": "0006",
-        "name": "Power Switch",
-        "value": 6
+        "hex": "0002",
+        "name": "Unknown",
+        "value": 2
       }
     }
   }
