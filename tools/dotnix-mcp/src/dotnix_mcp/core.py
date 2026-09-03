@@ -9,7 +9,7 @@ import re
 import socket
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import TypeAlias, TypedDict, cast
 
 SYSTEMCTL = "/run/current-system/sw/bin/systemctl"
 JOURNALCTL = "/run/current-system/sw/bin/journalctl"
@@ -41,14 +41,18 @@ _ENV = {
     "SYSTEMD_COLORS": "0",
 }
 
+JsonObject: TypeAlias = dict[str, object]
+UnitStatusValue: TypeAlias = str | int | None
+UnitStatus: TypeAlias = dict[str, UnitStatusValue]
+
 _SECRET_KEY_RE = re.compile(
     r"(?i)\b(password|passphrase|api[_-]?key|secret|token|"
-    r"authorization|cookie|credential)\b(\s*[:=]\s*)[^\s,;]+"
+    + r"authorization|cookie|credential)\b(\s*[:=]\s*)[^\s,;]+"
 )
 _BEARER_RE = re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._~+/=-]+")
 _URL_QUERY_RE = re.compile(
     r"(?i)([?&](?:password|passphrase|api[_-]?key|secret|token|"
-    r"authorization|cookie|credential)=)[^&\s]+"
+    + r"authorization|cookie|credential)=)[^&\s]+"
 )
 _PRIVATE_KEY_RE = re.compile(
     r"-----BEGIN [A-Z ]*PRIVATE KEY-----.*?-----END [A-Z ]*PRIVATE KEY-----",
@@ -60,7 +64,75 @@ class InvalidInput(ValueError):
     """An input is outside the fixed debug-tool schema."""
 
 
-def validate_unit(unit: str) -> str:
+class FailedUnit(TypedDict):
+    unit: str
+    load: str
+    active: str
+    sub: str
+    description: str
+
+
+class SystemdStatus(TypedDict):
+    state: str
+    failed_count: int
+
+
+class SystemLinks(TypedDict):
+    current_system: str | None
+    booted_system: str | None
+    system_profile: str | None
+    system_profile_generation: int | None
+
+
+class SystemStatus(TypedDict):
+    hostname: str
+    kernel: str
+    nixos_version: str | None
+    systemd: SystemdStatus
+    links: SystemLinks
+    failed_units: list[FailedUnit]
+
+
+class JournalEntry(TypedDict):
+    timestamp: str | None
+    priority: int | None
+    identifier: str | None
+    pid: int | None
+    unit: str | None
+    message: str
+    message_truncated: bool
+    redactions: int
+
+
+class JournalResult(TypedDict):
+    unit: str
+    boot: str
+    entries: list[JournalEntry]
+    requested: int
+    returned: int
+    available: int
+    omitted: int
+    parse_errors: int
+    redactions: int
+    truncated_messages: int
+    output_byte_limit: int
+    sensitive_hint: bool
+
+
+class GenerationEntry(TypedDict):
+    generation: int
+    path: str
+    modified_at: str
+    current: bool
+
+
+class GenerationResult(TypedDict):
+    current_generation: int | None
+    returned: int
+    generations: list[GenerationEntry]
+
+
+def validate_unit(unit: object) -> str:
     if not isinstance(unit, str) or not UNIT_RE.fullmatch(unit):
         raise InvalidInput(
             "unit must be an exact systemd unit name with an allowed suffix"
@@ -70,7 +142,7 @@ def validate_unit(unit: str) -> str:
     return unit
 
 
-def validate_limit(limit: int, maximum: int, default: int) -> int:
+def validate_limit(limit: object, maximum: int, default: int) -> int:
     if limit is None:
         return default
     if (
@@ -82,7 +154,7 @@ def validate_limit(limit: int, maximum: int, default: int) -> int:
     return limit
 
 
-def validate_priority(priority: int) -> int:
+def validate_priority(priority: object) -> int:
     if (
         isinstance(priority, bool)
         or not isinstance(priority, int)
@@ -99,7 +171,7 @@ def redact_text(text: str) -> tuple[str, int]:
         nonlocal count
         count += 1
 
-    def count_redaction(match: re.Match[str]) -> str:
+    def count_redaction(_match: re.Match[str]) -> str:
         increment()
         return "[REDACTED]"
 
@@ -158,11 +230,32 @@ def _profile_generation(path: Path | None = None) -> int | None:
         return None
 
 
-def system_status() -> dict[str, Any]:
+def _optional_integer(value: object) -> int | None:
+    if isinstance(value, bool) or not isinstance(value, (str, int)):
+        return None
+    try:
+        return int(value)
+    except (ValueError, OverflowError):
+        return None
+
+
+def _optional_text(value: object) -> str | None:
+    return value if isinstance(value, str) else None
+
+
+def _first_text(value: JsonObject, names: tuple[str, ...]) -> str | None:
+    for name in names:
+        text = _optional_text(value.get(name))
+        if text is not None:
+            return text
+    return None
+
+
+def system_status() -> SystemStatus:
     state = _run([SYSTEMCTL, "is-system-running"])
     failed = _run([SYSTEMCTL, "--failed", "--no-legend", "--plain", "--no-pager"])
     version = _run([NIXOS_VERSION], timeout=5)
-    failed_units = []
+    failed_units: list[FailedUnit] = []
     for line in failed.stdout.splitlines():
         fields = line.split(None, 4)
         if len(fields) >= 4:
@@ -176,25 +269,27 @@ def system_status() -> dict[str, Any]:
                 }
             )
 
+    systemd: SystemdStatus = {
+        "state": state.stdout.strip() or "unknown",
+        "failed_count": len(failed_units),
+    }
+    links: SystemLinks = {
+        "current_system": _realpath("/run/current-system"),
+        "booted_system": _realpath("/run/booted-system"),
+        "system_profile": _realpath(SYSTEM_PROFILE),
+        "system_profile_generation": _profile_generation(),
+    }
     return {
         "hostname": socket.gethostname(),
         "kernel": platform.release(),
         "nixos_version": version.stdout.strip() if version.returncode == 0 else None,
-        "systemd": {
-            "state": state.stdout.strip() or "unknown",
-            "failed_count": len(failed_units),
-        },
-        "links": {
-            "current_system": _realpath("/run/current-system"),
-            "booted_system": _realpath("/run/booted-system"),
-            "system_profile": _realpath(SYSTEM_PROFILE),
-            "system_profile_generation": _profile_generation(),
-        },
+        "systemd": systemd,
+        "links": links,
         "failed_units": failed_units,
     }
 
 
-def unit_status(unit: str) -> dict[str, Any]:
+def unit_status(unit: str) -> UnitStatus:
     unit = validate_unit(unit)
     properties = [
         "Id",
@@ -231,15 +326,12 @@ def unit_status(unit: str) -> dict[str, Any]:
     if canonical_unit != unit:
         raise InvalidInput("systemctl returned a different canonical unit name")
 
-    output = {"unit": unit}
+    output: UnitStatus = {"unit": unit}
     for property in properties:
         name = PROPERTY_NAMES[property]
-        value = values.get(property) or None
+        value: UnitStatusValue = values.get(property) or None
         if property in NUMERIC_PROPERTIES and value is not None:
-            try:
-                value = int(value)
-            except ValueError:
-                value = None
+            value = _optional_integer(value)
         output[name] = value
     return output
 
@@ -271,24 +363,27 @@ NUMERIC_PROPERTIES = {
 }
 
 
-def _journal_entry(raw: str) -> dict[str, Any] | None:
+def _journal_entry(raw: str) -> JournalEntry | None:
     try:
-        value = json.loads(raw)
+        decoded = cast(object, json.loads(raw))
     except json.JSONDecodeError:
         return None
-    if not isinstance(value, dict):
+    if not isinstance(decoded, dict):
         return None
+    # JSON object keys are always strings; only the values remain dynamic.
+    value = cast(JsonObject, decoded)
 
     timestamp = None
-    try:
-        microseconds = int(value.get("__REALTIME_TIMESTAMP", ""))
-        timestamp = (
-            dt.datetime.fromtimestamp(microseconds / 1_000_000, tz=dt.timezone.utc)
-            .isoformat(timespec="milliseconds")
-            .replace("+00:00", "Z")
-        )
-    except (TypeError, ValueError, OverflowError):
-        pass
+    microseconds = _optional_integer(value.get("__REALTIME_TIMESTAMP", ""))
+    if microseconds is not None:
+        try:
+            timestamp = (
+                dt.datetime.fromtimestamp(microseconds / 1_000_000, tz=dt.UTC)
+                .isoformat(timespec="milliseconds")
+                .replace("+00:00", "Z")
+            )
+        except (ValueError, OverflowError):
+            timestamp = None
 
     message = value.get("MESSAGE")
     if not isinstance(message, str):
@@ -296,30 +391,12 @@ def _journal_entry(raw: str) -> dict[str, Any] | None:
     message, redactions = redact_text(message)
     message, was_truncated = _truncate_bytes(message, JOURNAL_MESSAGE_MAX_BYTES)
 
-    def integer(name: str) -> int | None:
-        try:
-            return int(value.get(name, ""))
-        except (TypeError, ValueError):
-            return None
-
     return {
         "timestamp": timestamp,
-        "priority": integer("PRIORITY"),
-        "identifier": (
-            value.get("SYSLOG_IDENTIFIER")
-            if isinstance(value.get("SYSLOG_IDENTIFIER"), str)
-            else value.get("_COMM")
-            if isinstance(value.get("_COMM"), str)
-            else None
-        ),
-        "pid": integer("_PID"),
-        "unit": (
-            value.get("_SYSTEMD_UNIT")
-            if isinstance(value.get("_SYSTEMD_UNIT"), str)
-            else value.get("UNIT")
-            if isinstance(value.get("UNIT"), str)
-            else None
-        ),
+        "priority": _optional_integer(value.get("PRIORITY", "")),
+        "identifier": _first_text(value, ("SYSLOG_IDENTIFIER", "_COMM")),
+        "pid": _optional_integer(value.get("_PID", "")),
+        "unit": _first_text(value, ("_SYSTEMD_UNIT", "UNIT")),
         "message": message,
         "message_truncated": was_truncated,
         "redactions": redactions,
@@ -327,9 +404,9 @@ def _journal_entry(raw: str) -> dict[str, Any] | None:
 
 
 def _limit_journal_entries(
-    entries: list[dict[str, Any]],
-) -> tuple[list[dict[str, Any]], int]:
-    selected: list[dict[str, Any]] = []
+    entries: list[JournalEntry],
+) -> tuple[list[JournalEntry], int]:
+    selected: list[JournalEntry] = []
     used = 0
     omitted = 0
     for entry in reversed(entries):
@@ -350,8 +427,8 @@ def _limit_journal_entries(
 
 def journal_result(
     raw_lines: list[str], unit: str, requested_lines: int
-) -> dict[str, Any]:
-    entries = []
+) -> JournalResult:
+    entries: list[JournalEntry] = []
     parse_errors = 0
     for raw in raw_lines:
         entry = _journal_entry(raw)
@@ -379,7 +456,7 @@ def journal_result(
     }
 
 
-def unit_journal(unit: str, lines: int = 80, priority: int = 7) -> dict[str, Any]:
+def unit_journal(unit: str, lines: int = 80, priority: int = 7) -> JournalResult:
     unit = validate_unit(unit)
     lines = validate_limit(lines, JOURNAL_MAX_LINES, 80)
     priority = validate_priority(priority)
@@ -399,9 +476,9 @@ def unit_journal(unit: str, lines: int = 80, priority: int = 7) -> dict[str, Any
     return journal_result(result.stdout.splitlines(), unit, lines)
 
 
-def nixos_generations(limit: int = 20) -> dict[str, Any]:
+def nixos_generations(limit: int = 20) -> GenerationResult:
     limit = validate_limit(limit, GENERATION_MAX_LIMIT, 20)
-    generations = []
+    generations: list[GenerationEntry] = []
     for link in glob.glob(str(SYSTEM_PROFILE.parent / "system-*-link")):
         match = GENERATION_RE.fullmatch(os.path.basename(link))
         if not match:
@@ -414,11 +491,10 @@ def nixos_generations(limit: int = 20) -> dict[str, Any]:
             {
                 "generation": int(match.group(1)),
                 "path": os.path.realpath(link),
-                "modified_at": dt.datetime.fromtimestamp(
-                    stat.st_mtime, tz=dt.timezone.utc
-                )
+                "modified_at": dt.datetime.fromtimestamp(stat.st_mtime, tz=dt.UTC)
                 .isoformat(timespec="milliseconds")
                 .replace("+00:00", "Z"),
+                "current": False,
             }
         )
 

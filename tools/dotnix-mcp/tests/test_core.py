@@ -3,13 +3,14 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
-from dotnix_debug_mcp import core
+from dotnix_mcp import core
 
 
 class ValidationTests(unittest.TestCase):
     def test_accepts_exact_unit_name(self):
-        self.assertEqual(
+        _ = self.assertEqual(
             core.validate_unit("systemd-networkd.service"), "systemd-networkd.service"
         )
 
@@ -23,20 +24,20 @@ class ValidationTests(unittest.TestCase):
             "x" * 129 + ".service",
         ):
             with self.assertRaises(core.InvalidInput):
-                core.validate_unit(value)
+                _ = core.validate_unit(value)
 
     def test_rejects_invalid_limit_and_priority(self):
         with self.assertRaises(core.InvalidInput):
-            core.validate_limit(0, 200, 80)
+            _ = core.validate_limit(0, 200, 80)
         with self.assertRaises(core.InvalidInput):
-            core.validate_priority(8)
+            _ = core.validate_priority(8)
 
 
 class RedactionTests(unittest.TestCase):
     def test_redacts_common_credential_forms(self):
         text, count = core.redact_text(
             "password=hunter2 Authorization: abc123 Bearer abc.def.ghi "
-            "https://example.test/?token=secret"
+            + "https://example.test/?token=secret"
         )
         self.assertEqual(count, 5)
         self.assertNotIn("hunter2", text)
@@ -88,18 +89,17 @@ class JournalTests(unittest.TestCase):
         self.assertGreater(result["omitted"], 0)
 
     def test_journal_uses_fixed_journalctl_arguments(self):
-        commands = []
+        commands: list[list[str]] = []
 
-        def fake_run(command, timeout=10.0):
+        def fake_run(
+            command: list[str], timeout: float = 10.0
+        ) -> subprocess.CompletedProcess[str]:
+            _ = timeout
             commands.append(command)
             return subprocess.CompletedProcess(command, 0, "", "")
 
-        original_run = core._run
-        core._run = fake_run
-        try:
-            core.unit_journal("test.service", 20, 3)
-        finally:
-            core._run = original_run
+        with patch.object(core, "_run", fake_run):
+            _ = core.unit_journal("test.service", 20, 3)
 
         self.assertEqual(
             commands,
@@ -144,4 +144,4 @@ class GenerationTests(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    _ = unittest.main()

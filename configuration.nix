@@ -4,7 +4,7 @@
   pkgs,
   rimeFrostSource,
   llm-agents,
-  dotnixDebugMcp,
+  dotnixMcp,
   ...
 }:
 
@@ -300,8 +300,8 @@ in
     # 重定向 Nix cache 后需同步更新此路径并重启 Codex。
     writable_roots = ["~/.cache/nix"]
 
-    [mcp_servers.dotnix_debug]
-    command = "${dotnixDebugMcp}/bin/dotnix-debug-mcp"
+    [mcp_servers.dotnix-mcp]
+    command = "${dotnixMcp}/bin/dotnix-mcp"
     args = []
     enabled = true
     required = false
@@ -315,19 +315,19 @@ in
     ]
     default_tools_approval_mode = "prompt"
 
-    [mcp_servers.dotnix_debug.tools.system_status]
+    [mcp_servers.dotnix-mcp.tools.system_status]
     approval_mode = "auto"
     output_token_limit = 2500
 
-    [mcp_servers.dotnix_debug.tools.unit_status]
+    [mcp_servers.dotnix-mcp.tools.unit_status]
     approval_mode = "auto"
     output_token_limit = 1800
 
-    [mcp_servers.dotnix_debug.tools.unit_journal]
+    [mcp_servers.dotnix-mcp.tools.unit_journal]
     approval_mode = "prompt"
     output_token_limit = 4000
 
-    [mcp_servers.dotnix_debug.tools.nixos_generations]
+    [mcp_servers.dotnix-mcp.tools.nixos_generations]
     approval_mode = "auto"
     output_token_limit = 1800
 
@@ -379,7 +379,7 @@ in
 
     llm-agents.packages.${pkgs.system}.chatgpt
     bubblewrap
-    dotnixDebugMcp
+    dotnixMcp
 
     nixd
   ];

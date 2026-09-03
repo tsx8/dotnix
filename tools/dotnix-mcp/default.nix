@@ -1,7 +1,7 @@
 { python3Packages }:
 
-python3Packages.buildPythonApplication rec {
-  pname = "dotnix-debug-mcp";
+python3Packages.buildPythonApplication {
+  pname = "dotnix-mcp";
   version = "0.1.0";
   format = "pyproject";
 
@@ -22,13 +22,13 @@ python3Packages.buildPythonApplication rec {
   '';
 
   pythonImportsCheck = [
-    "dotnix_debug_mcp"
-    "dotnix_debug_mcp.core"
-    "dotnix_debug_mcp.server"
+    "dotnix_mcp"
+    "dotnix_mcp.core"
+    "dotnix_mcp.server"
   ];
 
   meta = {
-    description = "Read-only NixOS debug MCP server for dotnix";
-    mainProgram = "dotnix-debug-mcp";
+    description = "Read-only NixOS MCP server for dotnix";
+    mainProgram = "dotnix-mcp";
   };
 }

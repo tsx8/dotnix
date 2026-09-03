@@ -59,16 +59,21 @@
       ...
     }:
     let
-      dotnixDebugMcp =
-        nixpkgs.legacyPackages.x86_64-linux.callPackage ./tools/dotnix-debug-mcp/default.nix
-          { };
+      dotnixMcp = nixpkgs.legacyPackages.x86_64-linux.callPackage ./tools/dotnix-mcp/default.nix { };
+      dotnixDevShell = nixpkgs.legacyPackages.x86_64-linux.mkShell {
+        packages = [
+          (nixpkgs.legacyPackages.x86_64-linux.python3.withPackages (ps: [ ps.mcp ]))
+          nixpkgs.legacyPackages.x86_64-linux.basedpyright
+          nixpkgs.legacyPackages.x86_64-linux.ruff
+        ];
+      };
     in
     {
       nixosConfigurations.maco = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
 
         specialArgs = {
-          inherit daeuniverse llm-agents dotnixDebugMcp;
+          inherit daeuniverse llm-agents dotnixMcp;
           rimeFrostSource = rime-frost;
         };
 
@@ -98,7 +103,11 @@
 
         nixos-install = nixpkgs.legacyPackages.x86_64-linux.nixos-install;
 
-        dotnix-debug-mcp = dotnixDebugMcp;
+        dotnix-mcp = dotnixMcp;
+
+        nixf-diagnose = nixpkgs.legacyPackages.x86_64-linux.nixf-diagnose;
       };
+
+      devShells.x86_64-linux.default = dotnixDevShell;
     };
 }
