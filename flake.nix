@@ -58,12 +58,17 @@
       llm-agents,
       ...
     }:
+    let
+      dotnixDebugMcp =
+        nixpkgs.legacyPackages.x86_64-linux.callPackage ./tools/dotnix-debug-mcp/default.nix
+          { };
+    in
     {
       nixosConfigurations.maco = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
 
         specialArgs = {
-          inherit daeuniverse llm-agents;
+          inherit daeuniverse llm-agents dotnixDebugMcp;
           rimeFrostSource = rime-frost;
         };
 
@@ -92,6 +97,8 @@
         sops = nixpkgs.legacyPackages.x86_64-linux.sops;
 
         nixos-install = nixpkgs.legacyPackages.x86_64-linux.nixos-install;
+
+        dotnix-debug-mcp = dotnixDebugMcp;
       };
     };
 }

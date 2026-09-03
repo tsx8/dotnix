@@ -18,15 +18,20 @@
 
 仓库使用 just 管理日常运维命令，使用 `just --list` 查看所有常用命令。
 
-For AI Agents：禁止自动使用 `just os switch` 及其对应的 `nixos-rebuild` 命令，除非得到用户提前的明确的许可。禁止自动使用 `just secret edit` 及其对应的 sops 相关命令查看或修改 secrets。
+## AI Agent 工作流
+
+- 标准流程是修改后依次运行 `just repo fmt`、`just repo check`；系统级变更再运行 `just os build`，输出交接报告后停止。应用、回滚、重启、secrets 操作和 push 由用户执行。
+- MCP 只用于只读调试，不引入或调用写工具。
+- 禁止 Agent 自动读取、解密或修改 secrets。
+- 不伪造通过状态。`just repo check` 不证明配置可构建，`just os build` 不证明系统运行正常。
+- Nix cache 环境变量重定向缓存目录时，先更新 Codex writable root，再运行验证命令。
+- Codex sandbox 可能阻止 Nix daemon Unix socket；需要时按审批在 sandbox 外运行 just 标准命令，不得开启全局网络来绕过。
 
 ## 验证规则
 
-- 提交前必须通过 `just repo check`。
-- 系统级变更先 `just os build` 验证可构建，再 `switch` 应用。
+- 提交前必须通过 `just repo fmt` 和 `just repo check`；系统级变更还必须通过 `just os build`。
 - `nixos-rebuild` 构建可能耗时很长，执行时使用不少于 10 分钟的超时。
 - **flake 只看到 VCS 跟踪的文件**：新增文件后直接 eval/build 会报 `Path ... is not tracked by Git`，先 `git add`（或提交）再验证。
-- 提交前运行 `just repo fmt` 统一格式。
 
 ## Secrets 与敏感文件
 

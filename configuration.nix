@@ -4,6 +4,7 @@
   pkgs,
   rimeFrostSource,
   llm-agents,
+  dotnixDebugMcp,
   ...
 }:
 
@@ -281,7 +282,7 @@ in
     model = "glm-5.3"
     model_reasoning_effort = "max"
     approval_policy = "on-request"
-    sandbox_mode = "danger-full-access"
+    sandbox_mode = "workspace-write"
     web_search = "live"
     model_verbosity = "low"
     model_reasoning_summary = "concise"
@@ -294,7 +295,41 @@ in
     followUpQueueMode = "queue"
 
     [sandbox_workspace_write]
-    network_access = true
+    network_access = false
+    # 仅匹配 NIX_CACHE_HOME/XDG_CACHE_HOME 均未设置时的默认值；
+    # 重定向 Nix cache 后需同步更新此路径并重启 Codex。
+    writable_roots = ["~/.cache/nix"]
+
+    [mcp_servers.dotnix_debug]
+    command = "${dotnixDebugMcp}/bin/dotnix-debug-mcp"
+    args = []
+    enabled = true
+    required = false
+    startup_timeout_sec = 10
+    tool_timeout_sec = 20
+    enabled_tools = [
+      "system_status",
+      "unit_status",
+      "unit_journal",
+      "nixos_generations"
+    ]
+    default_tools_approval_mode = "prompt"
+
+    [mcp_servers.dotnix_debug.tools.system_status]
+    approval_mode = "auto"
+    output_token_limit = 2500
+
+    [mcp_servers.dotnix_debug.tools.unit_status]
+    approval_mode = "auto"
+    output_token_limit = 1800
+
+    [mcp_servers.dotnix_debug.tools.unit_journal]
+    approval_mode = "prompt"
+    output_token_limit = 4000
+
+    [mcp_servers.dotnix_debug.tools.nixos_generations]
+    approval_mode = "auto"
+    output_token_limit = 1800
 
     [model_providers.ZAI]
     name = "ZAI"
@@ -343,6 +378,8 @@ in
     zed-editor
 
     llm-agents.packages.${pkgs.system}.chatgpt
+    bubblewrap
+    dotnixDebugMcp
 
     nixd
   ];

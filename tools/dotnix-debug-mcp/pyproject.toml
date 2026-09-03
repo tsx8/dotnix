@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools >= 61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dotnix-debug-mcp"
+version = "0.1.0"
+description = "Read-only NixOS debug MCP server for dotnix"
+requires-python = ">=3.11"
+dependencies = ["mcp >= 1.0"]
+
+[project.scripts]
+dotnix-debug-mcp = "dotnix_debug_mcp.server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

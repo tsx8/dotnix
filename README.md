@@ -117,3 +117,7 @@ just repo update
 
 just secrets edit
 ```
+
+## AI Agent 工作流
+
+Agent 修改仓库后运行 `just repo fmt` 和 `just repo check`；系统级变更再运行 `just os build`，然后输出交接报告并停止。Codex sandbox 阻止 Nix daemon socket 时，按审批在 sandbox 外运行这些 just 命令。`just os test`、`just os switch`、回滚、重启、secrets 操作和 push 由用户执行。MCP 仅用于只读调试；Agent 不读取、解密或修改 secrets。检查和构建结果不能替代运行验证。
