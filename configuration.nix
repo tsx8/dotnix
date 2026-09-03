@@ -33,6 +33,8 @@ in
     "flakes"
   ];
 
+  nix.channel.enable = false;
+
   networking = {
     hostName = "maco";
   };
@@ -377,7 +379,7 @@ in
     neovim
     zed-editor
 
-    llm-agents.packages.${pkgs.system}.chatgpt
+    llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.chatgpt
     bubblewrap
     dotnixMcp
 
