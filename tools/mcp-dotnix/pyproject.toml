@@ -3,14 +3,14 @@ requires = ["setuptools >= 61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "dotnix-mcp"
+name = "mcp-dotnix"
 version = "0.1.0"
 description = "Read-only NixOS MCP server for dotnix"
 requires-python = ">=3.11"
 dependencies = ["mcp >= 1.0"]
 
 [project.scripts]
-dotnix-mcp = "dotnix_mcp.server:main"
+mcp-dotnix = "mcp_dotnix.server:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

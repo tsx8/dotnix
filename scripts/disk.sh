@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-export NIX_CONFIG="$(printf '%s\n%s\n' \
+NIX_CONFIG="$(printf '%s\n%s\n' \
   "${NIX_CONFIG:-}" \
   'experimental-features = nix-command flakes')"
+export NIX_CONFIG
 
 if [[ $# -ne 1 ]]; then
   echo "usage: $0 /dev/disk/by-id/<device>" >&2

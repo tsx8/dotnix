@@ -2,11 +2,14 @@ fmt:
   nix fmt
 
 lint:
-  git ls-files -z -- '*.nix' | xargs -0 nix run .#nixf-diagnose --
+  @git ls-files -z -- '*.nix' | xargs -0 -r nix fmt -- --no-cache --fail-on-change
+  @git ls-files -z -- '*.nix' | xargs -0 -r nix run .#nixf-diagnose --
+  @statix check --config statix.toml
+  @git ls-files -z -- 'scripts/*.sh' | xargs -0 -r shellcheck
+  @git diff --check HEAD
 
-check: lint
-  nix flake check --no-build
+test:
+  nix flake check --no-update-lock-file --no-write-lock-file
 
-update:
-  nix flake update
-  nix flake check --no-build
+update *inputs:
+  @bash -euo pipefail -c 'if (($# == 0)); then nix flake update; else nix flake update "$@"; fi; just repo lint; just repo test' update {{inputs}}

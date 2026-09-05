@@ -4,7 +4,6 @@
   pkgs,
   rimeFrostSource,
   llm-agents,
-  dotnixMcp,
   ...
 }:
 
@@ -181,7 +180,10 @@ in
   };
 
   programs.fish.enable = true;
-  programs.direnv.enable = true;
+  programs.direnv = {
+    enable = true;
+    nix-direnv.enable = true;
+  };
 
   home-manager = {
     useGlobalPkgs = true;
@@ -302,37 +304,6 @@ in
     # 重定向 Nix cache 后需同步更新此路径并重启 Codex。
     writable_roots = ["~/.cache/nix"]
 
-    [mcp_servers.dotnix-mcp]
-    command = "${dotnixMcp}/bin/dotnix-mcp"
-    args = []
-    enabled = true
-    required = false
-    startup_timeout_sec = 10
-    tool_timeout_sec = 20
-    enabled_tools = [
-      "system_status",
-      "unit_status",
-      "unit_journal",
-      "nixos_generations"
-    ]
-    default_tools_approval_mode = "prompt"
-
-    [mcp_servers.dotnix-mcp.tools.system_status]
-    approval_mode = "auto"
-    output_token_limit = 2500
-
-    [mcp_servers.dotnix-mcp.tools.unit_status]
-    approval_mode = "auto"
-    output_token_limit = 1800
-
-    [mcp_servers.dotnix-mcp.tools.unit_journal]
-    approval_mode = "prompt"
-    output_token_limit = 4000
-
-    [mcp_servers.dotnix-mcp.tools.nixos_generations]
-    approval_mode = "auto"
-    output_token_limit = 1800
-
     [model_providers.ZAI]
     name = "ZAI"
     base_url = "https://open.bigmodel.cn/api/v1"
@@ -365,7 +336,6 @@ in
 
   environment.systemPackages = with pkgs; [
     git
-    just
     sops
 
     curl
@@ -381,7 +351,6 @@ in
 
     llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.chatgpt
     bubblewrap
-    dotnixMcp
 
     nixd
   ];

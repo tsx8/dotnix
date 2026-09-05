@@ -1,0 +1,34 @@
+[mcp_servers.mcp-dotnix]
+command = "bash"
+args = ["-c", 'exec "$(git rev-parse --show-toplevel)/scripts/mcp.sh" "$1"', "mcp-dotnix", "mcp-dotnix"]
+enabled = true
+required = false
+startup_timeout_sec = 120
+tool_timeout_sec = 20
+enabled_tools = ["system_status", "unit_status", "unit_journal", "nixos_generations"]
+default_tools_approval_mode = "prompt"
+
+[mcp_servers.mcp-dotnix.tools.system_status]
+approval_mode = "auto"
+output_token_limit = 2500
+
+[mcp_servers.mcp-dotnix.tools.unit_status]
+approval_mode = "auto"
+output_token_limit = 1800
+
+[mcp_servers.mcp-dotnix.tools.unit_journal]
+approval_mode = "prompt"
+output_token_limit = 4000
+
+[mcp_servers.mcp-dotnix.tools.nixos_generations]
+approval_mode = "auto"
+output_token_limit = 1800
+
+[mcp_servers.mcp-nixos]
+command = "bash"
+args = ["-c", 'exec "$(git rev-parse --show-toplevel)/scripts/mcp.sh" "$1"', "mcp-nixos", "mcp-nixos"]
+enabled = true
+required = false
+startup_timeout_sec = 120
+tool_timeout_sec = 60
+default_tools_approval_mode = "prompt"

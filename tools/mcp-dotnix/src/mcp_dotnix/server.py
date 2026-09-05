@@ -3,10 +3,10 @@ from __future__ import annotations
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
-from . import core
+from mcp_dotnix import core
 
 mcp = FastMCP(
-    "dotnix-mcp",
+    "mcp-dotnix",
     instructions=(
         "Read-only NixOS diagnostics for dotnix. Tools never mutate system state, "
         "run sudo, or read arbitrary files. Journal output is best-effort redacted "

@@ -1,8 +1,12 @@
-build:
-  nixos-rebuild build --flake .#maco --no-link
+gate:
+  just repo lint
+  just repo test
 
-test:
-  sudo nixos-rebuild test --flake .#maco
+build: gate
+  nh os build --hostname maco --no-update-lock-file --no-write-lock-file .#maco
 
-switch label="":
-  @if [ -n "{{label}}" ]; then L="{{label}}"; else L="$(git write-tree | cut -c1-7)"; fi; echo "label: $L"; sudo NIXOS_LABEL="$L" nixos-rebuild switch --impure --flake .#maco
+test: gate
+  nh os test --hostname maco --ask --no-update-lock-file --no-write-lock-file .#maco
+
+switch LABEL="":
+  @scripts/os.sh switch {{quote(LABEL)}}
