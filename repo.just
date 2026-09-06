@@ -12,4 +12,4 @@ test:
   nix flake check --no-update-lock-file --no-write-lock-file
 
 update *inputs:
-  @bash -euo pipefail -c 'if (($# == 0)); then nix flake update; else nix flake update "$@"; fi; just repo lint; just repo test' update {{inputs}}
+  @bash -euo pipefail -c 'if (($# == 0)); then nix flake update; else nix flake update "$@"; fi; scripts/sync-models.sh; just repo lint; just repo test' update {{inputs}}

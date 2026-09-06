@@ -277,9 +277,13 @@ in
     ApplicationsMode=1
   '';
 
+  # 固定模型目录以覆盖长上下文上限；该快照需手动同步上游元数据。
+  environment.etc."codex/models.json".source = ./codex/models.json;
+
   environment.etc."codex/config.toml".text = ''
     model_provider = "openai"
     model = "gpt-6-astra"
+    model_catalog_json = "/etc/codex/models.json"
     model_reasoning_effort = "medium"
     approval_policy = "on-request"
     sandbox_mode = "workspace-write"

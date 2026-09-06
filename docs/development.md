@@ -22,7 +22,7 @@ nix develop --no-update-lock-file --no-write-lock-file --command just --list
 just repo fmt     # 格式化 Nix 文件（nixfmt-tree）
 just repo lint    # nixfmt 检查、nixf-diagnose、statix、ShellCheck、Git 空白检查
 just repo test    # nix flake check（含已声明 checks，不使用 --no-build）
-just repo update  # 无参数更新全部输入；传输入名只更新指定输入，成功后自动 lint、test
+just repo update  # 更新全部或指定 flake 输入，然后同步模型目录并运行 lint、test
 
 just os build     # 构建配置，不激活
 just os test      # 构建并激活当前代，不改变默认启动项；需要确认
@@ -30,6 +30,12 @@ just os switch    # 构建并切换默认启动项；需要确认
 ```
 
 `os build`、`os test`、`os switch` 先执行 repo lint 和 repo test，再调用项目 nh，目标显式为 `.#maco`，并禁止更新/写入 lock。构建至少预留 10 分钟。`test` 不等于 `build`，`build` 不证明系统运行正常。
+
+## Codex 模型目录
+
+`just repo update` 在 flake 输入更新成功后同步当前 ChatGPT 账号的远端模型目录；传入指定输入名时也会同步。同步失败则停止后续检查，已经完成的 flake 输入更新不会回滚。也可单独运行 `scripts/sync-models.sh`。脚本使用系统 Codex 和 bubblewrap，在独立挂载视图中屏蔽普通配置并使用临时缓存；脚本不直接读取凭据内容，不修改现有 Codex 配置或缓存。需已有 ChatGPT 登录和模型缓存文件。
+
+同步保留 Astra、Sol、Terra、Luna、GPT-5.5 的长上下文覆盖，其他模型采用上游值。刷新失败、目标模型缺失或目录校验失败时保留原文件。成功后审阅 `git diff HEAD -- codex/models.json`，按系统配置变更流程检查、构建和应用；脚本不自动暂存或应用系统。
 
 ## 工作树 label
 
