@@ -2,7 +2,7 @@
 
 ## 项目环境
 
-系统启用 nix-direnv 后（声明已在 `configuration.nix` 中配置）：
+系统启用 nix-direnv 后（声明已在 `modules/personal/terminal.nix` 中配置）：
 
 ```bash
 direnv allow
@@ -15,6 +15,8 @@ nix develop --no-update-lock-file --no-write-lock-file --command just --list
 ```
 
 环境加载失败时不会回退到其他工具来源；先修正 `.envrc`、flake 或 Nix 环境。`nix develop` 不隐式更新 `flake.lock`，需要更新输入时执行 `just repo update`。
+
+`.envrc` 监视 `modules/` 和 `packages/` 的文件与目录，配置或数据的修改、增删都会使环境重新加载。新增 flake 可见文件先精确 `git add`，避免 Nix 与基于 Git 文件清单的检查漏掉文件。
 
 ## 常用命令
 
@@ -33,13 +35,13 @@ just os switch    # 构建并切换默认启动项；需要确认
 
 ## Codex 模型目录
 
-`just repo update` 在 flake 输入更新成功后同步当前 ChatGPT 账号的远端模型目录；传入指定输入名时也会同步。同步失败则停止后续检查，已经完成的 flake 输入更新不会回滚。也可单独运行 `scripts/sync-models.sh`。脚本使用系统 Codex 和 bubblewrap，在独立挂载视图中屏蔽普通配置并使用临时缓存；脚本不直接读取凭据内容，不修改现有 Codex 配置或缓存。需已有 ChatGPT 登录和模型缓存文件。
+`just repo update` 在 flake 输入更新成功后同步当前 ChatGPT 账号的远端模型目录；传入指定输入名时也会同步。同步失败则停止后续检查，已经完成的 flake 输入更新不会回滚。也可单独运行 `scripts/sh/sync-models.sh`。脚本优先使用 PATH 中的 Codex，找不到时使用已安装 ChatGPT 桌面包内置的 CLI；通过 bubblewrap 在独立挂载视图中屏蔽普通配置并使用临时缓存。脚本不直接读取凭据内容，不修改现有 Codex 配置或缓存。需已有 ChatGPT 登录和模型缓存文件。
 
-同步保留 Astra、Sol、Terra、Luna、GPT-5.5 的长上下文覆盖，其他模型采用上游值。刷新失败、目标模型缺失或目录校验失败时保留原文件。成功后审阅 `git diff HEAD -- codex/models.json`，按系统配置变更流程检查、构建和应用；脚本不自动暂存或应用系统。
+同步保留 Astra、Sol、Terra、Luna、GPT-5.5 的长上下文覆盖，其他模型采用上游值。刷新失败、目标模型缺失或目录校验失败时保留原文件。成功后审阅 `git diff HEAD -- modules/personal/applications/codex/models.json`，按系统配置变更流程检查、构建和应用；脚本不自动暂存或应用系统。
 
 ## 工作树 label
 
-`just os switch` 未传入非空 label 时，用 `scripts/worktree-label.sh` 计算当前工作树 Git tree hash 前 12 位。该结果包含已跟踪文件的当前内容、删除、模式与符号链接变化以及未忽略的新文件，忽略的未跟踪文件不参与。脚本使用临时 index，不改变真实暂存区和工作树。操作期间不要并行修改仓库。
+`just os switch` 未传入非空 label 时，用 `scripts/sh/worktree-label.sh` 计算当前工作树 Git tree hash 前 12 位。该结果包含已跟踪文件的当前内容、删除、模式与符号链接变化以及未忽略的新文件，忽略的未跟踪文件不参与。脚本使用临时 index，不改变真实暂存区和工作树。操作期间不要并行修改仓库。
 
 ## 临时验证与清理
 
@@ -58,5 +60,5 @@ just os switch    # 构建并切换默认启动项；需要确认
 nix build --no-link .#mcp-dotnix .#mcp-nixos
 ```
 
-- Codex 首次打开项目时确认项目信任；项目配置 `.codex/config.toml` 声明两个 MCP，启动命令是仓库根下的 `scripts/mcp.sh`。
-- 启动失败时检查：包是否可构建、Nix daemon 是否可用、`scripts/mcp.sh` 是否能解析 Git 根。`required = false`，服务器不可用时 Codex 会报告，Agent 不应编造查询结果。
+- Codex 首次打开项目时确认项目信任；项目配置 `.codex/config.toml` 声明两个 MCP，启动命令是仓库根下的 `scripts/sh/mcp.sh`。
+- 启动失败时检查：包是否可构建、Nix daemon 是否可用、`scripts/sh/mcp.sh` 是否能解析 Git 根。`required = false`，服务器不可用时 Codex 会报告，Agent 不应编造查询结果。

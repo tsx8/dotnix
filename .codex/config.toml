@@ -1,6 +1,6 @@
 [mcp_servers.mcp-dotnix]
 command = "bash"
-args = ["-c", 'exec "$(git rev-parse --show-toplevel)/scripts/mcp.sh" "$1"', "mcp-dotnix", "mcp-dotnix"]
+args = ["-c", 'exec "$(git rev-parse --show-toplevel)/scripts/sh/mcp.sh" "$1"', "mcp-dotnix", "mcp-dotnix"]
 enabled = true
 required = false
 startup_timeout_sec = 120
@@ -42,7 +42,7 @@ output_token_limit = 1800
 
 [mcp_servers.mcp-nixos]
 command = "bash"
-args = ["-c", 'exec "$(git rev-parse --show-toplevel)/scripts/mcp.sh" "$1"', "mcp-nixos", "mcp-nixos"]
+args = ["-c", 'exec "$(git rev-parse --show-toplevel)/scripts/sh/mcp.sh" "$1"', "mcp-nixos", "mcp-nixos"]
 enabled = true
 required = false
 startup_timeout_sec = 120

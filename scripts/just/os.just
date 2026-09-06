@@ -1,3 +1,5 @@
+set working-directory := "../.."
+
 gate:
   just repo lint
   just repo test
@@ -9,4 +11,4 @@ test: gate
   nh os test --hostname maco --ask --no-update-lock-file --no-write-lock-file .#maco
 
 switch LABEL="":
-  @scripts/os.sh switch {{quote(LABEL)}}
+  @scripts/sh/os.sh switch {{quote(LABEL)}}

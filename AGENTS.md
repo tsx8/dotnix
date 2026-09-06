@@ -11,7 +11,7 @@
 
 - 软件来源优先级：默认 `官方 flake > nixpkgs-unstable > 第三方/自建 flake`。例外——当 nixpkgs-unstable 已满足版本与配置需求、且软件无官方集成诉求时（典型：简单 CLI 工具，如 just），取 `nixpkgs-unstable > 官方 flake > 第三方/自建 flake`。
 - 注释极简：只写该配置项基于需求背景所做的决策及原因；非常规、易被误改的配置必须注明原因。
-- 应用层级：应用只有系统级与项目级两级——系统级由 NixOS 管理（`configuration.nix`），项目级由项目 flake/devShell 管理，不存在用户级应用；用户级配置（dotfiles、编辑器设置、凭据等）由 Home Manager 管理，Home Manager 不管理应用。
+- 应用层级：应用只有系统级与项目级两级——系统级由 NixOS 管理（`modules/` 中的系统配置），项目级由项目 flake/devShell 管理，不存在用户级应用；用户级配置（dotfiles、编辑器设置、凭据等）由 Home Manager 管理，Home Manager 不管理应用。
 - flake 输入的 nixpkgs 跟随：默认 `inputs.X.nixpkgs.follows = "nixpkgs"`；当上游明确要求不 follow、或需要其锁定 nixpkgs 的构建产物与二进制缓存时才例外，并在 `flake.nix` 注明原因。
 
 ## 项目环境

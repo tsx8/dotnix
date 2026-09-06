@@ -7,12 +7,28 @@ if [[ $# -ne 0 ]]; then
 fi
 
 repo_root="$(
-  cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
+  cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.."
   pwd
 )"
+if codex_bin="$(command -v codex)"; then
+  codex_bin="$(realpath -e -- "$codex_bin")"
+elif chatgpt_bin="$(command -v chatgpt)"; then
+  # Nix 的桌面包只导出 chatgpt；share 链接指向包含内置 CLI 的未包装包。
+  chatgpt_root="$(dirname -- "$(dirname -- "$(realpath -e -- "$chatgpt_bin")")")"
+  chatgpt_share="$(realpath -e -- "$chatgpt_root/share")"
+  codex_bin="$(dirname -- "$chatgpt_share")/lib/chatgpt/resources/codex"
+else
+  echo "error: neither codex nor the ChatGPT desktop package is available in PATH" >&2
+  exit 1
+fi
+if [[ ! -x "$codex_bin" ]]; then
+  echo "error: Codex executable not found at $codex_bin" >&2
+  exit 1
+fi
+
 codex_dir="$(realpath -e -- "${CODEX_HOME:-$HOME/.codex}")"
 cache_path="$codex_dir/models_cache.json"
-catalog="$repo_root/codex/models.json"
+catalog="$repo_root/modules/personal/applications/codex/models.json"
 
 if [[ ! -f "$cache_path" ]]; then
   echo "error: $cache_path is missing; start Codex with ChatGPT sign-in first" >&2
@@ -49,10 +65,10 @@ for config_path in /etc/codex/config.toml "$codex_dir/config.toml"; do
   fi
 done
 
-codex_version="$(codex --version)"
+codex_version="$("$codex_bin" --version)"
 codex_version="${codex_version#codex-cli }"
 started_at="$(date +%s)"
-timeout 120 "${isolate[@]}" -- codex debug models > /dev/null
+timeout 120 "${isolate[@]}" -- "$codex_bin" debug models > /dev/null
 
 # CLI 刷新失败也可能返回内置目录；只有本次请求写入的独立缓存可证明刷新成功。
 if ! jq -e --arg version "$codex_version" '
@@ -87,14 +103,14 @@ jq -e '
 ' "$tmp_dir/cache.json" > "$tmp_dir/updated.json"
 
 catalog_override="$(jq -rn --arg path "$tmp_dir/updated.json" '"model_catalog_json=" + ($path | tojson)')"
-timeout 120 "${isolate[@]}" -- codex -c "$catalog_override" debug models > /dev/null
+timeout 120 "${isolate[@]}" -- "$codex_bin" -c "$catalog_override" debug models > /dev/null
 
 if cmp -s -- "$tmp_dir/updated.json" "$catalog"; then
   echo "Model catalog is unchanged."
   exit 0
 fi
 
-candidate="$(mktemp "$repo_root/codex/.models.json.XXXXXX")"
+candidate="$(mktemp "$repo_root/modules/personal/applications/codex/.models.json.XXXXXX")"
 cat "$tmp_dir/updated.json" > "$candidate"
 chmod 644 "$candidate"
 mv -f -- "$candidate" "$catalog"

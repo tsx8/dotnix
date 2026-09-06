@@ -1,11 +1,20 @@
 # 设计决策
 
-本文只记录需要长期维护的 Harness 决策；操作步骤见 [development.md](development.md)。
+本文记录配置组织与 Harness 中需要长期维护的决策；操作步骤见 [development.md](development.md)。
+
+## 配置组织
+
+- flake-parts 提供顶层模块系统，import-tree 递归导入 `modules/` 中的功能模块，排除 `*.data.nix` 数据文件。功能目录中的 `default.nix` 本身就是顶层模块，不重复导入已经扫描到的文件。
+- 功能按机器运行、个人使用、配置维护组织；系统配置与 Home Manager 配置共同归属功能，专属数据与配置放在同一目录。简单功能保留单文件。
+- `dotnix.modules.nixos` 和 `dotnix.modules.home` 以 `deferredModule` 合并各功能的贡献；`assembly.nix` 将它们装配为唯一的 `nixosConfigurations.maco`。
+- `dotnix.host` 保存当前单机的名称、平台和账户绑定；功能通过顶层作用域读取所需值。已有系统与用户配置仍是其路径等派生信息的来源；两个 `stateVersion` 独立维护。
+- 本地包的构建定义与源码归 `packages/<name>/`，由所属功能发布 flake 包输出，不参加模块自动导入。
+- Just 模块与 Shell 实现分别位于 `scripts/just/` 和 `scripts/sh/`，配方从仓库根执行。安装生成的硬件报告、磁盘设备输入归主机和存储功能；共享加密文件归身份功能，具体秘密声明归消费者。
 
 ## 工具边界
 
 - 系统级工具保持最小集：Git、gh、rg、fd、jq、curl、wget、基础 shell 工具、Nix、direnv/nix-direnv。
-- just、nh、Nix 格式化与静态检查工具、项目 MCP 属于项目环境，由 `shell.nix` 供应；不在系统与项目之间复制。
+- just、nh、Nix 格式化与静态检查工具、项目 MCP 属于项目环境，由 `modules/maintenance/development/default.nix` 供应；不在系统与项目之间复制。
 - Home Manager 只管理用户级配置，不管理应用。
 
 ## 文档与约束
@@ -24,7 +33,7 @@
 
 - `mcp-dotnix` 是本仓库自有只读诊断服务，包与入口名为 `mcp-dotnix`；能力不随改名扩展。
 - `mcp-nixos` 使用官方 utensils/mcp-nixos flake 输入；其 flake 输入查询在本地包中补上 lock 保护参数。
-- 两个服务都通过 `scripts/mcp.sh` 用系统 Nix 从项目锁启动，stdio 直接传递，配置在项目 `.codex/config.toml`，不写入全局 AGENTS。
+- 两个服务都通过 `scripts/sh/mcp.sh` 用系统 Nix 从项目锁启动，stdio 直接传递，配置在项目 `.codex/config.toml`，不写入全局 AGENTS。
 
 ## 配置 label
 

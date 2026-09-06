@@ -12,7 +12,7 @@ cd dotnix
 ## 2. 生成硬件报告
 
 ```bash
-./scripts/facter.sh
+./scripts/sh/facter.sh
 ```
 
 ## 3. 分区并挂载
@@ -27,7 +27,7 @@ ls -l /dev/disk/by-id/
 然后执行：
 
 ```bash
-./scripts/disk.sh /dev/disk/by-id/<target-disk>
+./scripts/sh/disk.sh /dev/disk/by-id/<target-disk>
 ```
 
 > 此操作会清空目标磁盘。
@@ -35,7 +35,7 @@ ls -l /dev/disk/by-id/
 ## 4. 初始化机器密钥
 
 ```bash
-./scripts/secrets.sh
+./scripts/sh/secrets.sh
 ```
 
 按提示输入恢复口令。脚本会为当前机器生成独立的 age identity，并更新 SOPS recipients。
@@ -43,7 +43,7 @@ ls -l /dev/disk/by-id/
 ## 5. 安装系统
 
 ```bash
-./scripts/nixos-install.sh
+./scripts/sh/nixos-install.sh
 ```
 
 ## 6. 保存安装期产生的仓库修改
@@ -71,10 +71,10 @@ git status
 确认以下机器相关文件的修改：
 
 ```text
-facter.json
-disk-device.nix
-.sops.yaml
-secrets.yaml
+modules/machine/host/facter.json
+modules/machine/storage/disk-device.data.nix
+modules/machine/identity/.sops.yaml
+modules/machine/identity/secrets.yaml
 ```
 
 此时系统尚未部署本次仓库声明中的 direnv/nix-direnv 与项目工具（若有），用显式项目环境验证配置：
@@ -86,7 +86,7 @@ nix develop --no-update-lock-file --no-write-lock-file --command bash -lc 'just 
 确认无误后提交：
 
 ```bash
-git add facter.json disk-device.nix .sops.yaml secrets.yaml
+git add modules/machine/host/facter.json modules/machine/storage/disk-device.data.nix modules/machine/identity/.sops.yaml modules/machine/identity/secrets.yaml
 git commit -m "configure maco"
 git push
 ```

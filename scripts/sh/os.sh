@@ -6,9 +6,15 @@ if [ "${1:-}" != "switch" ]; then
   exit 2
 fi
 
+repo_root="$(
+  cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.."
+  pwd
+)"
+cd "$repo_root"
+
 label="${2-}"
 if [ -z "$label" ]; then
-  label="$(dirname "$0")/worktree-label.sh"
+  label="$repo_root/scripts/sh/worktree-label.sh"
   label="$("$label")"
 fi
 

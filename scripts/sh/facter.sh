@@ -7,15 +7,15 @@ NIX_CONFIG="$(printf '%s\n%s\n' \
 export NIX_CONFIG
 
 repo_root="$(
-  cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
+  cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.."
   pwd
 )"
 
-report="$repo_root/facter.json"
+report="$repo_root/modules/machine/host/facter.json"
 
 cd "$repo_root"
 
-tmp="$(mktemp "$repo_root/.facter.json.XXXXXX")"
+tmp="$(mktemp "$repo_root/modules/machine/host/.facter.json.XXXXXX")"
 
 cleanup() {
   rm -f "$tmp"
@@ -42,4 +42,4 @@ trap - EXIT
 echo "Hardware report written to:"
 echo "  $report"
 echo
-git diff --stat -- facter.json
+git diff --stat -- modules/machine/host/facter.json

@@ -14,7 +14,7 @@ fi
 device="$1"
 
 repo_root="$(
-  cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
+  cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.."
   pwd
 )"
 
@@ -57,11 +57,11 @@ if [[ "$confirmation" != "$device" ]]; then
   exit 1
 fi
 
-tmp="$(mktemp "$repo_root/.disk-device.nix.XXXXXX")"
+tmp="$(mktemp "$repo_root/modules/machine/storage/.disk-device.data.nix.XXXXXX")"
 trap 'rm -f "$tmp"' EXIT
 
 printf '"%s"\n' "$device" > "$tmp"
-mv "$tmp" "$repo_root/disk-device.nix"
+mv "$tmp" "$repo_root/modules/machine/storage/disk-device.data.nix"
 trap - EXIT
 
 configured_device="$(

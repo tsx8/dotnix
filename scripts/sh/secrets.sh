@@ -12,20 +12,22 @@ if [[ $# -ne 0 ]]; then
 fi
 
 repo_root="$(
-  cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
+  cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.."
   pwd
 )"
 
 cd "$repo_root"
 
+identity_dir="$repo_root/modules/machine/identity"
+
 if ! mountpoint -q /mnt; then
   echo "error: /mnt is not mounted" >&2
-  echo "run scripts/disk.sh first" >&2
+  echo "run scripts/sh/disk.sh first" >&2
   exit 1
 fi
 
 for file in recovery-key.age secrets.yaml .sops.yaml; do
-  if [[ ! -f "$file" ]]; then
+  if [[ ! -f "$identity_dir/$file" ]]; then
     echo "error: missing $file" >&2
     exit 1
   fi
@@ -48,8 +50,8 @@ verify_home="$tmp_dir/home"
 
 mkdir -m 0700 "$verify_home"
 
-cp -p .sops.yaml "$backup_config"
-cp -p secrets.yaml "$backup_secrets"
+cp -p "$identity_dir/.sops.yaml" "$backup_config"
+cp -p "$identity_dir/secrets.yaml" "$backup_secrets"
 
 machine_key="/mnt/var/lib/sops-nix/key.txt"
 created_machine_key=false
@@ -64,8 +66,8 @@ cleanup() {
     echo
     echo "error: secrets bootstrap failed; restoring repository files" >&2
 
-    cp -p "$backup_config" .sops.yaml
-    cp -p "$backup_secrets" secrets.yaml
+    cp -p "$backup_config" "$identity_dir/.sops.yaml"
+    cp -p "$backup_secrets" "$identity_dir/secrets.yaml"
 
     if [[ "$created_machine_key" == true ]]; then
       sudo rm -f "$machine_key"
@@ -140,7 +142,7 @@ echo "Enter the recovery passphrase when prompted."
 echo
 
 umask 077
-"$age" -d recovery-key.age > "$recovery_identity"
+"$age" -d "$identity_dir/recovery-key.age" > "$recovery_identity"
 
 mapfile -t recovery_recipients < <(
   "$age_keygen" -y "$recovery_identity"
@@ -153,7 +155,7 @@ fi
 
 recovery_recipient="${recovery_recipients[0]}"
 
-cat > .sops.yaml <<EOF
+cat > "$identity_dir/.sops.yaml" <<EOF
 creation_rules:
   - path_regex: ^secrets\\.yaml$
     age: >-
@@ -167,22 +169,22 @@ echo "Updating SOPS recipients..."
 HOME="$verify_home" \
 SOPS_AGE_KEY_FILE="$recovery_identity" \
   "$sops" \
-    --config "$repo_root/.sops.yaml" \
-    updatekeys -y secrets.yaml
+    --config "$identity_dir/.sops.yaml" \
+    updatekeys -y "$identity_dir/secrets.yaml"
 
 echo
 echo "Verifying recovery identity..."
 
 HOME="$verify_home" \
 SOPS_AGE_KEY_FILE="$recovery_identity" \
-  "$sops" decrypt secrets.yaml >/dev/null
+  "$sops" --config "$identity_dir/.sops.yaml" decrypt "$identity_dir/secrets.yaml" >/dev/null
 
 echo "Verifying machine identity..."
 
 sudo env \
   HOME="$verify_home" \
   SOPS_AGE_KEY_FILE="$machine_key" \
-  "$sops" decrypt "$repo_root/secrets.yaml" >/dev/null
+  "$sops" --config "$identity_dir/.sops.yaml" decrypt "$identity_dir/secrets.yaml" >/dev/null
 
 committed=true
 
@@ -194,4 +196,4 @@ echo "  $machine_recipient"
 echo
 echo "Both recovery and machine identities can decrypt secrets.yaml."
 echo
-git status --short -- .sops.yaml secrets.yaml
+git status --short -- "$identity_dir/.sops.yaml" "$identity_dir/secrets.yaml"

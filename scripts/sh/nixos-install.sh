@@ -12,7 +12,7 @@ if [[ $# -ne 0 ]]; then
 fi
 
 repo_root="$(
-  cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
+  cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.."
   pwd
 )"
 
@@ -23,7 +23,7 @@ require_mount() {
 
   if ! findmnt --mountpoint "$path" >/dev/null 2>&1; then
     echo "error: $path is not mounted" >&2
-    echo "run scripts/disk.sh first" >&2
+    echo "run scripts/sh/disk.sh first" >&2
     exit 1
   fi
 }
@@ -39,8 +39,8 @@ configured_device="$(
 )"
 
 if [[ "$configured_device" == *REPLACE-ME* ]]; then
-  echo "error: disk-device.nix still contains the placeholder device" >&2
-  echo "run scripts/disk.sh first" >&2
+  echo "error: modules/machine/storage/disk-device.data.nix still contains the placeholder device" >&2
+  echo "run scripts/sh/disk.sh first" >&2
   exit 1
 fi
 
@@ -57,7 +57,7 @@ facter_enabled="$(
 
 if [[ "$facter_enabled" != "true" ]]; then
   echo "error: hardware Facter report is not enabled" >&2
-  echo "run scripts/facter.sh first" >&2
+  echo "run scripts/sh/facter.sh first" >&2
   exit 1
 fi
 
@@ -66,7 +66,7 @@ machine_key="/mnt/var/lib/sops-nix/key.txt"
 if ! sudo test -s "$machine_key"; then
   echo "error: machine SOPS identity is missing or empty:" >&2
   echo "  $machine_key" >&2
-  echo "run scripts/secrets.sh first" >&2
+  echo "run scripts/sh/secrets.sh first" >&2
   exit 1
 fi
 
@@ -105,7 +105,8 @@ echo "Verifying machine identity can decrypt secrets.yaml..."
 sudo env \
   HOME=/root \
   SOPS_AGE_KEY_FILE="$machine_key" \
-  "$sops" decrypt "$repo_root/secrets.yaml" >/dev/null
+  "$sops" --config "$repo_root/modules/machine/identity/.sops.yaml" \
+  decrypt "$repo_root/modules/machine/identity/secrets.yaml" >/dev/null
 
 nixos_install="$(
   nix build \
