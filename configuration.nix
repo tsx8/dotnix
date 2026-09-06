@@ -102,10 +102,6 @@ in
       user-passwd-hash = {
         neededForUsers = true;
       };
-      zai-api-key = {
-        owner = config.users.users.tsxb.name;
-        mode = "0400";
-      };
     };
 
     templates = {
@@ -282,16 +278,14 @@ in
   '';
 
   environment.etc."codex/config.toml".text = ''
-    model_provider = "ZAI"
-    model = "glm-5.3"
-    model_reasoning_effort = "max"
+    model_provider = "openai"
+    model = "gpt-6-astra"
+    model_reasoning_effort = "medium"
     approval_policy = "on-request"
     sandbox_mode = "workspace-write"
     web_search = "live"
     model_verbosity = "low"
-    model_reasoning_summary = "concise"
-    model_catalog_json = "/home/tsxb/.codex/models.json"
-
+    model_reasoning_summary = "detailed"
     [desktop]
     localeOverride = "zh-CN"
     preventSleepWhileRunning = true
@@ -304,14 +298,12 @@ in
     # 重定向 Nix cache 后需同步更新此路径并重启 Codex。
     writable_roots = ["~/.cache/nix"]
 
-    [model_providers.ZAI]
-    name = "ZAI"
-    base_url = "https://open.bigmodel.cn/api/v1"
-    wire_api = "responses"
+    [agents]
+    default_subagent_model = "gpt-6-astra"
+    default_subagent_reasoning_effort = "low"
 
-    [model_providers.ZAI.auth]
-    command = "/run/current-system/sw/bin/cat"
-    args = ["/run/secrets/zai-api-key"]
+    [features]
+    context_management.experimental_mode = true
   '';
 
   environment.variables = {

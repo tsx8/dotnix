@@ -34,9 +34,37 @@ def unit_status(unit: str) -> core.UnitStatus:
 
 
 @mcp.tool(name="unit_journal", annotations=_read_only)
-def unit_journal(unit: str, lines: int = 80, priority: int = 7) -> core.JournalResult:
-    """Read a bounded journal for one unit in the current boot."""
-    return core.unit_journal(unit, lines, priority)
+def unit_journal(
+    unit: str, lines: int = 80, priority: int = 7, boot: str = "current"
+) -> core.JournalResult:
+    """Read a bounded journal for one unit in the current or a previous boot."""
+    return core.unit_journal(unit, lines, priority, boot)
+
+
+@mcp.tool(name="kernel_log", annotations=_read_only)
+def kernel_log(
+    lines: int = 80, priority: int = 7, boot: str = "current"
+) -> core.JournalResult:
+    """Read bounded kernel messages from the current or a previous boot."""
+    return core.kernel_log(lines, priority, boot)
+
+
+@mcp.tool(name="boot_list", annotations=_read_only)
+def boot_list(limit: int = 20) -> core.BootResult:
+    """List recent boots from the journal, most recent first."""
+    return core.boot_list(limit)
+
+
+@mcp.tool(name="disk_status", annotations=_read_only)
+def disk_status() -> core.DiskStatusResult:
+    """Return block device layout from lsblk and mount table from /proc/mounts."""
+    return core.disk_status()
+
+
+@mcp.tool(name="network_status", annotations=_read_only)
+def network_status() -> core.NetworkStatusResult:
+    """Return network interface addresses and main routing table."""
+    return core.network_status()
 
 
 @mcp.tool(name="nixos_generations", annotations=_read_only)

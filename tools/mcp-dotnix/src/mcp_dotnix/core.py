@@ -14,7 +14,10 @@ from typing import TypeAlias, TypedDict, cast
 SYSTEMCTL = "/run/current-system/sw/bin/systemctl"
 JOURNALCTL = "/run/current-system/sw/bin/journalctl"
 NIXOS_VERSION = "/run/current-system/sw/bin/nixos-version"
+LSBLK = "/run/current-system/sw/bin/lsblk"
+IP = "/run/current-system/sw/bin/ip"
 SYSTEM_PROFILE = Path("/nix/var/nix/profiles/system")
+PROC_MOUNTS = Path("/proc/mounts")
 
 UNIT_SUFFIXES = (
     "service",
@@ -29,11 +32,19 @@ UNIT_SUFFIXES = (
 )
 UNIT_RE = re.compile(r"^[A-Za-z0-9@._-]{1,128}\.(?:" + "|".join(UNIT_SUFFIXES) + r")$")
 GENERATION_RE = re.compile(r"^system-(\d+)-link$")
+BOOT_ID_RE = re.compile(r"^[0-9a-f]{32}$")
+BOOT_OFFSET_RE = re.compile(r"^-\d{1,3}$")
 
 JOURNAL_MAX_LINES = 200
 JOURNAL_MESSAGE_MAX_BYTES = 2 * 1024
 JOURNAL_OUTPUT_MAX_BYTES = 32 * 1024
 GENERATION_MAX_LIMIT = 50
+BOOT_MAX_LIMIT = 50
+LSBLK_FIELDS = (
+    "name","path","type","size","fstype","fsavail","fsused","fsuse%",
+    "mountpoints","ro","rota","model","serial","tran","state",
+    "uuid","partuuid","label","partlabel",
+)
 
 _ENV = {
     "LC_ALL": "C",
@@ -132,6 +143,29 @@ class GenerationResult(TypedDict):
     generations: list[GenerationEntry]
 
 
+class BootEntry(TypedDict):
+    index: int
+    boot_id: str
+    first_entry: str | None
+    last_entry: str | None
+
+
+class BootResult(TypedDict):
+    returned: int
+    available: int
+    boots: list[BootEntry]
+
+
+class DiskStatusResult(TypedDict):
+    devices: list[JsonObject]
+    mounts: list[JsonObject]
+
+
+class NetworkStatusResult(TypedDict):
+    interfaces: list[JsonObject]
+    routes: list[JsonObject]
+
+
 def validate_unit(unit: object) -> str:
     if not isinstance(unit, str) or not UNIT_RE.fullmatch(unit):
         raise InvalidInput(
@@ -162,6 +196,19 @@ def validate_priority(priority: object) -> int:
     ):
         raise InvalidInput("priority must be an integer between 0 and 7")
     return priority
+
+
+def validate_boot(boot: object) -> str:
+    if boot is None or boot == "current":
+        return "current"
+    if isinstance(boot, str) and (
+        BOOT_ID_RE.fullmatch(boot) or BOOT_OFFSET_RE.fullmatch(boot)
+    ):
+        return boot
+    raise InvalidInput(
+        "boot must be 'current', a negative offset like '-1', "
+        "or a 32-character boot ID"
+    )
 
 
 def redact_text(text: str) -> tuple[str, int]:
@@ -426,7 +473,7 @@ def _limit_journal_entries(
 
 
 def journal_result(
-    raw_lines: list[str], unit: str, requested_lines: int
+    raw_lines: list[str], unit: str, requested_lines: int, boot: str = "current"
 ) -> JournalResult:
     entries: list[JournalEntry] = []
     parse_errors = 0
@@ -442,7 +489,7 @@ def journal_result(
     truncated_messages = sum(1 for entry in selected if entry["message_truncated"])
     return {
         "unit": unit,
-        "boot": "current",
+        "boot": boot,
         "entries": selected,
         "requested": requested_lines,
         "returned": len(selected),
@@ -456,14 +503,17 @@ def journal_result(
     }
 
 
-def unit_journal(unit: str, lines: int = 80, priority: int = 7) -> JournalResult:
+def unit_journal(
+    unit: str, lines: int = 80, priority: int = 7, boot: str = "current"
+) -> JournalResult:
     unit = validate_unit(unit)
     lines = validate_limit(lines, JOURNAL_MAX_LINES, 80)
     priority = validate_priority(priority)
+    boot = validate_boot(boot)
     result = _run(
         [
             JOURNALCTL,
-            "--boot",
+            *_journal_boot_arg(boot),
             f"--unit={unit}",
             f"--lines={lines}",
             f"--priority={priority}",
@@ -473,7 +523,194 @@ def unit_journal(unit: str, lines: int = 80, priority: int = 7) -> JournalResult
     )
     if result.returncode != 0:
         raise RuntimeError("journalctl failed")
-    return journal_result(result.stdout.splitlines(), unit, lines)
+    return journal_result(result.stdout.splitlines(), unit, lines, boot)
+
+
+def kernel_log(
+    lines: int = 80, priority: int = 7, boot: str = "current"
+) -> JournalResult:
+    lines = validate_limit(lines, JOURNAL_MAX_LINES, 80)
+    priority = validate_priority(priority)
+    boot = validate_boot(boot)
+    result = _run(
+        [
+            JOURNALCTL,
+            *_journal_boot_arg(boot),
+            "--dmesg",
+            f"--lines={lines}",
+            f"--priority={priority}",
+            "--no-pager",
+            "--output=json",
+        ]
+    )
+    if result.returncode != 0:
+        raise RuntimeError("journalctl --dmesg failed")
+    return journal_result(result.stdout.splitlines(), "kernel", lines, boot)
+
+
+def _journal_boot_arg(boot: str) -> list[str]:
+    return ["--boot"] if boot == "current" else [f"--boot={boot}"]
+
+
+def boot_list(limit: int = 20) -> BootResult:
+    limit = validate_limit(limit, BOOT_MAX_LIMIT, 20)
+    result = _run([JOURNALCTL, "--list-boots", "--output=json", "--no-pager"])
+    if result.returncode != 0:
+        raise RuntimeError("journalctl --list-boots failed")
+    try:
+        decoded = cast(object, json.loads(result.stdout))
+    except json.JSONDecodeError:
+        raise RuntimeError("journalctl --list-boots returned invalid JSON")
+    if not isinstance(decoded, list):
+        raise RuntimeError("journalctl --list-boots returned unexpected structure")
+
+    boots: list[BootEntry] = []
+    for item in decoded:
+        if not isinstance(item, dict):
+            continue
+        value = cast(JsonObject, item)
+        index = _optional_integer(value.get("index"))
+        boot_id = _optional_text(value.get("boot_id"))
+        if index is None or boot_id is None:
+            continue
+        boots.append(
+            {
+                "index": index,
+                "boot_id": boot_id,
+                "first_entry": _micros_to_iso(value.get("first_entry")),
+                "last_entry": _micros_to_iso(value.get("last_entry")),
+            }
+        )
+    boots.sort(key=lambda b: b["index"], reverse=True)
+    return {
+        "returned": len(boots[:limit]),
+        "available": len(boots),
+        "boots": boots[:limit],
+    }
+
+
+def _micros_to_iso(value: object) -> str | None:
+    micros = _optional_integer(value)
+    if micros is None:
+        return None
+    try:
+        return (
+            dt.datetime.fromtimestamp(micros / 1_000_000, tz=dt.UTC)
+            .isoformat(timespec="milliseconds")
+            .replace("+00:00", "Z")
+        )
+    except (ValueError, OverflowError):
+        return None
+
+
+def disk_status() -> DiskStatusResult:
+    result = _run([LSBLK, "--json", "-o", ",".join(LSBLK_FIELDS)])
+    if result.returncode != 0:
+        raise RuntimeError("lsblk failed")
+    try:
+        decoded = cast(object, json.loads(result.stdout))
+    except json.JSONDecodeError:
+        raise RuntimeError("lsblk returned invalid JSON")
+    if not isinstance(decoded, dict):
+        raise RuntimeError("lsblk returned unexpected structure")
+    root = cast(JsonObject, decoded)
+    raw_devices = root.get("blockdevices")
+    devices: list[JsonObject] = []
+    if isinstance(raw_devices, list):
+        _flatten_lsblk(raw_devices, devices)
+
+    mounts: list[JsonObject] = []
+    try:
+        mounts_text = PROC_MOUNTS.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        mounts_text = ""
+    for line in mounts_text.splitlines():
+        fields = line.split(None, 4)
+        if len(fields) >= 4:
+            mounts.append(
+                {
+                    "device": fields[0],
+                    "mountpoint": fields[1],
+                    "fstype": fields[2],
+                    "options": fields[3],
+                }
+            )
+    return {"devices": devices, "mounts": mounts}
+
+
+def _flatten_lsblk(raw: list[object], output: list[JsonObject]) -> None:
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        value = cast(JsonObject, item)
+        entry: JsonObject = {}
+        for field in LSBLK_FIELDS:
+            if field in value:
+                entry[field] = value[field]
+        children = value.get("children")
+        if isinstance(children, list):
+            del value["children"]
+        output.append(entry)
+        if isinstance(children, list):
+            _flatten_lsblk(children, output)
+
+
+def network_status() -> NetworkStatusResult:
+    addr_result = _run([IP, "--json", "addr", "show"])
+    if addr_result.returncode != 0:
+        raise RuntimeError("ip addr failed")
+    try:
+        addr_decoded = cast(object, json.loads(addr_result.stdout))
+    except json.JSONDecodeError:
+        raise RuntimeError("ip addr returned invalid JSON")
+
+    interfaces: list[JsonObject] = []
+    if isinstance(addr_decoded, list):
+        for item in addr_decoded:
+            if not isinstance(item, dict):
+                continue
+            value = cast(JsonObject, item)
+            addr_info = value.get("addr_info")
+            addresses: list[JsonObject] = []
+            if isinstance(addr_info, list):
+                for addr in addr_info:
+                    if not isinstance(addr, dict):
+                        continue
+                    a = cast(JsonObject, addr)
+                    entry_addr: JsonObject = {}
+                    for key in ("family", "local", "prefixlen", "scope", "dynamic"):
+                        if key in a:
+                            entry_addr[key] = a[key]
+                    addresses.append(entry_addr)
+            iface: JsonObject = {}
+            for key in ("ifindex", "ifname", "operstate", "flags", "mtu",
+                        "address", "master"):
+                if key in value:
+                    iface[key] = value[key]
+            iface["addresses"] = addresses
+            interfaces.append(iface)
+
+    route_result = _run([IP, "--json", "route", "show", "table", "main"])
+    if route_result.returncode != 0:
+        raise RuntimeError("ip route failed")
+    try:
+        route_decoded = cast(object, json.loads(route_result.stdout))
+    except json.JSONDecodeError:
+        raise RuntimeError("ip route returned invalid JSON")
+
+    routes: list[JsonObject] = []
+    if isinstance(route_decoded, list):
+        for item in route_decoded:
+            if not isinstance(item, dict):
+                continue
+            value = cast(JsonObject, item)
+            route: JsonObject = {}
+            for key in ("dst", "gateway", "dev", "protocol", "metric", "scope"):
+                if key in value:
+                    route[key] = value[key]
+            routes.append(route)
+
+    return {"interfaces": interfaces, "routes": routes}
 
 
 def nixos_generations(limit: int = 20) -> GenerationResult:

@@ -5,7 +5,7 @@ enabled = true
 required = false
 startup_timeout_sec = 120
 tool_timeout_sec = 20
-enabled_tools = ["system_status", "unit_status", "unit_journal", "nixos_generations"]
+enabled_tools = ["system_status", "unit_status", "unit_journal", "kernel_log", "boot_list", "disk_status", "network_status", "nixos_generations"]
 default_tools_approval_mode = "prompt"
 
 [mcp_servers.mcp-dotnix.tools.system_status]
@@ -19,6 +19,22 @@ output_token_limit = 1800
 [mcp_servers.mcp-dotnix.tools.unit_journal]
 approval_mode = "prompt"
 output_token_limit = 4000
+
+[mcp_servers.mcp-dotnix.tools.kernel_log]
+approval_mode = "prompt"
+output_token_limit = 4000
+
+[mcp_servers.mcp-dotnix.tools.boot_list]
+approval_mode = "auto"
+output_token_limit = 1800
+
+[mcp_servers.mcp-dotnix.tools.disk_status]
+approval_mode = "auto"
+output_token_limit = 2500
+
+[mcp_servers.mcp-dotnix.tools.network_status]
+approval_mode = "auto"
+output_token_limit = 2500
 
 [mcp_servers.mcp-dotnix.tools.nixos_generations]
 approval_mode = "auto"
