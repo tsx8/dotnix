@@ -20,20 +20,13 @@
 
 ## 日常命令
 
-先按 [项目环境](docs/development.md#项目环境) 加载开发工具，再按 [验证要求](docs/development.md#验证要求) 选择检查：
+先按 [项目环境](docs/development.md#项目环境) 加载开发工具，再按 [验证要求](docs/development.md#验证要求) 选择检查。系统配置修改使用：
 
 ```bash
 just repo fmt
-just repo lint
-just repo test
 just os build
 ```
 
-需要更新输入时运行 `just repo update`，该命令也会同步 Codex 模型目录。应用系统由用户执行：
+`os build` 包含 lint/test，不激活系统。需要更新输入时运行 `just repo update`，该命令也会同步 Codex 模型目录。
 
-```bash
-just os test
-just os switch
-```
-
-`os switch` 不自动运行 lint/test，切换前须有当前内容的适用检查结果，详见 [常用命令](docs/development.md#常用命令)。回滚、重启、安装、secrets 操作和 push 也由用户执行。
+应用系统由用户执行：`just os test` 临时激活，`just os switch` 同时更改默认启动项。`os switch` 不自动运行 lint/test，切换前须有当前内容的适用检查结果，详见 [常用命令](docs/development.md#常用命令)。回滚、重启、安装、secrets 操作和 push 也由用户执行。
