@@ -18,7 +18,7 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 
 本项目 `.envrc` 启用 `strict_env`，并在 `use flake` 前禁止 nix-direnv 回退；环境求值失败时停止，加载不更新或写入 `flake.lock`。其他项目的 `.envrc` 若自行忽略错误，初始化入口无法将其识别为失败。需要更新输入时执行 `just repo update`。
 
-`.envrc` 监视 `modules/` 和 `packages/` 的文件与目录，配置或数据的修改、增删都会使环境重新加载。新增 flake 可见文件先精确 `git add`，避免 Nix 与基于 Git 文件清单的检查漏掉文件。
+`modules/maintenance/` 是项目开发环境的模块边界；影响 devShell 的模块定义放在此目录。`.envrc` 监视该目录及开发环境依赖的本地工具源码 `packages/mcp-dotnix/` 下所有文件和目录，覆盖内容修改及文件增删；nix-direnv 同时监视 flake 入口与锁文件。其他项目内容的修改不触发环境刷新。新增开发环境的本地源码依赖时同步更新监视范围。新增 flake 可见文件先精确 `git add`，避免 Nix 与基于 Git 文件清单的检查漏掉文件。
 
 ## 常用命令
 
@@ -73,8 +73,8 @@ just os switch    # 构建、激活并切换默认启动项；需要确认
 
 ## 执行环境
 
-- Codex sandbox 可能阻止 Nix daemon socket；按审批在 sandbox 外运行受影响的 just 命令，不全局开放网络。nix-direnv 缓存缺失或失效时，环境初始化也需要该 socket；可按审批用非登录 `/bin/sh` 在项目目录执行 `env -u BASH_ENV direnv exec . true` 刷新缓存，再重试 Bash 命令。
-- 重定向 Nix cache 目录时，先更新 Codex writable root，再运行验证命令。
+- Codex 配置为 `sandbox_mode = "danger-full-access"`、`approval_policy = "never"`，命令不受 Codex 文件与网络沙箱限制，也不请求命令审批。direnv 缓存失效时直接访问 Nix daemon 重新求值；`.envrc` 仍须授权，加载失败仍停止执行。
+- 配置需应用系统并重启 Codex 后生效。当前会话若仍受外层沙箱限制，按实际权限申请执行项目命令；环境初始化受阻时，可按审批用非登录 `/bin/sh` 在项目目录执行 `env -u BASH_ENV direnv exec . true` 刷新缓存，再重试 Bash 命令。
 
 ## MCP
 

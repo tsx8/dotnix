@@ -11,8 +11,8 @@
       model = "gpt-6-astra"
       model_catalog_json = "/etc/codex/models.json"
       model_reasoning_effort = "medium"
-      approval_policy = "on-request"
-      sandbox_mode = "workspace-write"
+      approval_policy = "never"
+      sandbox_mode = "danger-full-access"
       # 非登录 Bash 避免恢复旧快照，环境由 BASH_ENV 按命令目录加载。
       allow_login_shell = false
       web_search = "live"
@@ -26,12 +26,6 @@
 
       [shell_environment_policy.set]
       BASH_ENV = "/etc/codex/bash-env"
-
-      [sandbox_workspace_write]
-      network_access = false
-      # 仅匹配 NIX_CACHE_HOME/XDG_CACHE_HOME 均未设置时的默认值；
-      # 重定向 Nix cache 后需同步更新此路径并重启 Codex。
-      writable_roots = ["~/.cache/nix"]
 
       [agents]
       default_subagent_model = "gpt-6-astra"

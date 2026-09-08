@@ -40,6 +40,5 @@
 
 ## 执行环境
 
-- Codex sandbox 可能阻止 Nix daemon Unix socket；需要时按审批在 sandbox 外运行 just 标准命令，不得开启全局网络绕过。
-- Nix cache 环境变量重定向缓存目录时，先更新 Codex writable root，再运行验证命令。
+- Codex 默认使用完全访问权限，环境缓存失效时由 direnv 自动重新求值；`.envrc` 授权和项目操作边界仍须遵守。
 - 约束由流程和授权约束行为；AGENTS.md 和 just 本身不能阻止绕过流程的任意终端命令。
