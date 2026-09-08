@@ -56,6 +56,8 @@ isolate=(
   bwrap --die-with-parent
   --ro-bind / /
   --bind "$tmp_dir" "$tmp_dir"
+  # Codex 启动会在 tmp/arg0 创建辅助命令链接，使用临时文件系统避免写入真实目录。
+  --tmpfs "$codex_dir/tmp"
   --bind "$tmp_dir/cache.json" "$(realpath -e -- "$cache_path")"
   --chdir "$tmp_dir"
 )
@@ -65,7 +67,7 @@ for config_path in /etc/codex/config.toml "$codex_dir/config.toml"; do
   fi
 done
 
-codex_version="$("$codex_bin" --version)"
+codex_version="$(timeout 120 "${isolate[@]}" -- "$codex_bin" --version)"
 codex_version="${codex_version#codex-cli }"
 started_at="$(date +%s)"
 timeout 120 "${isolate[@]}" -- "$codex_bin" debug models > /dev/null
