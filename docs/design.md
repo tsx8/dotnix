@@ -20,15 +20,16 @@
 
 ## 文档与约束
 
-- 安装操作在 `docs/install.md`，开发与验证在 `docs/development.md`；README 只保留仓库概览和入口。
-- 行为约束集中在根 `AGENTS.md` 及其引用文档；不使用额外 rules 文件。这些文档约束流程与授权，不能在技术上阻止绕过流程的命令。
+- 安装操作在 `docs/install.md`，环境入口、命令和验证步骤在 `docs/development.md`，长期设计理由在本文；README 保留仓库概览、简短命令和文档入口。
+- 根 `AGENTS.md` 保留稳定项目约束、授权边界和必读文档入口，操作细节由引用文档维护；不使用额外 rules 文件。这些文档约束流程与授权，不能在技术上阻止绕过流程的命令。临时系统状态留在交接记录中，不写入常驻文档。
 - 不引入 CI、常驻后台服务或永久配置行为测试体系；验证由本地命令和临时验证承担。
 
 ## 验证分工
 
-- `just repo lint` 覆盖 Nix 格式、nixf 诊断、statix 反模式检查、Shell 脚本 ShellCheck 和 Git 空白错误；`just repo test` 运行 `nix flake check`。
-- 配置行为验证按改动面临时创建、执行、审查并清理，不保留固定套件。
-- `test` 验证 flake 声明，`os build` 验证配置可构建，运行状态由用户通过 `os test`/`os switch` 验证。
+- 验证按实际影响和证据缺口选择，具体要求见 [development.md](development.md#验证要求)。纯文档检查内容和流程一致性；可执行行为仍需实际验证。已有结果在内容和条件仍适用时复用，避免重复检查。
+- `just repo lint` 覆盖 Nix 格式、nixf 诊断、statix 反模式检查、Shell 脚本 ShellCheck 和 Git 空白错误；`just repo test` 运行 `nix flake check`，不能代替变更包的定向构建或行为验证。
+- 配置行为的临时验证按需创建、执行、审查并清理，不保留固定套件。
+- `os build` 验证系统配置可构建；安装和激活由用户执行，运行结论需相应实际观察。Agent 可通过只读诊断取证，安装或激活命令成功本身不代表所有功能已验证。
 
 ## 项目 MCP
 

@@ -9,7 +9,7 @@
 - 维护：sops-nix secrets、disko 分区、nix-direnv 开发环境。
 - Agent 工具：Codex、项目级 MCP（`mcp-dotnix`、`mcp-nixos`）。
 
-声明式配置只有在执行 `just os test` 或 `just os switch` 后才进入运行系统；在此之前，文档描述的是目标配置。
+仓库描述声明配置，运行状态取决于实际安装、激活和启动的配置，不能仅凭仓库内容判断。
 
 ## 文档
 
@@ -20,15 +20,20 @@
 
 ## 日常命令
 
+先按 [项目环境](docs/development.md#项目环境) 加载开发工具，再按 [验证要求](docs/development.md#验证要求) 选择检查：
+
 ```bash
 just repo fmt
 just repo lint
 just repo test
-just repo update
-
 just os build
+```
+
+需要更新输入时运行 `just repo update`，该命令也会同步 Codex 模型目录。应用系统由用户执行：
+
+```bash
 just os test
 just os switch
 ```
 
-`just os test`、`just os switch`、回滚、重启、secrets 操作和 push 由用户执行。
+`os switch` 不自动运行 lint/test，切换前须有当前内容的适用检查结果，详见 [常用命令](docs/development.md#常用命令)。回滚、重启、安装、secrets 操作和 push 也由用户执行。

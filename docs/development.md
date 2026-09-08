@@ -2,15 +2,17 @@
 
 ## 项目环境
 
-Codex 使用非登录 Bash；`BASH_ENV` 指向系统生成的 `/etc/codex/bash-env`，每次命令按工作目录检查 direnv 授权、校验 `.envrc` 语法并加载环境。已授权的 `.envrc` 生效后可直接执行项目命令；当前目录及其父目录都没有 `.envrc` 时，普通命令正常执行。新的 Bash 启动于项目之外时，会卸载继承的 direnv 环境。
+交互终端进入项目后，direnv 加载已授权的 `.envrc`。首次使用或修改 `.envrc` 后，先审阅内容再执行 `direnv allow`。项目环境成功加载后可直接运行 `just` 等项目命令。
 
-初始化不会自动授权 `.envrc`。首次使用或修改 `.envrc` 后，审阅内容再执行 `direnv allow`；未授权、已拒绝或 direnv 报告加载失败时，项目命令不会执行。非登录 `/bin/sh` 不读取 `BASH_ENV`，可用于诊断和修复初始化，不应据此跳过项目环境继续检查。
+Codex 使用非登录 Bash；`BASH_ENV` 指向系统生成的 `/etc/codex/bash-env`，每次命令按工作目录检查 direnv 授权、校验 `.envrc` 语法并加载环境。初始化不会自动授权 `.envrc`，未授权、已拒绝或 direnv 报告加载失败时，项目命令不会执行。当前目录及其父目录都没有 `.envrc` 时，普通命令正常执行；新的 Bash 启动于项目之外时，会卸载继承的 direnv 环境。
 
-系统配置应用并重启 Codex 后才会启用此入口。尚未生效的会话中，每次项目命令使用显式入口，例如：
+以环境加载结果和项目工具是否可用判断入口是否生效，不只看 `BASH_ENV` 或 `IN_NIX_SHELL` 变量；已有成功结果无需每次重复探测。自动入口配置变更需应用系统并重启 Codex。未配置自动入口的会话中，每次项目命令使用显式入口，例如：
 
 ```bash
 nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 ```
+
+检测到 `.envrc` 未授权或加载失败时，先解决该状态，不用显式入口绕过。非登录 `/bin/sh` 不读取 `BASH_ENV`，可用于诊断和修复初始化，不应据此跳过项目环境继续检查。
 
 `--command` 只影响本次子进程，不会为下一次独立命令保留环境。Bash 启动后在同一条命令中跨项目 `cd` 不会重新加载环境，应直接指定目标工作目录，或使用 `direnv exec <目录> <命令>`。
 
@@ -24,14 +26,36 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 just repo fmt     # 格式化 Nix 文件（nixfmt-tree）
 just repo lint    # nixfmt 检查、nixf-diagnose、statix、ShellCheck、Git 空白检查
 just repo test    # nix flake check（含已声明 checks，不使用 --no-build）
-just repo update  # 更新全部或指定 flake 输入，然后同步模型目录并运行 lint、test
-
 just os build     # 构建配置，不激活
-just os test      # 构建并激活当前代，不改变默认启动项；需要确认
-just os switch    # 构建并切换默认启动项；需要确认
 ```
 
-`os build`、`os test`、`os switch` 先执行 repo lint 和 repo test，再调用项目 nh，目标显式为 `.#maco`，并禁止更新/写入 lock。构建至少预留 10 分钟。`test` 不等于 `build`，`build` 不证明系统运行正常。
+更新输入时使用 `just repo update [输入名…]`；不传输入名则更新全部输入。它还会同步模型目录并运行 lint、test，具体副作用见下文。
+
+以下命令由用户执行，都会激活系统：
+
+```bash
+just os test      # 构建并激活配置，不改变默认启动项；需要确认
+just os switch    # 构建、激活并切换默认启动项；需要确认
+```
+
+`os build`、`os test` 先执行 repo lint 和 repo test。`os switch` 经 `scripts/sh/os.sh` 直接调用 nh，不自动运行这两项检查；切换前须有当前内容的适用检查结果，已通过 `os build` 且相关内容未变化时复用。
+
+三个 os 命令均调用项目 nh，目标显式为 `.#maco`，并禁止更新/写入 lock。构建至少预留 10 分钟。`just repo test` 不构建每个 package；`test` 不等于 `build`，`build` 不证明系统运行正常。
+
+## 验证要求
+
+按实际影响选择验证，不能只按文件扩展名判断。被程序读取的文本、模型数据和环境配置属于行为修改；仅文档中的常驻指令和命令示例也须检查执行流程是否自洽。
+
+| 改动影响 | 必需验证 |
+| --- | --- |
+| 讨论、设计、只读调查 | 取得支持结论的证据，不要求格式化或构建 |
+| 仅文档和常驻指令 | 核对内容、授权边界、命令调用链、路径及链接，运行 `git diff --check HEAD`；需要时做命令静态检查或 dry-run，不执行破坏性示例 |
+| 开发环境、脚本、工具、本地包等可执行行为 | `just repo fmt`、`just repo lint`、`just repo test`，并验证成功及必要失败路径；变更包须定向构建，不能用 flake check 代替 |
+| 系统配置或影响系统的依赖 | `just repo fmt` 后运行 `just os build`，复用其内置 lint/test，并补足构建未覆盖的必要行为验证 |
+
+同时影响系统的开发工具、脚本或包走系统验证流程，并补足该对象的定向验证；已被系统构建覆盖的包无需重复构建。相同内容且条件仍适用的结果可复用，新修改、失败或证据缺口才补充检查。
+
+系统安装、激活、回滚、重启、秘密操作和 push 由用户执行。运行结论需要实际观察，Agent 可用只读诊断取证；报告须区分已完成检查、构建结果和未验证的运行行为。
 
 ## Codex 模型目录
 
@@ -45,7 +69,7 @@ just os switch    # 构建并切换默认启动项；需要确认
 
 ## 临时验证与清理
 
-配置行为修改按改动面创建临时测试：使用临时目录、独立测试仓库或命令替身，执行成功路径和必要失败路径，验证后删除临时产物并在交付说明中报告证据。不保留固定行为测试套件、临时测试框架或报告目录。仓库只保留服务自身需要的源代码。
+配置行为修改按改动面和证据缺口选择临时验证，可使用临时目录、独立测试仓库、命令替身或协议调用，执行成功路径和必要失败路径。审查结果后清理本次不再需要的临时产物，在交付说明中报告证据和未验证项。不保留固定行为测试套件、临时测试框架或报告目录。仓库只保留服务自身需要的源代码。
 
 ## 执行环境
 
@@ -54,11 +78,12 @@ just os switch    # 构建并切换默认启动项；需要确认
 
 ## MCP
 
-- 首次使用前预构建：
+- 首次使用前可预构建；服务已可用时无需重复：
 
 ```bash
-nix build --no-link .#mcp-dotnix .#mcp-nixos
+nix build --no-link --no-update-lock-file --no-write-lock-file .#mcp-dotnix .#mcp-nixos
 ```
 
 - Codex 首次打开项目时确认项目信任；项目配置 `.codex/config.toml` 声明两个 MCP，启动命令是仓库根下的 `scripts/sh/mcp.sh`。
+- 调用审批以工具配置、当前权限和有效批准为准。诊断摘要等工具配置为 auto，日志和 mcp-nixos 默认 prompt；不要把默认值当作所有工具都需重新确认。
 - 启动失败时检查：包是否可构建、Nix daemon 是否可用、`scripts/sh/mcp.sh` 是否能解析 Git 根。`required = false`，服务器不可用时 Codex 会报告，Agent 不应编造查询结果。

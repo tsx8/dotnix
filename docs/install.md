@@ -1,6 +1,6 @@
 # 安装
 
-使用官方 NixOS 图形安装 ISO 启动，并连接可正常访问互联网的网络。
+使用官方 NixOS 图形安装 ISO 启动，并连接可正常访问互联网的网络。安装、秘密操作和系统激活由用户执行。
 
 ## 1. 获取配置
 
@@ -77,13 +77,28 @@ modules/machine/identity/.sops.yaml
 modules/machine/identity/secrets.yaml
 ```
 
-此时系统尚未部署本次仓库声明中的 direnv/nix-direnv 与项目工具（若有），用显式项目环境验证配置：
+安装脚本已从本仓库 flake 安装系统，其中声明了 direnv/nix-direnv。首次进入项目时，审阅 `.envrc` 后授权并加载项目工具：
 
 ```bash
-nix develop --no-update-lock-file --no-write-lock-file --command bash -lc 'just repo test && just secrets edit'
+direnv allow
 ```
 
-确认无误后提交：
+未配置自动入口的会话使用 [显式 devShell 入口](development.md#项目环境)，每次将所需命令放在 `--command` 后；检测到未授权或加载失败时先解决环境问题。无需为取得项目工具再次应用系统。
+
+如需编辑秘密，由用户执行：
+
+```bash
+just secrets edit
+```
+
+机器私钥只保存在 `/var/lib/sops-nix/key.txt`，不要提交到仓库。完成必要编辑后，按 [验证要求](development.md#验证要求) 检查最终内容。系统配置修改执行：
+
+```bash
+just repo fmt
+just os build
+```
+
+`os build` 包含 lint/test，不激活系统。确认最终内容和适用检查无误后，由用户提交安装生成的修改：
 
 ```bash
 git add modules/machine/host/facter.json modules/machine/storage/disk-device.data.nix modules/machine/identity/.sops.yaml modules/machine/identity/secrets.yaml
@@ -91,10 +106,10 @@ git commit -m "configure maco"
 git push
 ```
 
-机器私钥只保存在 `/var/lib/sops-nix/key.txt`，不要提交到仓库。之后用显式项目环境应用系统配置：
+若相对已安装系统还有需要生效的配置修改，再由用户激活：
 
 ```bash
-nix develop --no-update-lock-file --no-write-lock-file --command just os test
+just os test
 ```
 
-或把 `os test` 换成 `os switch`。系统启用 nix-direnv 后，执行 `direnv allow` 进入项目环境。
+需要更改默认启动项时使用 `just os switch`。它不自动运行 lint/test，可复用当前内容已通过的 `os build` 检查结果；相关内容变化后须重新验证。没有需要生效的修改时，无需再次应用系统。
