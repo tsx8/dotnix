@@ -7,7 +7,7 @@ lint:
   @git ls-files -z -- '*.nix' | xargs -0 -r nix fmt -- --no-cache --fail-on-change
   @git ls-files -z -- '*.nix' | xargs -0 -r nix run .#nixf-diagnose --
   @statix check --config modules/maintenance/development/statix.toml
-  @git ls-files -z -- 'scripts/sh/*.sh' | xargs -0 -r shellcheck
+  @git ls-files -z -- '*.sh' | xargs -0 -r shellcheck
   @git diff --check HEAD
 
 test:

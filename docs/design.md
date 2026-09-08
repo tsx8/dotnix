@@ -16,6 +16,7 @@
 - 系统级工具保持最小集：Git、gh、rg、fd、jq、curl、wget、基础 shell 工具、Nix、direnv/nix-direnv。
 - just、nh、Nix 格式化与静态检查工具、项目 MCP 属于项目环境，由 `modules/maintenance/development/default.nix` 供应；不在系统与项目之间复制。
 - Home Manager 只管理用户级配置，不管理应用。
+- Codex 的项目环境由非登录 Bash 的 `BASH_ENV` 入口加载，复用 direnv 授权和 nix-direnv 缓存。关闭登录模式避免命令恢复旧 shell 快照；`BASH_ENV` 仅写入 Codex 的子进程环境配置，不导出到启动 Codex 的父进程，避免快照生成阶段执行项目环境。环境加载不改变 sandbox 权限。
 
 ## 文档与约束
 
@@ -25,7 +26,7 @@
 
 ## 验证分工
 
-- `just repo lint` 覆盖 Nix 格式、nixf 诊断、statix 反模式检查、维护脚本 ShellCheck 和 Git 空白错误；`just repo test` 运行 `nix flake check`。
+- `just repo lint` 覆盖 Nix 格式、nixf 诊断、statix 反模式检查、Shell 脚本 ShellCheck 和 Git 空白错误；`just repo test` 运行 `nix flake check`。
 - 配置行为验证按改动面临时创建、执行、审查并清理，不保留固定套件。
 - `test` 验证 flake 声明，`os build` 验证配置可构建，运行状态由用户通过 `os test`/`os switch` 验证。
 

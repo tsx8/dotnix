@@ -16,14 +16,15 @@
 
 ## 项目环境
 
-- 进入方式：在仓库目录 `direnv allow` 后自动加载 `.envrc`；未启用 nix-direnv 时使用 `nix develop --no-update-lock-file --no-write-lock-file --command just --list`。
+- Codex 使用非登录 Bash，通过 `BASH_ENV` 按每次命令的工作目录加载 direnv 环境；`.envrc` 必须已授权，当前及父目录都没有 `.envrc` 时使用普通环境，未授权或加载失败时停止执行。
+- 上述配置需应用系统并重启 Codex 才生效；尚未生效的会话中，项目命令在同一次调用里使用 `nix develop --no-update-lock-file --no-write-lock-file --command <命令>`。一次 `just --list` 不会让后续独立命令继承环境。
 - 项目环境供应 just、nh、Nix 格式与静态检查工具和两个 MCP 包；不复制系统通用工具。
-- 进入环境不自动 fmt、lint、test、update 或应用系统。
+- 环境加载不自动 fmt、lint、test、update 或应用系统。初始化失败时可用非登录 `/bin/sh` 执行环境诊断；不静默跳过项目环境继续验证。
 
 ## 标准流程
 
 1. 阅读本文件和 docs 中与改动相关的部分。
-2. 进入项目环境后修改；新增 flake 可见文件先 `git add` 该文件，不能全量暂存无关变更。
+2. 修改相关文件；执行项目工具时使用上述环境入口。新增 flake 可见文件先 `git add` 该文件，不能全量暂存无关变更。
 3. 运行 `just repo fmt`，然后 `just repo lint`、`just repo test`。
 4. 按改动面创建临时验证（含临时测试仓库、命令替身或协议调用），执行成功路径和必要失败路径，审查结果后清理临时产物，并在交付说明中报告证据。
 5. 系统级变更运行 `just os build`；build 入口已内置 lint/test，同一未变化工作树不重复手工执行。
@@ -34,7 +35,7 @@
 ## MCP
 
 - `mcp-dotnix`：只读 NixOS 诊断，固定工具、严格参数、不执行 shell、不提权，日志尽力脱敏；失败如实报告。
-- `mcp-nixos`：查询 NixOS/nix-darwin 选项与文档；查询会联网或读取 store，两个工具默认询问。不可用或查询失败时不编造结果。
+- `mcp-nixos`：需要查询 Nix 软件包、版本、选项、flake 输入或相关文档时，先使用该 MCP。核对本仓库锁定版本时，使用 `nix` 工具的 `flake-inputs` 操作指定本仓库目录，定位并读取输入源码；已知 store 路径时使用 `store` 操作读取。在线渠道结果不能替代锁定源码证据。已有充分且适用的证据可复用；上述查询仅在工具不可用、查询失败或能力不覆盖时，改用其他途径补充，并说明缺口。本地配置读取、求值、测试与构建仍按项目流程执行。查询会联网或读取 store，两个工具默认询问，遵循审批；不编造结果。
 - Agent 不读取、解密或修改 secrets；不伪造通过状态。
 
 ## 执行环境

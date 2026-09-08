@@ -2,19 +2,19 @@
 
 ## 项目环境
 
-系统启用 nix-direnv 后（声明已在 `modules/personal/terminal.nix` 中配置）：
+Codex 使用非登录 Bash；`BASH_ENV` 指向系统生成的 `/etc/codex/bash-env`，每次命令按工作目录检查 direnv 授权、校验 `.envrc` 语法并加载环境。已授权的 `.envrc` 生效后可直接执行项目命令；当前目录及其父目录都没有 `.envrc` 时，普通命令正常执行。新的 Bash 启动于项目之外时，会卸载继承的 direnv 环境。
+
+初始化不会自动授权 `.envrc`。首次使用或修改 `.envrc` 后，审阅内容再执行 `direnv allow`；未授权、已拒绝或 direnv 报告加载失败时，项目命令不会执行。非登录 `/bin/sh` 不读取 `BASH_ENV`，可用于诊断和修复初始化，不应据此跳过项目环境继续检查。
+
+系统配置应用并重启 Codex 后才会启用此入口。尚未生效的会话中，每次项目命令使用显式入口，例如：
 
 ```bash
-direnv allow
+nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 ```
 
-系统尚未应用 nix-direnv 时，使用显式入口：
+`--command` 只影响本次子进程，不会为下一次独立命令保留环境。Bash 启动后在同一条命令中跨项目 `cd` 不会重新加载环境，应直接指定目标工作目录，或使用 `direnv exec <目录> <命令>`。
 
-```bash
-nix develop --no-update-lock-file --no-write-lock-file --command just --list
-```
-
-环境加载失败时不会回退到其他工具来源；先修正 `.envrc`、flake 或 Nix 环境。`nix develop` 不隐式更新 `flake.lock`，需要更新输入时执行 `just repo update`。
+本项目 `.envrc` 启用 `strict_env`，并在 `use flake` 前禁止 nix-direnv 回退；环境求值失败时停止，加载不更新或写入 `flake.lock`。其他项目的 `.envrc` 若自行忽略错误，初始化入口无法将其识别为失败。需要更新输入时执行 `just repo update`。
 
 `.envrc` 监视 `modules/` 和 `packages/` 的文件与目录，配置或数据的修改、增删都会使环境重新加载。新增 flake 可见文件先精确 `git add`，避免 Nix 与基于 Git 文件清单的检查漏掉文件。
 
@@ -49,7 +49,7 @@ just os switch    # 构建并切换默认启动项；需要确认
 
 ## 执行环境
 
-- Codex sandbox 可能阻止 Nix daemon socket；按审批在 sandbox 外运行受影响的 just 命令，不全局开放网络。
+- Codex sandbox 可能阻止 Nix daemon socket；按审批在 sandbox 外运行受影响的 just 命令，不全局开放网络。nix-direnv 缓存缺失或失效时，环境初始化也需要该 socket；可按审批用非登录 `/bin/sh` 在项目目录执行 `env -u BASH_ENV direnv exec . true` 刷新缓存，再重试 Bash 命令。
 - 重定向 Nix cache 目录时，先更新 Codex writable root，再运行验证命令。
 
 ## MCP
