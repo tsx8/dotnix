@@ -1,6 +1,10 @@
 # 安装
 
-使用官方 NixOS 图形安装 ISO 启动，并连接可正常访问互联网的网络。安装、秘密操作和系统激活由用户执行。
+使用官方 NixOS x86_64 图形安装 ISO，以 UEFI 模式启动。进入 Live 桌面后连接可正常访问互联网的网络，打开终端执行下列步骤。
+
+安装前准备好恢复口令和现有 `tsxb` 账户密码，并确保恢复口令不只保存在即将清空的目标磁盘上。恢复口令用于初始化机器密钥，账户密码用于安装后的首次登录。
+
+Live 阶段以默认的 `nixos` 用户克隆仓库并运行脚本。该用户可免密使用 `sudo`，脚本内部会对必要操作提权，无需在脚本外层加 `sudo`。安装介质已提供 Git 和 Nix；脚本自行通过 flake 获取安装工具，无需先加载项目 devShell。安装、秘密操作和系统激活由用户执行。
 
 ## 1. 获取配置
 
@@ -24,13 +28,11 @@ lsblk
 ls -l /dev/disk/by-id/
 ```
 
-然后执行：
+将 `<target-disk>` 替换为目标磁盘的实际标识。以下操作会清空该磁盘，并将目标系统挂载到 `/mnt`：
 
 ```bash
 ./scripts/sh/disk.sh /dev/disk/by-id/<target-disk>
 ```
-
-> 此操作会清空目标磁盘。
 
 ## 4. 初始化机器密钥
 
@@ -38,7 +40,7 @@ ls -l /dev/disk/by-id/
 ./scripts/sh/secrets.sh
 ```
 
-按提示输入恢复口令。脚本会为当前机器生成独立的 age identity，并更新 SOPS recipients。
+按提示输入恢复口令。脚本会为当前机器生成独立的 age identity，并更新 SOPS recipients。新机器私钥写入 `/mnt/var/lib/sops-nix/key.txt`；此步骤不会更改账户密码。
 
 ## 5. 安装系统
 
@@ -48,10 +50,11 @@ ls -l /dev/disk/by-id/
 
 ## 6. 保存安装期产生的仓库修改
 
-不要立即重启。
+安装成功后仍在 Live 环境中操作，保持当前目录为仓库根目录。将仓库及安装期间的修改复制到目标系统，并将所有权交给已创建的 `tsxb` 用户。完成后再重启，以免丢失 Live 环境中的修改。
 
 ```bash
-sudo cp -a "$(pwd)" /mnt/home/tsxb/dotnix
+sudo mkdir -p /mnt/home/tsxb/dotnix
+sudo cp -a "$(pwd)/." /mnt/home/tsxb/dotnix/
 sudo chown -R --reference=/mnt/home/tsxb /mnt/home/tsxb/dotnix
 ```
 
@@ -62,6 +65,8 @@ sudo reboot
 ```
 
 ## 首次启动后
+
+从目标磁盘启动，以 `tsxb` 登录，使用加密配置中 `user-passwd-hash` 对应的现有密码。安装脚本不会提示设置新的 root 密码。
 
 ```bash
 cd ~/dotnix
@@ -103,6 +108,17 @@ just os build
 ```bash
 git add modules/machine/host/facter.json modules/machine/storage/disk-device.data.nix modules/machine/identity/.sops.yaml modules/machine/identity/secrets.yaml
 git commit -m "configure maco"
+```
+
+推送前需完成 GitHub 身份验证，并具有仓库写入权限。首次使用可运行：
+
+```bash
+gh auth login
+```
+
+已登录后推送：
+
+```bash
 git push
 ```
 
