@@ -27,8 +27,8 @@
     },
     "bluetooth": [
       {
-        "index": 81,
-        "attached_to": 77,
+        "index": 83,
+        "attached_to": 78,
         "class_list": [
           "usb",
           "bluetooth"
@@ -100,7 +100,7 @@
           },
           "interface_protocol": 1,
           "interface_number": 2,
-          "interface_alternate_setting": 1,
+          "interface_alternate_setting": 0,
           "interface_association": {
             "function_class": {
               "hex": "00e0",
@@ -118,19 +118,11 @@
           }
         },
         "hotplug": "usb",
-        "driver": "btusb",
-        "driver_module": "btusb",
-        "drivers": [
-          "btusb"
-        ],
-        "driver_modules": [
-          "btusb"
-        ],
         "module_alias": "usb:v2C7Cp7009d0100dcEFdsc02dp01icE0isc01ip01in02"
       },
       {
-        "index": 83,
-        "attached_to": 77,
+        "index": 86,
+        "attached_to": 78,
         "class_list": [
           "usb",
           "bluetooth"
@@ -231,8 +223,8 @@
         "module_alias": "usb:v2C7Cp7009d0100dcEFdsc02dp01icE0isc01ip01in00"
       },
       {
-        "index": 91,
-        "attached_to": 77,
+        "index": 95,
+        "attached_to": 78,
         "class_list": [
           "usb",
           "bluetooth"
@@ -1963,7 +1955,7 @@
         "sysfs_id": "/class/block/zram0",
         "unix_device_names": [
           "/dev/disk/by-label/zram0",
-          "/dev/disk/by-uuid/b6c4e623-d7eb-42ef-8c43-85e402c4c6a0",
+          "/dev/disk/by-uuid/1abca422-cf00-4479-addd-4393910e4e50",
           "/dev/zram0"
         ],
         "resources": [
@@ -2059,7 +2051,7 @@
     "hub": [
       {
         "index": 73,
-        "attached_to": 77,
+        "attached_to": 78,
         "class_list": [
           "usb",
           "hub"
@@ -2143,7 +2135,7 @@
         "module_alias": "usb:v1A40p0101d0111dc09dsc00dp01ic09isc00ip00in00"
       },
       {
-        "index": 74,
+        "index": 75,
         "attached_to": 62,
         "class_list": [
           "usb",
@@ -2165,7 +2157,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 7.2.2 xhci-hcd",
+          "name": "Linux 7.2.4 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -2179,7 +2171,7 @@
           "value": 0
         },
         "serial": "0000:c7:00.3",
-        "model": "Linux 7.2.2 xhci-hcd xHCI Host Controller",
+        "model": "Linux 7.2.4 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.3/usb6/6-0:1.0",
         "sysfs_bus_id": "6-0:1.0",
         "detail": {
@@ -2220,7 +2212,7 @@
         "module_alias": "usb:v1D6Bp0003d0702dc09dsc00dp03ic09isc00ip00in00"
       },
       {
-        "index": 77,
+        "index": 78,
         "attached_to": 45,
         "class_list": [
           "usb",
@@ -2242,7 +2234,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 7.2.2 xhci-hcd",
+          "name": "Linux 7.2.4 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -2256,7 +2248,7 @@
           "value": 0
         },
         "serial": "0000:c7:00.0",
-        "model": "Linux 7.2.2 xhci-hcd xHCI Host Controller",
+        "model": "Linux 7.2.4 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.0/usb3/3-0:1.0",
         "sysfs_bus_id": "3-0:1.0",
         "resources": [
@@ -2307,7 +2299,7 @@
         "module_alias": "usb:v1D6Bp0002d0702dc09dsc00dp01ic09isc00ip00in00"
       },
       {
-        "index": 79,
+        "index": 80,
         "attached_to": 39,
         "class_list": [
           "usb",
@@ -2329,7 +2321,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 7.2.2 xhci-hcd",
+          "name": "Linux 7.2.4 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -2343,7 +2335,7 @@
           "value": 0
         },
         "serial": "0000:c7:00.4",
-        "model": "Linux 7.2.2 xhci-hcd xHCI Host Controller",
+        "model": "Linux 7.2.4 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.4/usb7/7-0:1.0",
         "sysfs_bus_id": "7-0:1.0",
         "resources": [
@@ -2394,7 +2386,7 @@
         "module_alias": "usb:v1D6Bp0002d0702dc09dsc00dp01ic09isc00ip00in00"
       },
       {
-        "index": 82,
+        "index": 85,
         "attached_to": 45,
         "class_list": [
           "usb",
@@ -2416,7 +2408,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 7.2.2 xhci-hcd",
+          "name": "Linux 7.2.4 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -2430,7 +2422,7 @@
           "value": 0
         },
         "serial": "0000:c7:00.0",
-        "model": "Linux 7.2.2 xhci-hcd xHCI Host Controller",
+        "model": "Linux 7.2.4 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.0/usb4/4-0:1.0",
         "sysfs_bus_id": "4-0:1.0",
         "detail": {
@@ -2471,7 +2463,7 @@
         "module_alias": "usb:v1D6Bp0003d0702dc09dsc00dp03ic09isc00ip00in00"
       },
       {
-        "index": 84,
+        "index": 87,
         "attached_to": 39,
         "class_list": [
           "usb",
@@ -2493,7 +2485,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 7.2.2 xhci-hcd",
+          "name": "Linux 7.2.4 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -2507,7 +2499,7 @@
           "value": 0
         },
         "serial": "0000:c7:00.4",
-        "model": "Linux 7.2.2 xhci-hcd xHCI Host Controller",
+        "model": "Linux 7.2.4 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.4/usb8/8-0:1.0",
         "sysfs_bus_id": "8-0:1.0",
         "detail": {
@@ -2548,7 +2540,7 @@
         "module_alias": "usb:v1D6Bp0003d0702dc09dsc00dp03ic09isc00ip00in00"
       },
       {
-        "index": 86,
+        "index": 89,
         "attached_to": 51,
         "class_list": [
           "usb",
@@ -2570,7 +2562,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 7.2.2 xhci-hcd",
+          "name": "Linux 7.2.4 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -2584,7 +2576,7 @@
           "value": 0
         },
         "serial": "0000:c5:00.4",
-        "model": "Linux 7.2.2 xhci-hcd xHCI Host Controller",
+        "model": "Linux 7.2.4 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:08.1/0000:c5:00.4/usb1/1-0:1.0",
         "sysfs_bus_id": "1-0:1.0",
         "resources": [
@@ -2635,7 +2627,7 @@
         "module_alias": "usb:v1D6Bp0002d0702dc09dsc00dp01ic09isc00ip00in00"
       },
       {
-        "index": 89,
+        "index": 92,
         "attached_to": 62,
         "class_list": [
           "usb",
@@ -2657,7 +2649,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 7.2.2 xhci-hcd",
+          "name": "Linux 7.2.4 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -2671,7 +2663,7 @@
           "value": 0
         },
         "serial": "0000:c7:00.3",
-        "model": "Linux 7.2.2 xhci-hcd xHCI Host Controller",
+        "model": "Linux 7.2.4 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.3/usb5/5-0:1.0",
         "sysfs_bus_id": "5-0:1.0",
         "resources": [
@@ -2722,7 +2714,7 @@
         "module_alias": "usb:v1D6Bp0002d0702dc09dsc00dp01ic09isc00ip00in00"
       },
       {
-        "index": 90,
+        "index": 94,
         "attached_to": 51,
         "class_list": [
           "usb",
@@ -2744,7 +2736,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 7.2.2 xhci-hcd",
+          "name": "Linux 7.2.4 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -2758,7 +2750,7 @@
           "value": 0
         },
         "serial": "0000:c5:00.4",
-        "model": "Linux 7.2.2 xhci-hcd xHCI Host Controller",
+        "model": "Linux 7.2.4 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:08.1/0000:c5:00.4/usb2/2-0:1.0",
         "sysfs_bus_id": "2-0:1.0",
         "detail": {
@@ -2801,8 +2793,8 @@
     ],
     "keyboard": [
       {
-        "index": 87,
-        "attached_to": 77,
+        "index": 90,
+        "attached_to": 78,
         "class_list": [
           "keyboard",
           "usb"
@@ -2903,8 +2895,8 @@
         "module_alias": "usb:v046Ap013Bd0109dc00dsc00dp00ic03isc01ip01in01"
       },
       {
-        "index": 88,
-        "attached_to": 77,
+        "index": 91,
+        "attached_to": 78,
         "class_list": [
           "keyboard",
           "usb"
@@ -3260,8 +3252,8 @@
     ],
     "mouse": [
       {
-        "index": 78,
-        "attached_to": 77,
+        "index": 79,
+        "attached_to": 78,
         "class_list": [
           "mouse",
           "usb"
@@ -3367,8 +3359,8 @@
         "module_alias": "usb:v046Ap013Bd0109dc00dsc00dp00ic03isc01ip02in00"
       },
       {
-        "index": 85,
-        "attached_to": 77,
+        "index": 88,
+        "attached_to": 78,
         "class_list": [
           "mouse",
           "usb"
@@ -3721,7 +3713,7 @@
     ],
     "network_interface": [
       {
-        "index": 92,
+        "index": 96,
         "attached_to": 0,
         "class_list": [
           "network_interface"
@@ -3743,7 +3735,7 @@
         ]
       },
       {
-        "index": 93,
+        "index": 97,
         "attached_to": 29,
         "class_list": [
           "network_interface"
@@ -3784,7 +3776,7 @@
         ]
       },
       {
-        "index": 94,
+        "index": 98,
         "attached_to": 38,
         "class_list": [
           "network_interface"
@@ -3825,7 +3817,7 @@
         ]
       },
       {
-        "index": 95,
+        "index": 99,
         "attached_to": 0,
         "class_list": [
           "network_interface"
@@ -3857,7 +3849,7 @@
         ]
       },
       {
-        "index": 97,
+        "index": 101,
         "attached_to": 63,
         "class_list": [
           "network_interface"
@@ -4402,6 +4394,327 @@
         ],
         "module_alias": "pci:v00001022d000015E3sv000010ECsd000012E8bc04sc03i00",
         "label": "Realtek ALC245"
+      },
+      {
+        "index": 74,
+        "attached_to": 92,
+        "class_list": [
+          "sound",
+          "usb"
+        ],
+        "bus_type": {
+          "hex": "0086",
+          "name": "USB",
+          "value": 134
+        },
+        "slot": {
+          "bus": 0,
+          "number": 0
+        },
+        "base_class": {
+          "hex": "0004",
+          "name": "Multimedia controller",
+          "value": 4
+        },
+        "sub_class": {
+          "hex": "0001",
+          "name": "Multimedia audio controller",
+          "value": 1
+        },
+        "vendor": {
+          "hex": "3302",
+          "name": "MOONDROP",
+          "value": 13058
+        },
+        "device": {
+          "hex": "1269",
+          "name": "Muse Dash\u0026Quark2",
+          "value": 4713
+        },
+        "revision": {
+          "hex": "0000",
+          "name": "0.01",
+          "value": 0
+        },
+        "serial": "33021269240710",
+        "model": "MOONDROP Muse Dash\u0026Quark2",
+        "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.3/usb5/5-1/5-1:1.0",
+        "sysfs_bus_id": "5-1:1.0",
+        "resources": [
+          {
+            "type": "baud",
+            "speed": 480000000,
+            "bits": 0,
+            "stop_bits": 0,
+            "parity": 0,
+            "handshake": 0
+          }
+        ],
+        "detail": {
+          "device_class": {
+            "hex": "00ef",
+            "name": "miscellaneous",
+            "value": 239
+          },
+          "device_subclass": {
+            "hex": "0002",
+            "name": "comm",
+            "value": 2
+          },
+          "device_protocol": 1,
+          "interface_class": {
+            "hex": "0001",
+            "name": "audio",
+            "value": 1
+          },
+          "interface_subclass": {
+            "hex": "0001",
+            "name": "audio",
+            "value": 1
+          },
+          "interface_protocol": 32,
+          "interface_number": 0,
+          "interface_alternate_setting": 0,
+          "interface_association": {
+            "function_class": {
+              "hex": "0001",
+              "name": "audio",
+              "value": 1
+            },
+            "function_subclass": {
+              "hex": "0000",
+              "name": "per_interface",
+              "value": 0
+            },
+            "function_protocol": 32,
+            "interface_count": 3,
+            "first_interface": 0
+          }
+        },
+        "hotplug": "usb",
+        "driver": "snd-usb-audio",
+        "driver_module": "snd_usb_audio",
+        "drivers": [
+          "snd-usb-audio"
+        ],
+        "driver_modules": [
+          "snd_usb_audio"
+        ],
+        "module_alias": "usb:v3302p1269d0001dcEFdsc02dp01ic01isc01ip20in00"
+      },
+      {
+        "index": 84,
+        "attached_to": 92,
+        "class_list": [
+          "sound",
+          "usb"
+        ],
+        "bus_type": {
+          "hex": "0086",
+          "name": "USB",
+          "value": 134
+        },
+        "slot": {
+          "bus": 0,
+          "number": 0
+        },
+        "base_class": {
+          "hex": "0004",
+          "name": "Multimedia controller",
+          "value": 4
+        },
+        "sub_class": {
+          "hex": "0001",
+          "name": "Multimedia audio controller",
+          "value": 1
+        },
+        "vendor": {
+          "hex": "3302",
+          "name": "MOONDROP",
+          "value": 13058
+        },
+        "device": {
+          "hex": "1269",
+          "name": "Muse Dash\u0026Quark2",
+          "value": 4713
+        },
+        "revision": {
+          "hex": "0000",
+          "name": "0.01",
+          "value": 0
+        },
+        "serial": "33021269240710",
+        "model": "MOONDROP Muse Dash\u0026Quark2",
+        "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.3/usb5/5-1/5-1:1.1",
+        "sysfs_bus_id": "5-1:1.1",
+        "resources": [
+          {
+            "type": "baud",
+            "speed": 480000000,
+            "bits": 0,
+            "stop_bits": 0,
+            "parity": 0,
+            "handshake": 0
+          }
+        ],
+        "detail": {
+          "device_class": {
+            "hex": "00ef",
+            "name": "miscellaneous",
+            "value": 239
+          },
+          "device_subclass": {
+            "hex": "0002",
+            "name": "comm",
+            "value": 2
+          },
+          "device_protocol": 1,
+          "interface_class": {
+            "hex": "0001",
+            "name": "audio",
+            "value": 1
+          },
+          "interface_subclass": {
+            "hex": "0002",
+            "name": "comm",
+            "value": 2
+          },
+          "interface_protocol": 32,
+          "interface_number": 1,
+          "interface_alternate_setting": 0,
+          "interface_association": {
+            "function_class": {
+              "hex": "0001",
+              "name": "audio",
+              "value": 1
+            },
+            "function_subclass": {
+              "hex": "0000",
+              "name": "per_interface",
+              "value": 0
+            },
+            "function_protocol": 32,
+            "interface_count": 3,
+            "first_interface": 0
+          }
+        },
+        "hotplug": "usb",
+        "driver": "snd-usb-audio",
+        "driver_module": "snd_usb_audio",
+        "drivers": [
+          "snd-usb-audio"
+        ],
+        "driver_modules": [
+          "snd_usb_audio"
+        ],
+        "module_alias": "usb:v3302p1269d0001dcEFdsc02dp01ic01isc02ip20in01"
+      },
+      {
+        "index": 93,
+        "attached_to": 92,
+        "class_list": [
+          "sound",
+          "usb"
+        ],
+        "bus_type": {
+          "hex": "0086",
+          "name": "USB",
+          "value": 134
+        },
+        "slot": {
+          "bus": 0,
+          "number": 0
+        },
+        "base_class": {
+          "hex": "0004",
+          "name": "Multimedia controller",
+          "value": 4
+        },
+        "sub_class": {
+          "hex": "0001",
+          "name": "Multimedia audio controller",
+          "value": 1
+        },
+        "vendor": {
+          "hex": "3302",
+          "name": "MOONDROP",
+          "value": 13058
+        },
+        "device": {
+          "hex": "1269",
+          "name": "Muse Dash\u0026Quark2",
+          "value": 4713
+        },
+        "revision": {
+          "hex": "0000",
+          "name": "0.01",
+          "value": 0
+        },
+        "serial": "33021269240710",
+        "model": "MOONDROP Muse Dash\u0026Quark2",
+        "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.3/usb5/5-1/5-1:1.2",
+        "sysfs_bus_id": "5-1:1.2",
+        "resources": [
+          {
+            "type": "baud",
+            "speed": 480000000,
+            "bits": 0,
+            "stop_bits": 0,
+            "parity": 0,
+            "handshake": 0
+          }
+        ],
+        "detail": {
+          "device_class": {
+            "hex": "00ef",
+            "name": "miscellaneous",
+            "value": 239
+          },
+          "device_subclass": {
+            "hex": "0002",
+            "name": "comm",
+            "value": 2
+          },
+          "device_protocol": 1,
+          "interface_class": {
+            "hex": "0001",
+            "name": "audio",
+            "value": 1
+          },
+          "interface_subclass": {
+            "hex": "0002",
+            "name": "comm",
+            "value": 2
+          },
+          "interface_protocol": 32,
+          "interface_number": 2,
+          "interface_alternate_setting": 0,
+          "interface_association": {
+            "function_class": {
+              "hex": "0001",
+              "name": "audio",
+              "value": 1
+            },
+            "function_subclass": {
+              "hex": "0000",
+              "name": "per_interface",
+              "value": 0
+            },
+            "function_protocol": 32,
+            "interface_count": 3,
+            "first_interface": 0
+          }
+        },
+        "hotplug": "usb",
+        "driver": "snd-usb-audio",
+        "driver_module": "snd_usb_audio",
+        "drivers": [
+          "snd-usb-audio"
+        ],
+        "driver_modules": [
+          "snd_usb_audio"
+        ],
+        "module_alias": "usb:v3302p1269d0001dcEFdsc02dp01ic01isc02ip20in02"
       }
     ],
     "storage_controller": [
@@ -4483,8 +4796,8 @@
     },
     "usb": [
       {
-        "index": 75,
-        "attached_to": 77,
+        "index": 76,
+        "attached_to": 78,
         "class_list": [
           "usb",
           "unknown"
@@ -4574,8 +4887,8 @@
         "module_alias": "usb:v046Ap013Bd0109dc00dsc00dp00ic03isc00ip00in02"
       },
       {
-        "index": 76,
-        "attached_to": 77,
+        "index": 77,
+        "attached_to": 78,
         "class_list": [
           "usb",
           "unknown"
@@ -4669,7 +4982,7 @@
         "module_alias": "usb:v3554pFB51d0313dc00dsc00dp00ic03isc00ip00in01"
       },
       {
-        "index": 80,
+        "index": 81,
         "attached_to": 73,
         "class_list": [
           "usb",
@@ -4751,6 +5064,104 @@
         },
         "hotplug": "usb",
         "module_alias": "usb:v3274p8012d0100dc00dsc00dp00icFFisc01ip01in00"
+      },
+      {
+        "index": 82,
+        "attached_to": 92,
+        "class_list": [
+          "usb",
+          "unknown"
+        ],
+        "bus_type": {
+          "hex": "0086",
+          "name": "USB",
+          "value": 134
+        },
+        "slot": {
+          "bus": 0,
+          "number": 0
+        },
+        "base_class": {
+          "hex": "0000",
+          "name": "Unclassified device",
+          "value": 0
+        },
+        "sub_class": {
+          "hex": "0000",
+          "name": "Unclassified device",
+          "value": 0
+        },
+        "vendor": {
+          "hex": "3302",
+          "name": "MOONDROP",
+          "value": 13058
+        },
+        "device": {
+          "hex": "1269",
+          "name": "Muse Dash\u0026Quark2",
+          "value": 4713
+        },
+        "revision": {
+          "hex": "0000",
+          "name": "0.01",
+          "value": 0
+        },
+        "serial": "33021269240710",
+        "model": "MOONDROP Muse Dash\u0026Quark2",
+        "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.3/usb5/5-1/5-1:1.3",
+        "sysfs_bus_id": "5-1:1.3",
+        "unix_device_names": [
+          "/dev/input/by-id/usb-MOONDROP_Muse_Dash_Quark2_33021269240710-event-if03",
+          "/dev/input/by-path/pci-0000:c7:00.3-usb-0:1:1.3-event",
+          "/dev/input/by-path/pci-0000:c7:00.3-usbv2-0:1:1.3-event",
+          "/dev/input/event21"
+        ],
+        "resources": [
+          {
+            "type": "baud",
+            "speed": 480000000,
+            "bits": 0,
+            "stop_bits": 0,
+            "parity": 0,
+            "handshake": 0
+          }
+        ],
+        "detail": {
+          "device_class": {
+            "hex": "00ef",
+            "name": "miscellaneous",
+            "value": 239
+          },
+          "device_subclass": {
+            "hex": "0002",
+            "name": "comm",
+            "value": 2
+          },
+          "device_protocol": 1,
+          "interface_class": {
+            "hex": "0003",
+            "name": "hid",
+            "value": 3
+          },
+          "interface_subclass": {
+            "hex": "0000",
+            "name": "per_interface",
+            "value": 0
+          },
+          "interface_protocol": 0,
+          "interface_number": 3,
+          "interface_alternate_setting": 0
+        },
+        "hotplug": "usb",
+        "driver": "usbhid",
+        "driver_module": "usbhid",
+        "drivers": [
+          "usbhid"
+        ],
+        "driver_modules": [
+          "usbhid"
+        ],
+        "module_alias": "usb:v3302p1269d0001dcEFdsc02dp01ic03isc00ip00in03"
       }
     ],
     "usb_controller": [
@@ -6051,9 +6462,9 @@
       "product": "MACO",
       "version": "Default string",
       "wake_up": {
-        "hex": "0002",
-        "name": "Unknown",
-        "value": 2
+        "hex": "0006",
+        "name": "Power Switch",
+        "value": 6
       }
     }
   }
