@@ -1,16 +1,16 @@
 [build-system]
-requires = ["setuptools >= 61"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "mcp-dotnix"
 version = "0.1.0"
 description = "Read-only NixOS MCP server for dotnix"
 requires-python = ">=3.11"
-dependencies = ["mcp >= 1.0"]
+dependencies = ["fastmcp>=3.0.0"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mcp_dotnix"]
 
 [project.scripts]
 mcp-dotnix = "mcp_dotnix.server:main"
-
-[tool.setuptools.packages.find]
-where = ["src"]

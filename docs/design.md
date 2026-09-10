@@ -36,6 +36,7 @@
 
 - `mcp-dotnix` 是本仓库自有只读诊断服务，包与入口名为 `mcp-dotnix`；能力不随改名扩展。
 - `mcp-nixos` 使用官方 utensils/mcp-nixos flake 输入；其 flake 输入查询在本地包中补上 lock 保护参数。
+- `mcp-dotnix` 使用 FastMCP 和 Hatchling，直接由本仓库锁定的 nixpkgs 构建；`mcp-nixos` 使用上游包声明的依赖。两个服务独立构建和运行，相同的底层依赖由 Nix 复用构建结果。
 - 两个服务都通过 `scripts/sh/mcp.sh` 用系统 Nix 从项目锁启动，stdio 直接传递，配置在项目 `.codex/config.toml`，不写入全局 AGENTS。
 
 ## 配置 label

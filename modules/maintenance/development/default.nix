@@ -2,7 +2,7 @@
   perSystem =
     { pkgs, config, ... }:
     let
-      # 两个 Python 应用依赖互不兼容的 mcp；直接加入会向整个 shell 传播 PYTHONPATH。
+      # 两个应用使用独立的 Python 依赖，只暴露命令以免向整个 shell 传播 PYTHONPATH。
       mcpDotnixCli = pkgs.writeShellScriptBin "mcp-dotnix" ''
         unset PYTHONPATH
         exec "${config.packages.mcp-dotnix}/bin/mcp-dotnix" "$@"

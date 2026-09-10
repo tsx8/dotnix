@@ -69,6 +69,8 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 
 ## MCP
 
+- 项目环境提供两个独立的 MCP 命令，各自使用包内的 Python 依赖；命令包装避免将应用依赖传播到整个 shell，并清除继承的 `PYTHONPATH`。
+
 - 首次使用前可预构建；服务已可用时无需重复：
 
 ```bash

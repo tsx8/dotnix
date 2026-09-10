@@ -3,16 +3,20 @@
 python3Packages.buildPythonApplication {
   pname = "mcp-dotnix";
   version = "0.1.0";
-  format = "pyproject";
+  pyproject = true;
 
   src = ./.;
 
   build-system = [
-    python3Packages.setuptools
+    python3Packages.hatchling
   ];
 
-  propagatedBuildInputs = [
-    python3Packages.mcp
+  dependencies = [
+    python3Packages.fastmcp
+  ];
+
+  pythonImportsCheck = [
+    "mcp_dotnix.server"
   ];
 
   meta = {
