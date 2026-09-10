@@ -10,7 +10,7 @@
       model_provider = "openai"
       model = "gpt-6-astra"
       model_catalog_json = "/etc/codex/models.json"
-      model_reasoning_effort = "medium"
+      model_reasoning_effort = "xhigh"
       approval_policy = "never"
       sandbox_mode = "danger-full-access"
       # 非登录 Bash 避免恢复旧快照，环境由 BASH_ENV 按命令目录加载。
@@ -28,8 +28,9 @@
       BASH_ENV = "/etc/codex/bash-env"
 
       [agents]
-      default_subagent_model = "gpt-6-astra"
-      default_subagent_reasoning_effort = "low"
+      max_concurrent_threads_per_session = 4
+      default_subagent_model = "gpt-5.6-luna"
+      default_subagent_reasoning_effort = "max"
 
       [features]
       context_management.experimental_mode = true
