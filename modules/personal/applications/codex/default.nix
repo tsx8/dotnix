@@ -30,8 +30,6 @@
       [agents]
       max_concurrent_threads_per_session = 4
 
-      [features]
-      context_management.experimental_mode = true
       [features.multi_agent_v2]
       enabled = true
       hide_spawn_agent_metadata = false

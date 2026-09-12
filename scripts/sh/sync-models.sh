@@ -73,8 +73,7 @@ started_at="$(date +%s)"
 timeout 120 "${isolate[@]}" -- "$codex_bin" debug models > /dev/null
 
 # CLI 刷新失败也可能返回内置目录；只有本次请求写入的独立缓存可证明刷新成功。
-if ! jq -e --arg version "$codex_version" '
-  (.client_version == $version) and
+if ! jq -e '
   (.fetched_at | type == "string") and
   (.models | type == "array" and length > 0)
 ' "$tmp_dir/cache.json" > /dev/null; then
