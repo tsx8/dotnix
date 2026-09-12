@@ -10,7 +10,7 @@
       model_provider = "openai"
       model = "gpt-6-astra"
       model_catalog_json = "/etc/codex/models.json"
-      model_reasoning_effort = "xhigh"
+      model_reasoning_effort = "low"
       approval_policy = "never"
       sandbox_mode = "danger-full-access"
       # 非登录 Bash 避免恢复旧快照，环境由 BASH_ENV 按命令目录加载。
@@ -29,11 +29,13 @@
 
       [agents]
       max_concurrent_threads_per_session = 4
-      default_subagent_model = "gpt-5.6-luna"
-      default_subagent_reasoning_effort = "max"
 
       [features]
       context_management.experimental_mode = true
+      [features.multi_agent_v2]
+      enabled = true
+      hide_spawn_agent_metadata = false
+      expose_spawn_agent_model_overrides = false
     '';
 
     environment.systemPackages = [
@@ -43,5 +45,7 @@
   };
   dotnix.modules.home = {
     home.file.".codex/AGENTS.md".source = ./AGENTS-md.txt;
+    # Codex 忽略符号链接角色文件；链接整个目录，保留内部 TOML 为普通文件。
+    home.file.".codex/agents".source = ./agents;
   };
 }

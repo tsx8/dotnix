@@ -59,6 +59,12 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 
 同步保留 Astra、Sol、Terra、Luna、GPT-5.5 的长上下文覆盖，其他模型采用上游值。刷新失败、目标模型缺失或目录校验失败时保留原文件。成功后审阅 `git diff HEAD -- modules/personal/applications/codex/models.json`，按系统配置变更流程检查、构建和应用；脚本不自动暂存或应用系统。
 
+## Codex 子代理 PoC
+
+系统配置由 `modules/personal/applications/codex/default.nix` 生成 `/etc/codex/config.toml` 和 `/etc/codex/models.json`。Home Manager 将 `modules/personal/applications/codex/agents/` 整个目录链接到 `~/.codex/agents/`；其中的角色文件设置模型、推理强度和职责，provider 与模型目录继承主代理配置。
+
+更新模块后由用户应用系统配置并重启 Codex；新会话才读取新的配置和角色文件。需验证原生派发中的角色选择、模型与推理强度及结果回传，系统构建成功不能替代这项运行验证。
+
 ## 工作树 label
 
 `just os switch` 未传入非空 label 时，用 `scripts/sh/worktree-label.sh` 计算当前工作树 Git tree hash 前 12 位。该结果包含已跟踪文件的当前内容、删除、模式与符号链接变化以及未忽略的新文件，忽略的未跟踪文件不参与。脚本使用临时 index，不改变真实暂存区和工作树。操作期间不要并行修改仓库。

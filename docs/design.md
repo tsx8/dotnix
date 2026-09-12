@@ -18,6 +18,7 @@
 - `modules/maintenance/` 是项目开发环境的模块边界，影响 devShell 的模块定义集中于此。direnv 监视此目录和环境依赖的本地工具源码，普通系统配置与应用数据不触发环境刷新。
 - Home Manager 只管理用户级配置，不管理应用。
 - Codex 的项目环境由非登录 Bash 的 `BASH_ENV` 入口加载，复用 direnv 授权和 nix-direnv 缓存。关闭登录模式避免命令恢复旧 shell 快照；`BASH_ENV` 仅写入 Codex 的子进程环境配置，不导出到启动 Codex 的父进程，避免快照生成阶段执行项目环境。环境加载不改变 sandbox 权限。
+- Codex 子代理 PoC 让所有实质任务先由 `complex` 持续负责；较小任务可由它直接完成，需要拆分时再使用独立角色。主代理保留用户沟通与授权边界，各角色共用 OpenAI provider 和模型目录。具体路径、更新方式和验证要求见 [Codex 子代理 PoC](development.md#codex-子代理-poc)。
 
 ## 文档与约束
 
