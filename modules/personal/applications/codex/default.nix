@@ -26,14 +26,6 @@
 
       [shell_environment_policy.set]
       BASH_ENV = "/etc/codex/bash-env"
-
-      [agents]
-      max_concurrent_threads_per_session = 4
-
-      [features.multi_agent_v2]
-      enabled = true
-      hide_spawn_agent_metadata = false
-      expose_spawn_agent_model_overrides = false
     '';
 
     environment.systemPackages = [
@@ -43,7 +35,5 @@
   };
   dotnix.modules.home = {
     home.file.".codex/AGENTS.md".source = ./AGENTS-md.txt;
-    # Codex 忽略符号链接角色文件；链接整个目录，保留内部 TOML 为普通文件。
-    home.file.".codex/agents".source = ./agents;
   };
 }
