@@ -1955,7 +1955,7 @@
         "sysfs_id": "/class/block/zram0",
         "unix_device_names": [
           "/dev/disk/by-label/zram0",
-          "/dev/disk/by-uuid/9bcca855-fe1f-4189-bd34-d2be1e72a748",
+          "/dev/disk/by-uuid/68d0ec50-8183-4ea5-81da-809855ef787d",
           "/dev/zram0"
         ],
         "resources": [
@@ -3787,7 +3787,39 @@
         ]
       },
       {
-        "index": 95,
+        "index": 94,
+        "attached_to": 0,
+        "class_list": [
+          "network_interface"
+        ],
+        "base_class": {
+          "hex": "0107",
+          "name": "Network Interface",
+          "value": 263
+        },
+        "sub_class": {
+          "hex": "0001",
+          "name": "Ethernet",
+          "value": 1
+        },
+        "model": "Ethernet network interface",
+        "sysfs_id": "/class/net/dae0",
+        "unix_device_names": [
+          "dae0"
+        ],
+        "resources": [
+          {
+            "type": "hwaddr",
+            "address": 50
+          }
+        ],
+        "driver": "netkit",
+        "drivers": [
+          "netkit"
+        ]
+      },
+      {
+        "index": 96,
         "attached_to": 63,
         "class_list": [
           "network_interface"
