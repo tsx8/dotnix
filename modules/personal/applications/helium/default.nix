@@ -21,7 +21,7 @@
           echo "Helium keyboard configuration deferred until the next login"
           exit 0
         fi
-        exec ${pkgs.python3}/bin/python3 ${./helium-keymap.py} \
+        exec ${pkgs.python3}/bin/python3 ${./keymap.py} \
           "''${XDG_CONFIG_HOME:-$HOME/.config}/net.imput.helium"
       '';
     };

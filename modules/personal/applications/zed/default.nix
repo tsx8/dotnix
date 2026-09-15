@@ -10,7 +10,7 @@
       pkgs.runCommand "zed-vscode-macos-keymap.json"
         { nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.json5 ])) ]; }
         ''
-          python3 ${./zed-keymap.py} \
+          python3 ${./keymap.py} \
             ${pkgs.zed-editor.src}/assets/keymaps/default-macos.json \
             ${pkgs.zed-editor.src}/assets/keymaps/macos/vscode.json \
             ${pkgs.zed-editor.src}/assets/keymaps/specific-overrides-macos.json > $out
