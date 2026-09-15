@@ -40,7 +40,7 @@ ls -l /dev/disk/by-id/
 ./scripts/sh/secrets.sh
 ```
 
-按提示输入恢复口令。脚本会为当前机器生成独立的 age identity，并更新 SOPS recipients。新机器私钥写入 `/mnt/var/lib/sops-nix/key.txt`；此步骤不会更改账户密码。
+按提示输入恢复口令。脚本会为当前机器生成独立的 age identity，已有机器密钥时复用，并更新 SOPS recipients。新机器私钥写入 `/mnt/var/lib/sops-nix/key.txt`；此步骤不会更改账户密码。
 
 ## 5. 安装系统
 

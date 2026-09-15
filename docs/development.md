@@ -4,7 +4,7 @@
 
 交互终端进入项目后，direnv 加载已授权的 `.envrc`。首次使用或修改 `.envrc` 后，先审阅内容再执行 `direnv allow`。项目环境成功加载后可直接运行 `just` 等项目命令。
 
-Codex 使用非登录 Bash；`BASH_ENV` 指向系统生成的 `/etc/codex/bash-env`，每次命令按工作目录检查 direnv 授权、校验 `.envrc` 语法并加载环境。初始化不会自动授权 `.envrc`，未授权、已拒绝或 direnv 报告加载失败时，项目命令不会执行。当前目录及其父目录都没有 `.envrc` 时，普通命令正常执行；新的 Bash 启动于项目之外时，会卸载继承的 direnv 环境。
+Codex 使用非登录 Bash，通过 `BASH_ENV` 在每次命令启动时按工作目录加载环境。初始化不会自动授权 `.envrc`，未授权、已拒绝、语法错误或 direnv 报告加载失败时，项目命令不会执行。当前目录及其父目录都没有 `.envrc` 时，普通命令正常执行；新的 Bash 启动于项目之外时，会卸载继承的 direnv 环境。
 
 以环境加载结果和项目工具是否可用判断入口是否生效，不只看 `BASH_ENV` 或 `IN_NIX_SHELL` 变量；已有成功结果无需每次重复探测。自动入口配置变更需应用系统并重启 Codex。未配置自动入口的会话中，每次项目命令使用显式入口，例如：
 
@@ -16,11 +16,11 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 
 `--command` 只影响本次子进程，不会为下一次独立命令保留环境。Bash 启动后在同一条命令中跨项目 `cd` 不会重新加载环境，应直接指定目标工作目录，或使用 `direnv exec <目录> <命令>`。
 
-本项目 `.envrc` 启用 `strict_env`，并在 `use flake` 前禁止 nix-direnv 回退；环境求值失败时停止，加载不更新或写入 `flake.lock`。其他项目的 `.envrc` 若自行忽略错误，初始化入口无法将其识别为失败。需要更新输入时执行 `just repo update`。
+本项目环境求值失败时停止，不回退到旧缓存，加载不更新或写入 `flake.lock`。其他项目的 `.envrc` 若自行忽略错误，初始化入口无法将其识别为失败。需要更新输入时执行 `just repo update`。
 
 环境缓存失效时由 direnv 重新求值；加载环境不自动 fmt、lint、test、update 或应用系统。仓库为 Codex 声明 `sandbox_mode = "danger-full-access"`、`approval_policy = "on-request"`、`approvals_reviewer = "user"`，配置需应用系统并重启 Codex 后生效。执行以当前会话实际权限为准；完全访问权限不取消 `.envrc` 授权、MCP 工具审批和项目操作边界。权限受阻时按当前环境允许的方式处理，不假定可以申请提权。
 
-`modules/maintenance/` 是项目开发环境的模块边界；影响 devShell 的模块定义放在此目录。`.envrc` 监视该目录及开发环境依赖的本地工具源码 `packages/mcp-dotnix/` 下所有文件和目录，覆盖内容修改及文件增删；nix-direnv 同时监视 flake 入口与锁文件。其他项目内容的修改不触发环境刷新。新增开发环境的本地源码依赖时同步更新监视范围。新增 flake 可见文件先精确 `git add`，避免 Nix 与基于 Git 文件清单的检查漏掉文件。
+影响 devShell 的模块定义放在 `modules/maintenance/`。新增开发环境的本地源码依赖时，同步更新 [.envrc](../.envrc) 的监视范围，使内容修改及文件增删都能触发刷新；普通系统配置与应用数据不触发环境刷新。新增 flake 可见文件先精确 `git add`，避免 Nix 与基于 Git 文件清单的检查漏掉文件。模块装配与环境职责见 [架构设计](design.md)。
 
 ## 常用命令
 
@@ -42,6 +42,8 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 
 按实际影响选择验证，不能只按文件扩展名判断。被程序读取的文本、模型数据和环境配置属于行为修改；仅文档中的常驻指令和命令示例也须检查执行流程是否自洽。
 
+修改 Harness 时，按 [文档边界](../AGENTS.md#文档边界) 核对代码、注释和文档：可执行约束是否已有实现，局部理由是否紧邻代码，使用契约和架构说明是否与实现一致。仅局部实现变化不要求补写文档；接口、操作后果或跨组件职责变化时，更新对应说明。
+
 | 改动影响 | 必需验证 |
 | --- | --- |
 | 讨论、设计、只读调查 | 取得支持结论的证据，不要求格式化或构建 |
@@ -55,13 +57,13 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 
 ## Codex 模型目录
 
-`just repo update` 在 flake 输入更新成功后同步当前 ChatGPT 账号的远端模型目录；传入指定输入名时也会同步。同步失败则停止后续检查，已经完成的 flake 输入更新不会回滚。也可单独运行 `scripts/sh/sync-models.sh`。脚本优先使用 PATH 中的 Codex，找不到时使用已安装 ChatGPT 桌面包内置的 CLI；通过 bubblewrap 在独立挂载视图中屏蔽普通配置并使用临时缓存。脚本不直接读取凭据内容，不修改现有 Codex 配置或缓存。需已有 ChatGPT 登录和模型缓存文件。
+`just repo update` 在 flake 输入更新成功后同步当前 ChatGPT 账号的远端模型目录；传入指定输入名时也会同步。同步失败则停止后续检查，已经完成的 flake 输入更新不会回滚。也可单独运行 [scripts/sh/sync-models.sh](../scripts/sh/sync-models.sh)。需已有 ChatGPT 登录和模型缓存文件，以及 PATH 中的 Codex 或 ChatGPT 桌面包。同步过程不修改现有 Codex 配置或缓存。
 
 刷新失败、目标模型缺失或目录校验失败时保留原文件。成功后审阅 `git diff HEAD -- modules/personal/applications/codex/models.json`，按系统配置变更流程检查、构建和应用；脚本不自动暂存或应用系统。
 
 ## 工作树 label
 
-`just os switch` 未传入非空 label 时，用 `scripts/sh/worktree-label.sh` 计算当前工作树 Git tree hash 前 12 位。该结果包含已跟踪文件的当前内容、删除、模式与符号链接变化以及未忽略的新文件，忽略的未跟踪文件不参与。脚本使用临时 index，不改变真实暂存区和工作树。操作期间不要并行修改仓库。
+`just os switch` 未传入非空 label 时，用 [scripts/sh/worktree-label.sh](../scripts/sh/worktree-label.sh) 计算当前工作树 Git tree hash 前 12 位。该结果包含已跟踪文件的当前内容、删除、模式与符号链接变化以及未忽略的新文件，忽略的未跟踪文件不参与。计算不改变真实暂存区和工作树；操作期间不要并行修改仓库。
 
 ## 临时验证与清理
 
@@ -69,7 +71,7 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 
 ## MCP
 
-- 项目环境提供两个独立的 MCP 命令，各自使用包内的 Python 依赖；命令包装避免将应用依赖传播到整个 shell，并清除继承的 `PYTHONPATH`。
+- 项目环境提供 `mcp-dotnix` 和 `mcp-nixos` 两个命令，职责和依赖隔离见 [架构设计](design.md#项目-mcp)。
 
 - 首次使用前可预构建；服务已可用时无需重复：
 

@@ -1,6 +1,6 @@
 { inputs, ... }: {
   dotnix.modules.nixos = { pkgs, ... }: {
-    # 固定模型目录以覆盖长上下文上限；该快照需手动同步上游元数据。
+    # 固定模型目录以覆盖长上下文上限。
     environment.etc."codex/models.json".source = ./models.json;
     environment.etc."codex/bash-env".text =
       builtins.replaceStrings [ "@direnv@" "@jq@" ] [ "${pkgs.direnv}/bin/direnv" "${pkgs.jq}/bin/jq" ]

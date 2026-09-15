@@ -1,6 +1,7 @@
 # shellcheck shell=bash
 _codex_load_direnv() {
   local status rc exports
+  # direnv may start Bash itself; clearing BASH_ENV prevents recursive loading.
   status="$(BASH_ENV='' @direnv@ status --json)" || return
   # direnv represents an authorized rc with allowed = 0.
   rc="$(@jq@ -er '

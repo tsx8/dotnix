@@ -69,7 +69,7 @@ in
     dotnix.modules.home = { config, lib, ... }: {
       home.stateVersion = "26.05";
 
-      # 仓库原则：应用不进用户环境
+      # 禁止用户环境安装应用，同时保留 Home Manager 生成的会话变量。
       home.packages = lib.mkForce [ config.home.sessionVariablesPackage ];
     };
   };

@@ -7,21 +7,21 @@
 - flake-parts 提供顶层模块系统，import-tree 递归导入 `modules/` 中的功能模块，排除 `*.data.nix` 数据文件。功能目录中的 `default.nix` 本身就是顶层模块，不重复导入已经扫描到的文件。
 - 功能按机器运行、个人使用、配置维护组织；系统配置与 Home Manager 配置共同归属功能，专属数据与配置放在同一目录。简单功能保留单文件。
 - `dotnix.modules.nixos` 和 `dotnix.modules.home` 以 `deferredModule` 合并各功能的贡献；`assembly.nix` 将它们装配为唯一的 `nixosConfigurations.maco`。
-- `dotnix.host` 保存当前单机的名称、平台和账户绑定；功能通过顶层作用域读取所需值。已有系统与用户配置仍是其路径等派生信息的来源；两个 `stateVersion` 独立维护。
+- `dotnix.host` 保存当前单机的名称、平台和账户绑定，供功能共享；路径等派生信息仍从系统与用户配置读取，避免形成第二份配置来源。
 - 本地包的构建定义与源码归 `packages/<name>/`，由所属功能发布 flake 包输出，不参加模块自动导入。
 - Just 模块与 Shell 实现分别位于 `scripts/just/` 和 `scripts/sh/`，配方从仓库根执行。安装生成的硬件报告、磁盘设备输入归主机和存储功能；共享加密文件归身份功能，具体秘密声明归消费者。
 
 ## 工具边界
 
-- 系统级工具保持最小集：Git、gh、rg、fd、jq、curl、wget、基础 shell 工具、Nix、direnv/nix-direnv。
-- just、nh、Nix 格式化与静态检查工具、项目 MCP 属于项目环境，由 `modules/maintenance/development/default.nix` 供应；不在系统与项目之间复制。
+- 系统提供跨项目通用工具和加载项目环境所需的 Nix、direnv；仓库专属命令、检查工具与 MCP 由 [项目环境模块](../modules/maintenance/development/default.nix) 供应。项目工具随仓库锁定版本，避免依赖宿主机上的另一套版本。
 - `modules/maintenance/` 是项目开发环境的模块边界，影响 devShell 的模块定义集中于此。direnv 监视此目录和环境依赖的本地工具源码，普通系统配置与应用数据不触发环境刷新。
 - Home Manager 只管理用户级配置，不管理应用。
-- Codex 的项目环境由非登录 Bash 的 `BASH_ENV` 入口加载，复用 direnv 授权和 nix-direnv 缓存。关闭登录模式避免命令恢复旧 shell 快照；`BASH_ENV` 仅写入 Codex 的子进程环境配置，不导出到启动 Codex 的父进程，避免快照生成阶段执行项目环境。环境加载不改变 sandbox 权限。
+- Codex 的项目环境由非登录 Bash 的 `BASH_ENV` 入口加载，复用 direnv 授权和 nix-direnv 缓存，使每次命令按工作目录取得环境。该入口只作用于命令子进程，不参与启动 Codex 的父进程和快照生成；环境加载不改变 sandbox 权限。接入在 [Codex 模块](../modules/personal/applications/codex/default.nix)，加载实现在 [bash-env.sh](../modules/personal/applications/codex/bash-env.sh)。
 
 ## 文档与约束
 
 - 安装操作在 `docs/install.md`，环境入口、命令和验证步骤在 `docs/development.md`，开发 Harness 的架构设计理由在本文；README 保留仓库概览、简短命令和文档入口。内容归属遵循 [AGENTS.md 的文档边界](../AGENTS.md#文档边界)。
+- 可执行约束由代码落实，局部理由紧邻实现，文档连接使用入口与跨组件设计。这样局部实现变化无需维护一份源码解说，使用者仍能在不读源码的情况下理解操作的前提、后果与限制；对外行为或架构取舍变化时，才同步相应文档。
 - 根 `AGENTS.md` 保留稳定项目约束、授权边界和必读文档入口，操作细节由引用文档维护；不使用额外 rules 文件。这些文档约束流程与授权，不能在技术上阻止绕过流程的命令。临时系统状态留在交接记录中，不写入常驻文档。
 - 不引入 CI、常驻后台服务或永久配置行为测试体系；验证由本地命令和临时验证承担。
 
@@ -34,9 +34,8 @@
 
 ## 项目 MCP
 
-- `mcp-dotnix` 提供只读诊断和独立的 `run_privileged` 工具。调用批准由 Codex 的 `on-request`、用户审核及工具 `prompt` 配置负责；审批参数包含完整命令、工作目录、提权原因和影响。服务通过 `sudo -k -n` 调用固定的 Nix store 入口，按参数数组执行命令并返回退出码与输出。系统仅为本机用户调用该入口配置 `NOPASSWD`；包内路径和 sudo 规则引用同一个派生，避免路径不一致。同账户其他程序也可调用该入口，操作系统不验证 Codex 审批。服务不增加二次确认、常驻进程或密码窗口。
-- `mcp-nixos` 使用官方 utensils/mcp-nixos flake 输入；其 flake 输入查询在本地包中补上 lock 保护参数。
-- `mcp-dotnix` 使用 FastMCP 和 Hatchling，直接由本仓库锁定的 nixpkgs 构建；`mcp-nixos` 使用上游包声明的依赖。两个服务独立构建和运行，相同的底层依赖由 Nix 复用构建结果。
+- `mcp-dotnix` 将只读诊断与 `run_privileged` 分开，后者由客户端在执行前取得用户批准。系统授权仅覆盖本机用户调用固定的 Nix store 入口，执行入口与 sudo 规则由 [同一个包输出](../modules/maintenance/mcp.nix) 连接。同账户其他程序也可调用该入口，操作系统不验证客户端审批；不能把客户端审批视为系统级隔离。调用契约与故障处理见 [开发文档](development.md#mcp)。
+- `mcp-dotnix` 由本仓库维护；`mcp-nixos` 复用官方 flake，查询也须遵守仓库的 lock 保护约束。两个服务独立构建和运行，避免应用依赖相互污染，底层依赖由 Nix 复用。
 - 两个服务都通过 `scripts/sh/mcp.sh` 用系统 Nix 从项目锁启动，stdio 直接传递，配置在项目 `.codex/config.toml`，不写入全局 AGENTS。
 
 ## 配置 label
