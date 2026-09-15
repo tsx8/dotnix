@@ -36,6 +36,11 @@
 
         edit_predictions.provider = "none";
 
+        git_panel = {
+          tree_view = true;
+          group_by = "staging";
+        };
+
         languages.Nix.language_servers = [
           "nixd"
           "!nil"
