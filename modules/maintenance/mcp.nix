@@ -1,4 +1,27 @@
+{ config, self, ... }:
+let
+  userName = config.dotnix.host.userName;
+in
 {
+  dotnix.modules.nixos = { pkgs, ... }: {
+    security.sudo.extraRules = [
+      {
+        users = [ userName ];
+        runAs = "root";
+        commands = [
+          {
+            # 免密只匹配不可修改的专用入口；同账户程序也能直接调用它。
+            command = "${self.packages.${pkgs.stdenv.hostPlatform.system}.mcp-dotnix.privilegedRunner}";
+            options = [
+              "NOPASSWD"
+              "NOSETENV"
+            ];
+          }
+        ];
+      }
+    ];
+  };
+
   perSystem =
     { pkgs, inputs', ... }:
     {

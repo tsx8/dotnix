@@ -18,7 +18,7 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 
 本项目 `.envrc` 启用 `strict_env`，并在 `use flake` 前禁止 nix-direnv 回退；环境求值失败时停止，加载不更新或写入 `flake.lock`。其他项目的 `.envrc` 若自行忽略错误，初始化入口无法将其识别为失败。需要更新输入时执行 `just repo update`。
 
-环境缓存失效时由 direnv 重新求值；加载环境不自动 fmt、lint、test、update 或应用系统。仓库为 Codex 声明 `sandbox_mode = "danger-full-access"`、`approval_policy = "never"`，配置需应用系统并重启 Codex 后生效。执行以当前会话实际权限为准；完全访问权限不取消 `.envrc` 授权、MCP 工具审批和项目操作边界。权限受阻时按当前环境允许的方式处理，不假定可以申请提权。
+环境缓存失效时由 direnv 重新求值；加载环境不自动 fmt、lint、test、update 或应用系统。仓库为 Codex 声明 `sandbox_mode = "danger-full-access"`、`approval_policy = "on-request"`、`approvals_reviewer = "user"`，配置需应用系统并重启 Codex 后生效。执行以当前会话实际权限为准；完全访问权限不取消 `.envrc` 授权、MCP 工具审批和项目操作边界。权限受阻时按当前环境允许的方式处理，不假定可以申请提权。
 
 `modules/maintenance/` 是项目开发环境的模块边界；影响 devShell 的模块定义放在此目录。`.envrc` 监视该目录及开发环境依赖的本地工具源码 `packages/mcp-dotnix/` 下所有文件和目录，覆盖内容修改及文件增删；nix-direnv 同时监视 flake 入口与锁文件。其他项目内容的修改不触发环境刷新。新增开发环境的本地源码依赖时同步更新监视范围。新增 flake 可见文件先精确 `git add`，避免 Nix 与基于 Git 文件清单的检查漏掉文件。
 
@@ -78,5 +78,8 @@ nix build --no-link --no-update-lock-file --no-write-lock-file .#mcp-dotnix .#mc
 ```
 
 - Codex 首次打开项目时确认项目信任；项目配置 `.codex/config.toml` 声明两个 MCP，启动命令是仓库根下的 `scripts/sh/mcp.sh`。
-- 调用审批以工具配置、当前权限和有效批准为准。诊断摘要等工具配置为 auto，日志和 mcp-nixos 默认 prompt；不要把默认值当作所有工具都需重新确认。
+- 两个 MCP 默认采用 `auto`；只读诊断（含日志）和 mcp-nixos 查询直接调用，`run_privileged` 单独配置为 `prompt`。执行仍须遵守当前权限和项目操作边界。
+- `run_privileged(program, args, cwd, reason, impact)` 通过专用入口免密执行 root 命令；程序与目录须为绝对路径，参数按数组传递，不展开 shell 语法。审批请求须展示完整命令、工作目录、需要 root 的具体原因，以及受影响的文件、服务或系统状态和预期变化。Codex 在调用前审批；sudo 仅为本机用户调用固定的 Nix store 入口配置免密，同账户其他程序也能直接调用该入口。命令环境由 sudo 过滤，stdin 关闭；输出每路最多返回 32 KiB，并尽力脱敏。
+- 免密规则需由用户运行 `just os switch` 应用系统后生效。工具使用 `sudo -k -n`，不使用或更新密码缓存；规则不可用时直接返回 sudo 错误，不弹出密码窗口。入口内容或其 Bash 依赖变化后，需重新应用系统以更新规则中的路径。
+- `mcp-dotnix` 的调用超时为 600 秒。客户端取消或超时不保证 root 命令已停止，重试前须确认实际状态。新增工具需重启 MCP 连接；系统审批配置需先由用户应用系统并重启 Codex。其他客户端必须自行配置调用审批，直接调用服务不会触发服务端确认。
 - 启动失败时检查：包是否可构建、Nix daemon 是否可用、`scripts/sh/mcp.sh` 是否能解析 Git 根。`required = false`，服务器不可用时 Codex 会报告，Agent 不应编造查询结果。

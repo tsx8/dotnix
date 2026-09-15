@@ -34,7 +34,7 @@
 
 ## 项目 MCP
 
-- `mcp-dotnix` 是本仓库自有只读诊断服务，包与入口名为 `mcp-dotnix`；能力不随改名扩展。
+- `mcp-dotnix` 提供只读诊断和独立的 `run_privileged` 工具。调用批准由 Codex 的 `on-request`、用户审核及工具 `prompt` 配置负责；审批参数包含完整命令、工作目录、提权原因和影响。服务通过 `sudo -k -n` 调用固定的 Nix store 入口，按参数数组执行命令并返回退出码与输出。系统仅为本机用户调用该入口配置 `NOPASSWD`；包内路径和 sudo 规则引用同一个派生，避免路径不一致。同账户其他程序也可调用该入口，操作系统不验证 Codex 审批。服务不增加二次确认、常驻进程或密码窗口。
 - `mcp-nixos` 使用官方 utensils/mcp-nixos flake 输入；其 flake 输入查询在本地包中补上 lock 保护参数。
 - `mcp-dotnix` 使用 FastMCP 和 Hatchling，直接由本仓库锁定的 nixpkgs 构建；`mcp-nixos` 使用上游包声明的依赖。两个服务独立构建和运行，相同的底层依赖由 Nix 复用构建结果。
 - 两个服务都通过 `scripts/sh/mcp.sh` 用系统 Nix 从项目锁启动，stdio 直接传递，配置在项目 `.codex/config.toml`，不写入全局 AGENTS。

@@ -3,14 +3,16 @@ from __future__ import annotations
 from fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
-from mcp_dotnix import core
+from mcp_dotnix import core, privileged
 
 mcp = FastMCP(
     "mcp-dotnix",
     instructions=(
-        "Read-only NixOS diagnostics for dotnix. Tools never mutate system state, "
-        "run sudo, or read arbitrary files. Journal output is best-effort redacted "
-        "and must still be treated as potentially sensitive."
+        "NixOS diagnostics and explicitly approved privileged execution for dotnix. "
+        "Diagnostic tools are read-only. The client must require approval for "
+        "run_privileged, showing its command, cwd, reason and impact before execution. "
+        "The dedicated root execution entry uses passwordless sudo. "
+        "Output is best-effort redacted and may still contain sensitive data."
     ),
 )
 _read_only = ToolAnnotations(
@@ -71,6 +73,36 @@ def network_status() -> core.NetworkStatusResult:
 def nixos_generations(limit: int = 20) -> core.GenerationResult:
     """List recent NixOS system generations from read-only profile links."""
     return core.nixos_generations(limit)
+
+
+@mcp.tool(
+    name="run_privileged",
+    annotations=ToolAnnotations(
+        readOnlyHint=False, destructiveHint=True, idempotentHint=False, openWorldHint=True,
+    ),
+)
+def run_privileged(
+    program: str, args: list[str], cwd: str, reason: str, impact: str,
+) -> privileged.PrivilegedResult:
+    """Run a command as root without a password after client approval, returning its exit code and output.
+
+    Use absolute program and cwd paths. Arguments are passed without shell expansion.
+    The client must show the command, cwd, reason and impact before approval.
+    Requires the dedicated entry's NOPASSWD rule; fails without prompting if unavailable.
+    Command stdin is closed and sudo filters the inherited environment.
+    Client cancellation or timeout does not guarantee the command has stopped.
+    Existing restrictions on system activation, secrets and other operations apply.
+
+    Args:
+        program: Absolute path of the program to run as root.
+        args: Exact arguments passed to the program.
+        cwd: Absolute working directory.
+        reason: Explain why this operation needs root privileges.
+        impact: Describe affected files, services or system state and expected changes.
+    """
+    if not reason.strip() or not impact.strip():
+        raise ValueError("reason and impact must explain the privilege request")
+    return privileged.run_privileged(program, args, cwd)
 
 
 def main() -> None:

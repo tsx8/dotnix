@@ -11,7 +11,8 @@
       model = "gpt-6-astra"
       model_catalog_json = "/etc/codex/models.json"
       model_reasoning_effort = "low"
-      approval_policy = "never"
+      approval_policy = "on-request"
+      approvals_reviewer = "user"
       sandbox_mode = "danger-full-access"
       # 非登录 Bash 避免恢复旧快照，环境由 BASH_ENV 按命令目录加载。
       allow_login_shell = false

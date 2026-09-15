@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mcp-dotnix"
-version = "0.1.0"
-description = "Read-only NixOS MCP server for dotnix"
+version = "0.2.0"
+description = "NixOS diagnostics and user-approved privileged execution for dotnix"
 requires-python = ">=3.11"
 dependencies = ["fastmcp>=3.0.0"]
 
