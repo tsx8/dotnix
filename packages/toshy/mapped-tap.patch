@@ -1,0 +1,13 @@
+--- a/vendors/xwaykeyz-main/src/xwaykeyz/transform.py
++++ b/vendors/xwaykeyz-main/src/xwaykeyz/transform.py
+@@ -1097,0 +1098,3 @@
++            # A tap may itself be mapped to a combo. Do not expose its raw
++            # identity while resuming the other suspended keys.
++            keystate.suspended = False
+@@ -1099 +1102,5 @@
+-            transform_key(key, action, ctx)
++            transform_key(key, Action.PRESS, ctx)
++            if _held_combo_ctx is not None and _held_combo_ctx.trigger_key == key:
++                teardown_held_combo()
++            elif _output.is_key_pressed(key):
++                _output.send_key_action_fast(key, Action.RELEASE)

@@ -11,6 +11,8 @@ patch:
   switcher/hotkeys: []
 
   key_binder/bindings:
+    - { when: composing, accept: Alt+BackSpace, send: Control+BackSpace }
+    - { when: composing, accept: Control+Shift+BackSpace, send: Control+BackSpace }
     - { when: composing, accept: Shift+Tab, send: Shift+Left }
     - { when: composing, accept: Tab, send: Shift+Right }
     - { when: composing, accept: Alt+Left, send: Shift+Left }
@@ -19,7 +21,6 @@ patch:
     - { when: has_menu, accept: equal, send: Page_Down }
     - { when: always, toggle: ascii_punct, accept: Control+Shift+3 }
     - { when: always, toggle: ascii_punct, accept: Control+Shift+numbersign }
-    - { when: composing, accept: Control+k, send: Shift+Delete }
     - { accept: KP_0, send: 0, when: composing }
     - { accept: KP_1, send: 1, when: composing }
     - { accept: KP_2, send: 2, when: composing }

@@ -1,0 +1,120 @@
+--- a/src/rimeengine.h
++++ b/src/rimeengine.h
+@@ -214,6 +214,11 @@
+                        std::list<std::unique_ptr<RimeOptionAction>>>
+         optionActions_;
+     Menu schemaMenu_;
++    std::unique_ptr<HandlerTableEntry<EventHandler>> macEditingHandle_;
++    std::list<std::unique_ptr<HandlerTableEntry<EventHandler>>> macEditingResetHandles_;
++    TrackableObjectReference<InputContext> macEditContext_;
++    bool macEditInPreedit_ = false;
++    KeySym macEditFinish_ = FcitxKey_None;
+     std::unique_ptr<HandlerTableEntry<EventHandler>> globalConfigReloadHandle_;
+ 
+ #ifndef FCITX_RIME_NO_DBUS
+--- a/src/rimeengine.cpp
++++ b/src/rimeengine.cpp
+@@ -229,6 +229,103 @@
+         EventType::GlobalConfigReloaded, EventWatcherPhase::Default,
+         [this](Event &) { refreshSessionPoolPolicy(); });
+ 
++    macEditingHandle_ = instance_->watchEvent(
++        EventType::InputContextKeyEvent, EventWatcherPhase::PreInputMethod,
++        [this](Event &event) {
++            auto &keyEvent = static_cast<KeyEvent &>(event);
++            auto *ic = keyEvent.inputContext();
++            const auto raw = keyEvent.rawKey();
++            const auto modifiers = raw.states();
++            const bool tagged = modifiers.test(KeyState::Mod3) &&
++                !modifiers.testAny(KeyStates{KeyState::Ctrl, KeyState::Alt,
++                                             KeyState::Super, KeyState::Mod5});
++            const bool start = tagged && (raw.sym() == FcitxKey_End ||
++                                          raw.sym() == FcitxKey_Home) &&
++                               modifiers.test(KeyState::Shift);
++            const bool finish = tagged && (raw.sym() == FcitxKey_Delete ||
++                                           raw.sym() == FcitxKey_BackSpace) &&
++                                !modifiers.test(KeyState::Shift);
++            auto composing = [&]() {
++                const auto *entry = instance_->inputMethodEntry(ic);
++                bool result = false;
++                if (entry && entry->uniqueName() == "rime") {
++                    // A selected but unavailable Rime must not release a GUI deletion.
++                    result = true;
++                    if (auto *rimeState = state(ic)) {
++                        rimeState->getStatus([&result](const RimeStatus &status) {
++                            result = status.is_composing;
++                        });
++                    }
++                }
++                return result;
++            };
++            // Mod3 marks both steps; the first step determines whether the
++            // following GUI deletion belongs to Rime or to the application.
++            if (start) {
++                if (!keyEvent.isRelease()) {
++                    macEditContext_ = ic->watch();
++                    macEditInPreedit_ = composing();
++                    macEditFinish_ = raw.sym() == FcitxKey_Home
++                        ? FcitxKey_BackSpace : FcitxKey_Delete;
++                }
++                if (macEditContext_.get() != ic) {
++                    keyEvent.filterAndAccept();
++                } else {
++                    const Key preeditKey = raw.sym() == FcitxKey_Home
++                        ? Key("Control+BackSpace") : Key("Shift+Delete");
++                    keyEvent.setRawKey(macEditInPreedit_ ? preeditKey
++                        : Key(raw.sym(), KeyState::Shift));
++                }
++                return;
++            }
++            if (finish) {
++                if (macEditContext_.get() != ic || macEditInPreedit_ ||
++                    raw.sym() != macEditFinish_) {
++                    keyEvent.filterAndAccept();
++                } else {
++                    keyEvent.setRawKey(Key(raw.sym()));
++                }
++                if (keyEvent.isRelease()) {
++                    macEditContext_.unwatch();
++                }
++                return;
++            }
++            if (!keyEvent.isRelease() && !raw.isModifier() &&
++                raw.sym() != FcitxKey_ISO_Level5_Shift) {
++                macEditContext_.unwatch();
++            }
++            if (modifiers.test(KeyState::Mod3) && composing()) {
++                const std::pair<char, KeySym> editingKeys[] = {
++                    {'a', FcitxKey_Home}, {'e', FcitxKey_End},
++                    {'b', FcitxKey_Left}, {'f', FcitxKey_Right},
++                    {'p', FcitxKey_Up}, {'n', FcitxKey_Down},
++                    {'h', FcitxKey_BackSpace}, {'d', FcitxKey_Delete},
++                    {'k', FcitxKey_Delete},
++                };
++                for (const auto &[letter, symbol] : editingKeys) {
++                    const std::string name(1, letter);
++                    if (keyEvent.key().check(Key("Hyper+Super+" + name).normalize()) ||
++                        keyEvent.key().check(Key("Hyper+Control+" + name).normalize())) {
++                        keyEvent.setRawKey(Key(symbol, letter == 'k'
++                            ? KeyState::Shift : KeyState::NoState));
++                        break;
++                    }
++                }
++            }
++        });
++
++    for (const auto type : {EventType::InputContextFocusOut,
++                            EventType::InputContextReset,
++                            EventType::InputContextSwitchInputMethod}) {
++        macEditingResetHandles_.push_back(instance_->watchEvent(
++            type, EventWatcherPhase::PreInputMethod, [this](Event &event) {
++                if (static_cast<InputContextEvent &>(event).inputContext() ==
++                    macEditContext_.get()) {
++                    macEditContext_.unwatch();
++                }
++            }));
++    }
++
+     allowNotification("failure");
+     reloadConfig();
+     constructed_ = true;

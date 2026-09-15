@@ -1,6 +1,6 @@
 # AGENTS.md
 
-本文件是给 AI 编码代理与贡献者的常驻指令。安装步骤见 [docs/install.md](docs/install.md)，开发与验证见 [docs/development.md](docs/development.md)，设计决策见 [docs/design.md](docs/design.md)。
+本文件是给 AI 编码代理与贡献者的常驻指令。安装步骤见 [docs/install.md](docs/install.md)，开发与验证见 [docs/development.md](docs/development.md)，开发 Harness 的架构设计决策见 [docs/design.md](docs/design.md)。
 
 ## 仓库定位
 
@@ -14,6 +14,12 @@
 - 应用层级：应用只有系统级与项目级两级——系统级由 NixOS 管理（`modules/` 中的系统配置），项目级由项目 flake/devShell 管理，不存在用户级应用；用户级配置（dotfiles、编辑器设置、凭据等）由 Home Manager 管理，Home Manager 不管理应用。
 - flake 输入的 nixpkgs 跟随：默认 `inputs.X.nixpkgs.follows = "nixpkgs"`；当上游明确要求不 follow、或需要其锁定 nixpkgs 的构建产物与二进制缓存时才例外，并在 `flake.nix` 注明原因。
 
+## 文档边界
+
+- `docs/` 维护仓库开发 Harness：开发环境、模块装配、工具接口、安装与验证流程、代理协作等。`docs/design.md` 记录这些机制的架构设计决策，`docs/development.md` 介绍日常使用，`docs/install.md` 介绍安装流程。
+- 桌面、键位、输入法、应用等具体配置的行为与取舍不写入 `docs/`；必要的决策理由以简短注释维护在对应配置代码附近。代码已清楚表达的内容不重复说明，不将专题文档整篇搬成注释。按内容是否服务于仓库开发和维护判断归属，不按文件位置或“设计决策”名称判断。
+- 临时方案、排查过程、验证报告和运行状态留在会话交接中，不写入常驻文档。具体配置变化本身不构成新增或更新 Harness 文档的理由。
+
 ## 项目环境
 
 - 按 [项目环境](docs/development.md#项目环境) 加载工具。Codex 使用非登录 Bash，通过 `BASH_ENV` 按命令工作目录加载 direnv；已成功加载时直接运行项目命令。
@@ -25,7 +31,7 @@
 1. 阅读本文件和 docs 中与改动相关的部分。
 2. 修改相关文件，保留无关工作区和暂存内容；执行项目工具时使用上述环境入口。新增 flake 可见文件先精确 `git add`，不能全量暂存无关变更。
 3. 按 [验证要求](docs/development.md#验证要求) 执行对应检查：文档核对内容和流程；可执行行为运行 fmt、lint、test；影响系统时运行 fmt、os build，复用 build 内置的 lint/test。补足必要行为验证；变更包须验证其构建，不能用 flake check 代替。
-4. 复用内容及条件仍适用的验证结果；新修改、失败或证据缺口才补充检查。清理本次不再需要的临时产物，在交接中报告修改、实际验证和未验证项。
+4. 交付前按文档边界检查归属：docs 内容是否属于 Harness，配置注释是否解释必要理由且紧邻实现。复用内容及条件仍适用的验证结果；新修改、失败或证据缺口才补充检查。清理本次不再需要的临时产物，在交接中报告修改、实际验证和未验证项。
 5. 输出交接报告后停止。
 
 讨论和只读调查不要求格式化或构建。验证按实际影响选择，不能只按文件扩展名判断；常驻指令和命令示例须检查执行流程是否自洽。构建成功不证明系统运行正常。

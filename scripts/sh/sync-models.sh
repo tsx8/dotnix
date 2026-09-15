@@ -86,6 +86,7 @@ if ((fetched_at < started_at || fetched_at > $(date +%s))); then
   exit 1
 fi
 
+# 避免刷新远端目录时丢失指定模型的长上下文设置。
 jq -e '
   ["gpt-6-astra", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.5"] as $targets |
   if (all(.models[]; (.slug | type == "string" and length > 0)) | not) then

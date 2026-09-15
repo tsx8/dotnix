@@ -45,7 +45,7 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 | 改动影响 | 必需验证 |
 | --- | --- |
 | 讨论、设计、只读调查 | 取得支持结论的证据，不要求格式化或构建 |
-| 仅文档和常驻指令 | 核对内容、授权边界、命令调用链、路径及链接，运行 `git diff --check HEAD`；需要时做命令静态检查或 dry-run，不执行破坏性示例 |
+| 仅文档和常驻指令 | 核对[内容归属](../AGENTS.md#文档边界)、授权边界、命令调用链、路径及链接，运行 `git diff --check HEAD`；需要时做命令静态检查或 dry-run，不执行破坏性示例 |
 | 开发环境、脚本、工具、本地包等可执行行为 | `just repo fmt`、`just repo lint`、`just repo test`，并验证成功及必要失败路径；变更包须定向构建，不能用 flake check 代替 |
 | 系统配置或影响系统的依赖 | `just repo fmt` 后运行 `just os build`，复用其内置 lint/test，并补足构建未覆盖的必要行为验证 |
 
@@ -57,7 +57,7 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 
 `just repo update` 在 flake 输入更新成功后同步当前 ChatGPT 账号的远端模型目录；传入指定输入名时也会同步。同步失败则停止后续检查，已经完成的 flake 输入更新不会回滚。也可单独运行 `scripts/sh/sync-models.sh`。脚本优先使用 PATH 中的 Codex，找不到时使用已安装 ChatGPT 桌面包内置的 CLI；通过 bubblewrap 在独立挂载视图中屏蔽普通配置并使用临时缓存。脚本不直接读取凭据内容，不修改现有 Codex 配置或缓存。需已有 ChatGPT 登录和模型缓存文件。
 
-同步保留 Astra、Sol、Terra、Luna、GPT-5.5 的长上下文覆盖，其他模型采用上游值。刷新失败、目标模型缺失或目录校验失败时保留原文件。成功后审阅 `git diff HEAD -- modules/personal/applications/codex/models.json`，按系统配置变更流程检查、构建和应用；脚本不自动暂存或应用系统。
+刷新失败、目标模型缺失或目录校验失败时保留原文件。成功后审阅 `git diff HEAD -- modules/personal/applications/codex/models.json`，按系统配置变更流程检查、构建和应用；脚本不自动暂存或应用系统。
 
 ## 工作树 label
 

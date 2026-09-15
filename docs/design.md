@@ -1,6 +1,6 @@
-# 设计决策
+# 开发 Harness 架构设计
 
-本文记录配置组织与 Harness 中需要长期维护的决策；操作步骤见 [development.md](development.md)。
+本文记录支撑仓库开发与维护的 Harness 架构设计决策，包括模块装配、开发环境、工具职责和验证分工；操作步骤见 [development.md](development.md)。
 
 ## 配置组织
 
@@ -21,7 +21,7 @@
 
 ## 文档与约束
 
-- 安装操作在 `docs/install.md`，环境入口、命令和验证步骤在 `docs/development.md`，长期设计理由在本文；README 保留仓库概览、简短命令和文档入口。
+- 安装操作在 `docs/install.md`，环境入口、命令和验证步骤在 `docs/development.md`，开发 Harness 的架构设计理由在本文；README 保留仓库概览、简短命令和文档入口。内容归属遵循 [AGENTS.md 的文档边界](../AGENTS.md#文档边界)。
 - 根 `AGENTS.md` 保留稳定项目约束、授权边界和必读文档入口，操作细节由引用文档维护；不使用额外 rules 文件。这些文档约束流程与授权，不能在技术上阻止绕过流程的命令。临时系统状态留在交接记录中，不写入常驻文档。
 - 不引入 CI、常驻后台服务或永久配置行为测试体系；验证由本地命令和临时验证承担。
 

@@ -1,0 +1,16 @@
+--- a/vendors/xwaykeyz-main/src/xwaykeyz/transform.py
++++ b/vendors/xwaykeyz-main/src/xwaykeyz/transform.py
+@@ -1205,2 +1205,8 @@
+-    inkey = inmods[0].get_key()
+-    outkey = outmods[0].get_key()
++    # Shared modifiers (such as Shift) are not the modifier being rebound.
++    # Compare key sets so generic Shift also matches Left/Right Shift.
++    inmod = next((mod for mod in inmods
++                  if not any(set(mod.keys) & set(other.keys) for other in outmods)), inmods[0])
++    outmod = next((mod for mod in outmods
++                   if not any(set(mod.keys) & set(other.keys) for other in inmods)), outmods[0])
++    inkey = inmod.get_key()
++    outkey = outmod.get_key()
+@@ -1480,0 +1487,2 @@
++                # Callbacks dispatching desktop actions must distinguish press from repeat.
++                ctx.action = action

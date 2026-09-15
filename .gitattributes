@@ -1,1 +1,4 @@
 modules/machine/identity/recovery-key.age binary
+
+# Unified diffs prefix unchanged blank lines with a space.
+*.patch whitespace=-blank-at-eol,-blank-at-eof

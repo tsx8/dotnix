@@ -369,7 +369,8 @@
         "mcp-nixos": "mcp-nixos",
         "nixpkgs": "nixpkgs",
         "rime-frost": "rime-frost",
-        "sops-nix": "sops-nix"
+        "sops-nix": "sops-nix",
+        "toshy": "toshy"
       }
     },
     "sops-nix": {
@@ -404,6 +405,26 @@
       "original": {
         "owner": "nix-systems",
         "repo": "default",
+        "type": "github"
+      }
+    },
+    "toshy": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1788172796,
+        "narHash": "sha256-E530ttWt6QUwKz6NfFEbyQz98REKQnNInPBl53eTUn0=",
+        "owner": "RedBearAK",
+        "repo": "Toshy",
+        "rev": "6e1196efb3e140445715b17f00599667de952609",
+        "type": "github"
+      },
+      "original": {
+        "owner": "RedBearAK",
+        "repo": "Toshy",
         "type": "github"
       }
     },

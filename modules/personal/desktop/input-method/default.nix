@@ -3,6 +3,9 @@
     { config, pkgs, ... }:
     let
       fcitx5Rime = pkgs.fcitx5-rime.overrideAttrs (old: {
+        patches = (old.patches or [ ]) ++ [
+          ./rime-editing-order.patch
+        ];
         postPatch = (old.postPatch or "") + ''
           # 保留声明式配置入口，但不在托盘菜单暴露 Rime 运行时操作。
           sed -i \
@@ -15,6 +18,10 @@
 
           substituteInPlace src/rime.conf.in \
             --replace-fail 'Configurable=True' 'Configurable=False'
+
+          # 编辑宏在英文输入阶段也需要记录首步状态。
+          substituteInPlace src/rime-addon.conf.in.in \
+            --replace-fail 'OnDemand=True' 'OnDemand=False'
         '';
       });
     in
@@ -54,7 +61,7 @@
 
           settings.globalOptions = {
             "Hotkey" = {
-              # 点按 CapsLock 由 keyd 转为该组合键，切换 keyboard-us ↔ rime
+              # 点按 CapsLock 由 Toshy 转为该组合键，切换 keyboard-us ↔ rime
               "EnumerateWithTriggerKeys" = "False";
             };
 
