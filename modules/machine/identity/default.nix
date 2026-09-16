@@ -7,6 +7,12 @@ in
   dotnix.modules.nixos = { config, pkgs, ... }: {
     imports = [ inputs.sops-nix.nixosModules.sops ];
 
+    # nixpkgs 移除了 EOL 的 buildGo125Module，sops-nix 上游仍硬编码引用它构建
+    # sops-install-secrets；以当前 builder 过渡，上游迁移后删除此别名。
+    nixpkgs.overlays = [
+      (_: prev: { buildGo125Module = prev.buildGoModule; })
+    ];
+
     sops = {
       defaultSopsFile = ./secrets.yaml;
       age = {
