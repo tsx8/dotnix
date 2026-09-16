@@ -34,7 +34,8 @@
         global {
           lan_interface: ${lanInterface}
           wan_interface: ${wanInterface}
-          log_level: info
+          # Upstream demoted per-connection logs to debug/trace; info has none
+          log_level: trace
           allow_insecure: false
           auto_config_kernel_parameter: true
           dial_mode: domain
@@ -50,6 +51,8 @@
 
           routing {
             request {
+              # Campus DNS forges NXDOMAIN for some Google domains (gemini.gstatic.com)
+              qname(geosite:google) -> googledns
               fallback: buaadns
             }
             response {
