@@ -46,6 +46,16 @@
         defaultProjectTrust = "always";
         tuiMode = "fullscreen";
       };
+      # 市场与插件全量声明，激活时由 plugin-ensure.sh 登记/安装；store 路径随
+      # 输入变化时重建重装。
+      marketplaceSources = {
+        kami = "${inputs.kami}";
+        waza = "${inputs.waza}";
+      };
+      marketplacePlugins = [
+        "kami:kami"
+        "waza:waza"
+      ];
     in
     {
       home.file.".pi/agent/skills/obelisk".source = "${inputs.obelisk-skill}/skills/obelisk";
@@ -104,6 +114,19 @@
           ${pkgs.coreutils}/bin/mv -f -- "$candidate_path" "$settings_path"
           candidate_path=
         ) || exit 1
+      '';
+    };
+
+      # 市场未登记或源路径变化时由脚本重建；已装插件仅在对应市场重建时重装，
+      # 重装保留 .disabled/.auto-update 标记，其余用户状态不动。
+      home.activation.piPluginMarketplaces = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+        if [[ -v DRY_RUN ]]; then
+          echo "Would ensure pi plugin marketplaces"
+          exit 0
+        fi
+        PATH="${pkgs.coreutils}/bin:${pkgs.jq}/bin" ${pkgs.bash}/bin/bash ${./plugin-ensure.sh} "$HOME/.pi/agent" \
+          ${lib.concatStringsSep " " (lib.mapAttrsToList (n: p: "${n}=${p}") marketplaceSources)} -- \
+          ${lib.concatStringsSep " " marketplacePlugins} || exit 1
       '';
     };
 }
