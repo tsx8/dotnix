@@ -41,6 +41,14 @@ in
   };
 
   config = {
+    perSystem = { system, ... }: {
+      # perSystem 求值与 NixOS 配置相互独立，默认同样放行 unfree。
+      _module.args.pkgs = import inputs.nixpkgs {
+        inherit system;
+        config.allowUnfree = true;
+      };
+    };
+
     dotnix.host = {
       name = "maco";
       system = "x86_64-linux";

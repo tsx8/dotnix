@@ -19,11 +19,11 @@ pkg-update:
   #!/usr/bin/env bash
   set -euo pipefail
   while read -r name extra; do
-    [[ -z "$name" || $name == \#* ]] && continue
+    [[ -z "$name" || "$name" == \#* ]] && continue
     # shellcheck disable=SC2086
     nix-update "$name" --flake --format $extra
   done < packages/update.list
   scripts/sh/sync-pi-plugins-lock.sh
 
 update *inputs:
-  @bash -euo pipefail -c 'if (($# == 0)); then nix flake update; else nix flake update "$@"; fi; just repo pkg-update; scripts/sh/sync-models.sh; just repo lint; just repo test' update {{inputs}}
+  @bash -euo pipefail -c 'if (($# == 0)); then nix flake update; else nix flake update "$@"; fi; just repo pkg-update; scripts/sh/update-wechat.sh; scripts/sh/sync-models.sh; just repo lint; just repo test' update {{inputs}}
