@@ -80,6 +80,11 @@
       url = "github:nicobailon/pi-mcp-adapter";
       flake = false;
     };
+
+    simple-live-app = {
+      url = "github:xiaoyaocz/dart_simple_live";
+      flake = false;
+    };
   };
 
   outputs =

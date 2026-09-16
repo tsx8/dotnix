@@ -420,9 +420,26 @@
         "obelisk-skill": "obelisk-skill",
         "pi-mcp-adapter": "pi-mcp-adapter",
         "rime-frost": "rime-frost",
+        "simple-live-app": "simple-live-app",
         "sops-nix": "sops-nix",
         "toshy": "toshy",
         "waza": "waza"
+      }
+    },
+    "simple-live-app": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1769152363,
+        "narHash": "sha256-JuwF/yvpwD013DsgMS7pCgS8UhiOO+PGNnIDAdBDg/U=",
+        "owner": "xiaoyaocz",
+        "repo": "dart_simple_live",
+        "rev": "ba828e6783b176ea5709fcd09f0eb01dfaceeb51",
+        "type": "github"
+      },
+      "original": {
+        "owner": "xiaoyaocz",
+        "repo": "dart_simple_live",
+        "type": "github"
       }
     },
     "sops-nix": {

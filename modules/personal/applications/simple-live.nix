@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, inputs, ... }:
 {
   dotnix.modules.nixos = { pkgs, ... }: {
     environment.systemPackages = [
@@ -7,6 +7,8 @@
   };
 
   perSystem = { pkgs, ... }: {
-    packages.simple-live-app = pkgs.callPackage ../../../packages/simple-live-app/package.nix { };
+    packages.simple-live-app = pkgs.callPackage ../../../packages/simple-live-app/package.nix {
+      appSrc = inputs.simple-live-app;
+    };
   };
 }
