@@ -36,6 +36,8 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 
 `os switch` 切换前须有当前内容的适用检查结果；已通过 `os build` 且相关内容未变化时复用。`repo update` 指定单个输入时也会同步模型目录；任一步失败会停止后续步骤，已经完成的输入更新或模型目录修改不会回滚，详见 [Codex 模型目录](#codex-模型目录)。
 
+纳入仓库的上游应尽量保持可随 `repo update` 滚动更新（flake 输入或 `packages/update.list`）。piliplus 目前是例外：源码构建需要 nixpkgs 的 `nixos-unstable` 分支提供 Flutter ≥ 3.47.4，跟进前维持预编译产物与手工升级。
+
 三个 os 命令均调用项目 nh，目标显式为 `.#maco`，并禁止更新/写入 lock。构建至少预留 10 分钟。`just repo test` 不构建每个 package；`test` 不等于 `build`，`build` 不证明系统运行正常。
 
 ## 验证要求
