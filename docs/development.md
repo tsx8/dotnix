@@ -32,7 +32,7 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 | `just os build` | 先运行 repo lint、repo test，再构建系统，不激活 |
 | `just os test` | 先运行 repo lint、repo test，再构建并经确认激活系统，不改变默认启动项；由用户执行 |
 | `just os switch [label]` | 经 `scripts/sh/os.sh` 构建并经确认激活系统、切换默认启动项，不自动运行 lint/test；由用户执行 |
-| `just repo update [输入名…]` | 依次更新 flake 输入、同步模型目录、运行 lint、test；不传输入名则更新全部输入 |
+| `just repo update [输入名…]` | 依次更新 flake 输入、经 `packages/update.list` 用 nix-update 检查登记的包、同步模型目录、运行 lint、test；不传输入名则更新全部输入 |
 
 `os switch` 切换前须有当前内容的适用检查结果；已通过 `os build` 且相关内容未变化时复用。`repo update` 指定单个输入时也会同步模型目录；任一步失败会停止后续步骤，已经完成的输入更新或模型目录修改不会回滚，详见 [Codex 模型目录](#codex-模型目录)。
 

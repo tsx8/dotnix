@@ -29,6 +29,7 @@
           pkgs.nixf-diagnose
           pkgs.statix
           pkgs.shellcheck
+          pkgs.nix-update
 
           mcpDotnixCli
           mcpNixosCli

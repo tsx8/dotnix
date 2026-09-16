@@ -13,5 +13,15 @@ lint:
 test:
   nix flake check --no-update-lock-file --no-write-lock-file
 
+# 逐行读取 packages/update.list，用 nix-update 检查并晋进非 flake input 形态的远程源包。
+pkg-update:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  while read -r name extra; do
+    [[ -z "$name" || "$name" == \#* ]] && continue
+    # shellcheck disable=SC2086
+    nix-update "$name" --flake --format $extra
+  done < packages/update.list
+
 update *inputs:
-  @bash -euo pipefail -c 'if (($# == 0)); then nix flake update; else nix flake update "$@"; fi; scripts/sh/sync-models.sh; just repo lint; just repo test' update {{inputs}}
+  @bash -euo pipefail -c 'if (($# == 0)); then nix flake update; else nix flake update "$@"; fi; just repo pkg-update; scripts/sh/sync-models.sh; just repo lint; just repo test' update {{inputs}}
