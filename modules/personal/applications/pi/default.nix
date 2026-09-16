@@ -19,6 +19,7 @@
             --extension ${adapter}/index.ts \
             --extension ${piPlugins}/dist/pi/extension.js \
             --extension ${./compact-1e.ts} \
+            --extension ${./slash-enter.ts} \
             "$@"
         '')
       ];
@@ -115,7 +116,6 @@
           candidate_path=
         ) || exit 1
       '';
-    };
 
       # 市场未登记或源路径变化时由脚本重建；已装插件仅在对应市场重建时重装，
       # 重装保留 .disabled/.auto-update 标记，其余用户状态不动。
