@@ -1,9 +1,9 @@
 {
   adapterSrc,
-  importNpmLock,
+  fetchurl,
   lib,
-  nodejs,
   stdenvNoCC,
+  writeText,
 }:
 
 let
@@ -14,7 +14,7 @@ let
     "node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-ai" =
       "sha256-araJGJ58s95c2xJjEqPmDorDX+XuXxtj0A9xHIpDDHM=";
     "node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-client" =
-      "sha256-iK/HOxkwWCcQ2DYPT6k6XYHwUu4fX7aDkCH3xPfYBSo=";
+      "sha256-iK/HOxkwWCcQ2DYPT6k6XYHwUu4fX7A7DkCH3xPfYBSo=";
     "node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-protocol" =
       "sha256-Ldxtomn/+a36btSLk5OjoViWCLzdNbvT3sp4KNENlYo=";
     "node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-telemetry" =
@@ -22,43 +22,66 @@ let
     "node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-tui" =
       "sha256-meHzu/jZ8DdT/KxmODHfYc+VssRfskkUJvlc8o2Coi0=";
   };
-  # 上游 lock 是依赖闭包的唯一来源；扩展由 Pi 加载，不执行安装脚本。
   upstreamLock = lib.importJSON "${adapterSrc}/package-lock.json";
-  packageLock = upstreamLock // {
+  lock = upstreamLock // {
     packages =
       upstreamLock.packages
       // (builtins.mapAttrs (
         path: integrity: upstreamLock.packages.${path} // { inherit integrity; }
       ) integrityFixups);
   };
-  # 扩展运行时只需要生产依赖；上游 dev 树（vitest、pi-coding-agent 等）不参与安装。
-  package = (lib.importJSON "${adapterSrc}/package.json") // {
-    devDependencies = { };
-  };
-  nodeModules = importNpmLock.buildNodeModules {
-    inherit package packageLock;
-    npmRoot = adapterSrc;
-    inherit nodejs;
-    derivationArgs.npmFlags = [ "--ignore-scripts" ];
-  };
+  # node_modules 按 lock 记录的树直接解包物化：npm 离线安装会在理想树与 lock
+  # 分歧时回源 registry（ENOTCACHED），且不可复现；解包与 --ignore-scripts 等价。
+  # 上游 lock 含 devDependencies 闭包，仅安装生产可达条目。
+  compatible =
+    v:
+    (!(v ? os) || builtins.elem "linux" v.os || builtins.elem "any" v.os)
+    && (!(v ? cpu) || builtins.elem "x64" v.cpu || builtins.elem "any" v.cpu);
+  wanted = lib.filterAttrs (
+    path: v: path != "" && v ? resolved && !(v.dev or false) && compatible v
+  ) lock.packages;
+  sources = lib.mapAttrs (
+    _: v:
+    fetchurl {
+      url = v.resolved;
+      hash = v.integrity;
+    }
+  ) wanted;
+  manifest = writeText "pi-mcp-adapter-node-modules-manifest" (
+    lib.concatStrings (lib.mapAttrsToList (path: source: "${path}\t${source}\n") sources)
+  );
 in
 stdenvNoCC.mkDerivation {
   pname = "pi-mcp-adapter";
-  # 版本随 flake input 晋进，与上游 package.json 保持一致。
+  # 版本随 flake input 更新，与上游 package.json 保持一致。
   inherit ((lib.importJSON "${adapterSrc}/package.json")) version;
 
   src = adapterSrc;
 
   dontBuild = true;
 
-  # 入口与其同仓源文件须与 node_modules 同级，供 Pi 的模块解析向上查找。
+  # 入口 index.ts 与其依赖须与 node_modules 同级，供 Pi 的模块解析向上查找。
   installPhase = ''
     runHook preInstall
 
     install -d "$out"
     cp -R "$src"/. "$out"/
     chmod -R u+w "$out"
-    ln -s "${nodeModules}/node_modules" "$out/node_modules"
+
+    while IFS=$'\t' read -r rel source; do
+      target="$out/$rel"
+      install -d "$(dirname "$target")"
+      unpack="$(mktemp -d)"
+      tar -xf "$source" -C "$unpack"
+      if [ -d "$unpack/package" ]; then
+        content="$unpack/package"
+      else
+        content="$unpack"
+      fi
+      rm -rf -- "$target"
+      mv "$content" "$target"
+      rm -rf -- "$unpack"
+    done < "${manifest}"
 
     runHook postInstall
   '';
