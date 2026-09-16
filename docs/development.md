@@ -32,7 +32,7 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 | `just os build` | 先运行 repo lint、repo test，再构建系统，不激活 |
 | `just os test` | 先运行 repo lint、repo test，再构建并经确认激活系统，不改变默认启动项；由用户执行 |
 | `just os switch [label]` | 经 `scripts/sh/os.sh` 构建并经确认激活系统、切换默认启动项，不自动运行 lint/test；由用户执行 |
-| `just repo update [输入名…]` | 依次更新 flake 输入、经 `packages/update.list` 用 nix-update 检查登记的包、同步模型目录、运行 lint、test；不传输入名则更新全部输入 |
+| `just repo update [输入名…]` | 依次更新 flake 输入、经 `packages/update.list` 用 nix-update 检查登记的包（pi-plugins 随后重生成依赖 lock）、同步 WeChat 滚动产物、同步模型目录、运行 lint、test；不传输入名则更新全部输入 |
 
 `os switch` 切换前须有当前内容的适用检查结果；已通过 `os build` 且相关内容未变化时复用。`repo update` 指定单个输入时也会同步模型目录；任一步失败会停止后续步骤，已经完成的输入更新或模型目录修改不会回滚，详见 [Codex 模型目录](#codex-模型目录)。
 
@@ -62,6 +62,10 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 `just repo update` 在 flake 输入更新成功后同步当前 ChatGPT 账号的远端模型目录；传入指定输入名时也会同步。同步失败则停止后续检查，已经完成的 flake 输入更新不会回滚。也可单独运行 [scripts/sh/sync-models.sh](../scripts/sh/sync-models.sh)。需已有 ChatGPT 登录和模型缓存文件，以及 PATH 中的 Codex 或 ChatGPT 桌面包。同步过程不修改现有 Codex 配置或缓存。
 
 刷新失败、目标模型缺失或目录校验失败时保留原文件。成功后审阅 `git diff HEAD -- modules/personal/applications/codex/models.json`，按系统配置变更流程检查、构建和应用；脚本不自动暂存或应用系统。
+
+## WeChat 滚动产物
+
+`just repo update` 在 pkg-update 后运行 [scripts/sh/update-wechat.sh](../scripts/sh/update-wechat.sh)：以官方下载地址的 Last-Modified 头为变更哨兵，无变化即空操作；有变化时经 nix 通道取权威哈希、从官方页取三位版本号，改写 `packages/wechat/package.nix`。失败语义与模型目录同步相同：停止后续步骤，已完成更新不回滚。腾讯静默覆盖但哨兵未变时，后续构建会因哈希失配失败，手动运行该脚本即可修复。
 
 ## 工作树 label
 

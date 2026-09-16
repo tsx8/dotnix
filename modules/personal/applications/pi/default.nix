@@ -6,6 +6,9 @@
       system = pkgs.stdenv.hostPlatform.system;
       pi = inputs.llm-agents.packages.${system}.pi;
       adapter = config.flake.packages.${system}.pi-mcp-adapter;
+      # 只注入主入口：kami/waza 插件无 agents/MCP/hooks 组件，
+      # pi-subagents/jiti 仅供未注入的可选入口，不入 node_modules 闭包。
+      piPlugins = config.flake.packages.${system}.pi-plugins;
     in
     {
       environment.systemPackages = [
@@ -14,6 +17,7 @@
           export BASH_ENV=/etc/direnv/bash-env
           exec ${pi}/bin/pi \
             --extension ${adapter}/index.ts \
+            --extension ${piPlugins}/dist/pi/extension.js \
             --extension ${./compact-1e.ts} \
             "$@"
         '')
@@ -24,6 +28,7 @@
     packages.pi-mcp-adapter = pkgs.callPackage ../../../../packages/pi-mcp-adapter/package.nix {
       adapterSrc = inputs.pi-mcp-adapter;
     };
+    packages.pi-plugins = pkgs.callPackage ../../../../packages/pi-plugins/package.nix { };
   };
 
   dotnix.modules.home =

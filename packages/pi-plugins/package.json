@@ -1,0 +1,9 @@
+{
+  "name": "@nklisch/pi-plugins",
+  "version": "0.8.4",
+  "private": true,
+  "description": "Synthesized runtime closure manifest for the pi plugin host extension",
+  "dependencies": {
+    "@nklisch/pi-mcp-adapter": "2.21.0-nklisch.4"
+  }
+}
