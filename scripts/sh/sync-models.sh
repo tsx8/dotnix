@@ -28,7 +28,7 @@ fi
 
 codex_dir="$(realpath -e -- "${CODEX_HOME:-$HOME/.codex}")"
 cache_path="$codex_dir/models_cache.json"
-catalog="$repo_root/modules/personal/applications/codex/models.json"
+catalog="$repo_root/modules/agents/codex/models.json"
 
 if [[ ! -f "$cache_path" ]]; then
   echo "error: $cache_path is missing; start Codex with ChatGPT sign-in first" >&2
@@ -112,7 +112,7 @@ if cmp -s -- "$tmp_dir/updated.json" "$catalog"; then
   exit 0
 fi
 
-candidate="$(mktemp "$repo_root/modules/personal/applications/codex/.models.json.XXXXXX")"
+candidate="$(mktemp "$repo_root/modules/agents/codex/.models.json.XXXXXX")"
 cat "$tmp_dir/updated.json" > "$candidate"
 chmod 644 "$candidate"
 mv -f -- "$candidate" "$catalog"

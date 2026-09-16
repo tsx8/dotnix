@@ -10,10 +10,6 @@ in
       nix-direnv.enable = true;
     };
 
-    environment.etc."direnv/bash-env".text =
-      builtins.replaceStrings [ "@direnv@" "@jq@" ] [ "${pkgs.direnv}/bin/direnv" "${pkgs.jq}/bin/jq" ]
-        (builtins.readFile ./bash-env.sh);
-
     users.users.${userName}.shell = pkgs.fish;
     environment.systemPackages = with pkgs; [
       curl

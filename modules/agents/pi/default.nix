@@ -26,10 +26,10 @@
     };
 
   perSystem = { pkgs, ... }: {
-    packages.pi-mcp-adapter = pkgs.callPackage ../../../../packages/pi-mcp-adapter/package.nix {
+    packages.pi-mcp-adapter = pkgs.callPackage ../../../packages/pi-mcp-adapter/package.nix {
       adapterSrc = inputs.pi-mcp-adapter;
     };
-    packages.pi-plugins = pkgs.callPackage ../../../../packages/pi-plugins/package.nix { };
+    packages.pi-plugins = pkgs.callPackage ../../../packages/pi-plugins/package.nix { };
   };
 
   dotnix.modules.home =
@@ -60,6 +60,7 @@
     in
     {
       home.file.".pi/agent/skills/obelisk".source = "${inputs.obelisk-skill}/skills/obelisk";
+      home.file.".pi/agent/AGENTS.md".source = ../AGENTS-md.txt;
 
       # pi 只读这些文件（/settings 只写 settings.json），故用只读 symlink。
       # models.json：openai-codex 目录默认 272k（短上下文定价档），与 codex 侧
@@ -68,8 +69,6 @@
       # 避免触发旧格式迁移写回。
       home.file.".pi/agent/models.json".source = ./models.json;
       home.file.".pi/agent/keybindings.json".source = ./keybindings.json;
-      # 与 Codex 共用同一份全局代理行为准则（单一事实源）。
-      home.file.".pi/agent/AGENTS.md".source = ../codex/AGENTS-md.txt;
 
       # settings.json 必须保持真实可写文件（pi /settings 原地写入），
       # 故不用 home.file symlink，而在激活时按声明键深合并（zed/vscode mutableUserSettings 模式）。

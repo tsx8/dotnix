@@ -61,7 +61,7 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 
 `just repo update` 在 flake 输入更新成功后同步当前 ChatGPT 账号的远端模型目录；传入指定输入名时也会同步。同步失败则停止后续检查，已经完成的 flake 输入更新不会回滚。也可单独运行 [scripts/sh/sync-models.sh](../scripts/sh/sync-models.sh)。需已有 ChatGPT 登录和模型缓存文件，以及 PATH 中的 Codex 或 ChatGPT 桌面包。同步过程不修改现有 Codex 配置或缓存。
 
-刷新失败、目标模型缺失或目录校验失败时保留原文件。成功后审阅 `git diff HEAD -- modules/personal/applications/codex/models.json`，按系统配置变更流程检查、构建和应用；脚本不自动暂存或应用系统。
+刷新失败、目标模型缺失或目录校验失败时保留原文件。成功后审阅 `git diff HEAD -- modules/agents/codex/models.json`，按系统配置变更流程检查、构建和应用；脚本不自动暂存或应用系统。
 
 ## WeChat 滚动产物
 

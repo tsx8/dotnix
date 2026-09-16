@@ -5,7 +5,7 @@
 ## 配置组织
 
 - flake-parts 提供顶层模块系统，import-tree 递归导入 `modules/` 中的功能模块，排除 `*.data.nix` 数据文件。功能目录中的 `default.nix` 本身就是顶层模块，不重复导入已经扫描到的文件。
-- 功能按机器运行、个人使用、配置维护组织；系统配置与 Home Manager 配置共同归属功能，专属数据与配置放在同一目录。简单功能保留单文件。
+- 功能按机器运行、个人使用、配置维护、代理能力组织；系统配置与 Home Manager 配置共同归属功能，专属数据与配置放在同一目录。简单功能保留单文件。
 - `dotnix.modules.nixos` 和 `dotnix.modules.home` 以 `deferredModule` 合并各功能的贡献；`assembly.nix` 将它们装配为唯一的 `nixosConfigurations.maco`。
 - `dotnix.host` 保存当前单机的名称、平台和账户绑定，供功能共享；路径等派生信息仍从系统与用户配置读取，避免形成第二份配置来源。
 - 本地包的构建定义与源码归 `packages/<name>/`，由所属功能发布 flake 包输出，不参加模块自动导入。
@@ -16,7 +16,7 @@
 - 系统提供跨项目通用工具和加载项目环境所需的 Nix、direnv；仓库专属命令、检查工具与 MCP 由 [项目环境模块](../modules/maintenance/development/default.nix) 供应。项目工具随仓库锁定版本，避免依赖宿主机上的另一套版本。
 - `modules/maintenance/` 是项目开发环境的模块边界，影响 devShell 的模块定义集中于此。direnv 监视此目录和环境依赖的本地工具源码，普通系统配置与应用数据不触发环境刷新。
 - Home Manager 只管理用户级配置，不管理应用。
-- [终端模块](../modules/personal/terminal/default.nix) 管理 direnv，并提供非交互 Bash 的环境加载入口 [bash-env.sh](../modules/personal/terminal/bash-env.sh)。Codex 与 Pi 分别设置 `BASH_ENV` 使用此入口，复用 direnv 授权和 nix-direnv 缓存，使每次命令按工作目录取得环境；不设置全局 `BASH_ENV`。Codex 通过命令环境配置接入，不参与其父进程和快照生成；Pi 通过启动包装传递给子进程。环境加载不改变代理权限，两个入口分别在 [Codex 模块](../modules/personal/applications/codex/default.nix) 与 [Pi 模块](../modules/personal/applications/pi.nix)。
+- [终端模块](../modules/personal/terminal.nix) 管理 direnv 与 fish；[agents 模块](../modules/agents/default.nix) 提供非交互 Bash 的环境加载入口 [bash-env.sh](../modules/agents/bash-env.sh)，并抑制代理命令的 direnv 状态日志（加载错误不受影响）。Codex 与 Pi 分别设置 `BASH_ENV` 使用此入口，复用 direnv 授权和 nix-direnv 缓存，使每次命令按工作目录取得环境；不设置全局 `BASH_ENV`。Codex 通过命令环境配置接入，不参与其父进程和快照生成；Pi 通过启动包装传递给子进程。环境加载不改变代理权限，两个入口分别在 [Codex 模块](../modules/agents/codex/default.nix) 与 [Pi 模块](../modules/agents/pi/default.nix)。
 
 ## 文档与约束
 
