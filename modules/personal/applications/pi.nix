@@ -12,13 +12,15 @@
         (pkgs.writeShellScriptBin "pi" ''
           export PATH="${pkgs.bash}/bin:$PATH"
           export BASH_ENV=/etc/direnv/bash-env
-          exec ${pi}/bin/pi --extension ${adapter}/node_modules/pi-mcp-adapter/index.ts "$@"
+          exec ${pi}/bin/pi --extension ${adapter}/index.ts "$@"
         '')
       ];
     };
 
   perSystem = { pkgs, ... }: {
-    packages.pi-mcp-adapter = pkgs.callPackage ../../../packages/pi-mcp-adapter/package.nix { };
+    packages.pi-mcp-adapter = pkgs.callPackage ../../../packages/pi-mcp-adapter/package.nix {
+      adapterSrc = inputs.pi-mcp-adapter;
+    };
   };
 
   dotnix.modules.home =

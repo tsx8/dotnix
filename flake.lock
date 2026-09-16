@@ -372,6 +372,22 @@
         "type": "github"
       }
     },
+    "pi-mcp-adapter": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1789452205,
+        "narHash": "sha256-nmvDX4urLUmcP3/HUdiwRsk8TtGwIHKIG2MIg8aARj0=",
+        "owner": "nicobailon",
+        "repo": "pi-mcp-adapter",
+        "rev": "33bdc38d8dd3802f2b51ba1fe37e30ed7ae6a29a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nicobailon",
+        "repo": "pi-mcp-adapter",
+        "type": "github"
+      }
+    },
     "rime-frost": {
       "flake": false,
       "locked": {
@@ -402,6 +418,7 @@
         "mcp-nixos": "mcp-nixos",
         "nixpkgs": "nixpkgs",
         "obelisk-skill": "obelisk-skill",
+        "pi-mcp-adapter": "pi-mcp-adapter",
         "rime-frost": "rime-frost",
         "sops-nix": "sops-nix",
         "toshy": "toshy",

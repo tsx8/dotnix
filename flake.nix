@@ -75,6 +75,11 @@
       url = "github:tommy0103/obelisk-skill";
       flake = false;
     };
+
+    pi-mcp-adapter = {
+      url = "github:nicobailon/pi-mcp-adapter";
+      flake = false;
+    };
   };
 
   outputs =
