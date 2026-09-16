@@ -74,6 +74,17 @@ def main():
                         output_shift = input_shift and not (not alt and key in string.ascii_lowercase)
                         output_suffix = ("alt-" if alt else "") + ("shift-" if output_shift else "")
                         bindings[chord] = ["terminal::SendKeystroke", f"ctrl-{output_suffix}{symbol}"]
+    # Zed 终端无 kitty 编码能力，ctrl-enter（物理 Cmd）到不了终端内程序，唯一
+    # 通道是注入 CSI u（pi 官方文档的 Zed 方案）；alt-enter 已有遗留编码（ESC
+    # CR）覆盖，勿动。
+    keymap.append(
+        {
+            "context": "Terminal",
+            "bindings": {
+                "ctrl-enter": ["terminal::SendText", "\u001b[13;5u"],
+            },
+        }
+    )
     json.dump(keymap, sys.stdout, ensure_ascii=False, indent=2)
 
 
