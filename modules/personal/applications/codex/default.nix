@@ -2,9 +2,6 @@
   dotnix.modules.nixos = { pkgs, ... }: {
     # 固定模型目录以覆盖长上下文上限。
     environment.etc."codex/models.json".source = ./models.json;
-    environment.etc."codex/bash-env".text =
-      builtins.replaceStrings [ "@direnv@" "@jq@" ] [ "${pkgs.direnv}/bin/direnv" "${pkgs.jq}/bin/jq" ]
-        (builtins.readFile ./bash-env.sh);
 
     environment.etc."codex/config.toml".text = ''
       model_provider = "openai"
@@ -26,7 +23,7 @@
       followUpQueueMode = "queue"
 
       [shell_environment_policy.set]
-      BASH_ENV = "/etc/codex/bash-env"
+      BASH_ENV = "/etc/direnv/bash-env"
     '';
 
     environment.systemPackages = [

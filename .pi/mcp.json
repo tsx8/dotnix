@@ -1,0 +1,39 @@
+{
+  "mcpServers": {
+    "mcp-dotnix": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "exec \"$(git rev-parse --show-toplevel)/scripts/sh/mcp.sh\" \"$1\"",
+        "mcp-dotnix",
+        "mcp-dotnix"
+      ],
+      "lifecycle": "eager",
+      "directTools": true,
+      "requestTimeoutMs": 600000,
+      "includeTools": [
+        "system_status",
+        "unit_status",
+        "unit_journal",
+        "kernel_log",
+        "boot_list",
+        "disk_status",
+        "network_status",
+        "nixos_generations"
+      ]
+    },
+    "mcp-nixos": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "exec \"$(git rev-parse --show-toplevel)/scripts/sh/mcp.sh\" \"$1\"",
+        "mcp-nixos",
+        "mcp-nixos"
+      ],
+      "lifecycle": "eager",
+      "directTools": true,
+      "requestTimeoutMs": 120000,
+      "includeTools": [ "nix", "nix_versions" ]
+    }
+  }
+}

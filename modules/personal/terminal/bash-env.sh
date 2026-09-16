@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-_codex_load_direnv() {
+_bash_load_direnv() {
   local status rc exports
   # direnv may start Bash itself; clearing BASH_ENV prevents recursive loading.
   status="$(BASH_ENV='' @direnv@ status --json)" || return
@@ -17,5 +17,5 @@ _codex_load_direnv() {
   exports="$(BASH_ENV='' @direnv@ export bash)" || return
   eval "$exports"
 }
-_codex_load_direnv || exit "$?"
-unset -f _codex_load_direnv
+_bash_load_direnv || exit "$?"
+unset -f _bash_load_direnv

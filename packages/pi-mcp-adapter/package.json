@@ -1,0 +1,8 @@
+{
+  "name": "dotnix-pi-mcp-adapter",
+  "version": "2.34.0",
+  "private": true,
+  "dependencies": {
+    "pi-mcp-adapter": "2.34.0"
+  }
+}

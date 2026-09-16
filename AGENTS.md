@@ -25,7 +25,7 @@
 
 ## 项目环境
 
-- 按 [项目环境](docs/development.md#项目环境) 加载工具。Codex 使用非登录 Bash，通过 `BASH_ENV` 按命令工作目录加载 direnv；已成功加载时直接运行项目命令。
+- 按 [项目环境](docs/development.md#项目环境) 加载工具。Codex 与 Pi 使用非登录 Bash，通过 `BASH_ENV` 按命令工作目录加载 direnv；已成功加载时直接运行项目命令。
 - `.envrc` 未授权或加载失败时停止执行，先诊断和解决环境问题，不改用其他入口绕过。未配置自动入口的会话使用文档中的显式 devShell 入口。
 - 项目环境供应 just、nh、Nix 格式与静态检查工具和两个 MCP 包；不复制系统通用工具。
 
