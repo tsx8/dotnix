@@ -77,6 +77,11 @@
           };
 
           settings.addons = {
+            # Toshy 用 Super 表示 Mac Control，Quick Phrase 默认热键会抢占应用操作。
+            quickphrase = {
+              globalSection = { };
+              sections.TriggerKey."0" = "";
+            };
             # 对齐 macOS：切走时上屏原始拼音（默认上屏中文）
             rime.globalSection.SwitchInputMethodBehavior = "Commit raw input";
           };

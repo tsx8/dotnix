@@ -16,6 +16,11 @@ def convert(sequence):
     )
 
 
+def identity(chord):
+    parts = chord.split("-")
+    return frozenset(parts[:-1]), parts[-1]
+
+
 def main():
     with open(sys.argv[1]) as source:
         keymap = json5.load(source)
@@ -25,21 +30,30 @@ def main():
             keymap.extend(json5.load(source))
     # These actions require AppKit. Toshy supplies the desktop equivalents.
     desktop_actions = {"zed::Hide", "zed::HideOthers", "zed::ShowAll", "zed::Minimize"}
-    for index, section in enumerate(keymap):
+    for section in keymap:
         section["bindings"] = {
             convert(key): value
             for key, value in section["bindings"].items()
             if not (isinstance(value, str) and value in desktop_actions)
         }
+    workspace_bindings = {}
+    for section in keymap:
+        if section.get("context") == "Workspace":
+            workspace_bindings.update(section["bindings"])
+    # Terminal fallbacks must not shadow parent actions or their chord prefixes.
+    workspace_keys = {
+        identity(key.split(" ")[0])
+        for key, action in workspace_bindings.items() if action is not None
+    }
+    for index, section in enumerate(keymap):
         # Later presets must retain their overrides, including explicit unbindings.
         if index < default_sections and section.get("context") == "Terminal":
             # macOS leaves many Control chords to the terminal's native encoder.
             # Linux's encoder cannot infer that Toshy's Super means Control.
             bindings = section["bindings"]
-            def identity(chord):
-                parts = chord.split("-")
-                return frozenset(parts[:-1]), parts[-1]
-            existing = {identity(key) for key, action in bindings.items() if action is not None}
+            existing = workspace_keys | {
+                identity(key) for key, action in bindings.items() if action is not None
+            }
             shifted = dict(zip("`1234567890-=[]\\;',./", '~!@#$%^&*()_+{}|:"<>?'))
             keys = list(string.ascii_lowercase + string.digits) + [
                 "space", "backspace", "enter", "tab", "escape", "[", "]", "\\",
