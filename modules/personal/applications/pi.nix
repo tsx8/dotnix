@@ -20,4 +20,8 @@
   perSystem = { pkgs, ... }: {
     packages.pi-mcp-adapter = pkgs.callPackage ../../../packages/pi-mcp-adapter/package.nix { };
   };
+
+  dotnix.modules.home = {
+    home.file.".pi/agent/skills/obelisk".source = "${inputs.obelisk-skill}/skills/obelisk";
+  };
 }

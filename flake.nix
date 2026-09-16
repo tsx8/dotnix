@@ -59,6 +59,22 @@
       url = "github:gaboolic/rime-frost";
       flake = false;
     };
+
+    # Agent 插件/技能与源码构建应用的上游，均无 flake；版本由 flake.lock 锁定。
+    kami = {
+      url = "github:tw93/kami";
+      flake = false;
+    };
+
+    waza = {
+      url = "github:tw93/waza";
+      flake = false;
+    };
+
+    obelisk-skill = {
+      url = "github:tommy0103/obelisk-skill";
+      flake = false;
+    };
   };
 
   outputs =

@@ -248,6 +248,22 @@
         "type": "github"
       }
     },
+    "kami": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1789454669,
+        "narHash": "sha256-hrDgL59LwYGYT41X0wpd6Iyv+yFs7nsqozJJ8A6JZP8=",
+        "owner": "tw93",
+        "repo": "kami",
+        "rev": "0847a06355b4fd62438c9fac38652dbbffeec7c4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "tw93",
+        "repo": "kami",
+        "type": "github"
+      }
+    },
     "llm-agents": {
       "inputs": {
         "bun2nix": "bun2nix",
@@ -340,6 +356,22 @@
         "type": "github"
       }
     },
+    "obelisk-skill": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1789401104,
+        "narHash": "sha256-28ex5Il8v8C2oiqTHEfJLals9jVRXq9OlLAoFnk5g5U=",
+        "owner": "tommy0103",
+        "repo": "obelisk-skill",
+        "rev": "b164d907a305d20f5d57394fd726f7999a6d0980",
+        "type": "github"
+      },
+      "original": {
+        "owner": "tommy0103",
+        "repo": "obelisk-skill",
+        "type": "github"
+      }
+    },
     "rime-frost": {
       "flake": false,
       "locked": {
@@ -365,12 +397,15 @@
         "helium-browser": "helium-browser",
         "home-manager": "home-manager",
         "import-tree": "import-tree",
+        "kami": "kami",
         "llm-agents": "llm-agents",
         "mcp-nixos": "mcp-nixos",
         "nixpkgs": "nixpkgs",
+        "obelisk-skill": "obelisk-skill",
         "rime-frost": "rime-frost",
         "sops-nix": "sops-nix",
-        "toshy": "toshy"
+        "toshy": "toshy",
+        "waza": "waza"
       }
     },
     "sops-nix": {
@@ -446,6 +481,22 @@
       "original": {
         "owner": "numtide",
         "repo": "treefmt-nix",
+        "type": "github"
+      }
+    },
+    "waza": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1789465469,
+        "narHash": "sha256-lhvxSR/nCDtcZy+yOlprIbt7fPYZocGdfWSlixytvDs=",
+        "owner": "tw93",
+        "repo": "waza",
+        "rev": "97ddbc398fcc9617610e8f48a18c35b43c916cbf",
+        "type": "github"
+      },
+      "original": {
+        "owner": "tw93",
+        "repo": "waza",
         "type": "github"
       }
     }

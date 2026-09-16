@@ -24,6 +24,22 @@
 
       [shell_environment_policy.set]
       BASH_ENV = "/etc/direnv/bash-env"
+
+      # git marketplace 改由 flake input 锁定的本地源提供，版本随 repo update 晋进；
+      # 插件缓存按 plugin.json 版本分目录，上游需正常 bump 版本号才会触发重载。
+      [marketplaces.kami]
+      source_type = "local"
+      source = "${inputs.kami}"
+
+      [marketplaces.waza]
+      source_type = "local"
+      source = "${inputs.waza}"
+
+      [plugins."kami@kami"]
+      enabled = true
+
+      [plugins."waza@waza"]
+      enabled = true
     '';
 
     environment.systemPackages = [
@@ -33,5 +49,6 @@
   };
   dotnix.modules.home = {
     home.file.".codex/AGENTS.md".source = ./AGENTS-md.txt;
+    home.file.".codex/skills/obelisk".source = "${inputs.obelisk-skill}/skills/obelisk";
   };
 }
