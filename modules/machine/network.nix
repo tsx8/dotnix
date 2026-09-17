@@ -45,14 +45,22 @@
           ipversion_prefer: 4
 
           upstream {
+            # 明文上游只在经代理隧道拨号时安全，routing 里不得加匹配它们的 direct
+            # 规则；节点/订阅主机名必须继续走 buaadns（fallback）解析，否则
+            # googledns 依赖的代理无法自举。
             buaadns: 'udp://${campusDns}:53'
-            googledns: 'tcp+udp://dns.google.com:53'
+            googledns: 'tcp+udp://8.8.8.8:53'
           }
 
           routing {
             request {
-              # Campus DNS forges NXDOMAIN for some Google domains (gemini.gstatic.com)
-              qname(geosite:google) -> googledns
+              # 拒绝 HTTPS 记录：浏览器可借其发现 DoH 绕过此分流，
+              # ECH 会向 dial_mode 嗅探隐藏 SNI
+              qtype(https) -> reject
+              # 校园 DNS 对被墙域名伪造答案（gstatic 假 A、
+              # gemini.gstatic.com NXDOMAIN），名单内外国域名
+              # 必须经代理走 googledns 解析
+              qname(geosite:geolocation-!cn) -> googledns
               fallback: buaadns
             }
             response {
@@ -70,8 +78,9 @@
         }
 
         routing {
+          # 此处不得对 :53 使用 must_*：会整包旁路 DNS 劫持，校园伪造答案
+          # （gemini.gstatic.com 的 NXDOMAIN）直达客户端，绕过 dns 分流过滤
           dip(224.0.0.0/3) -> direct
-          dip(${campusDns}) && l4proto(udp) && dport(53) -> must_direct
           l4proto(udp) && dport(443) -> block
           dip(geoip:private) -> direct
           dip(geoip:cn) -> direct
