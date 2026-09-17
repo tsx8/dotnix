@@ -10,7 +10,13 @@ const SUBMIT_SEQUENCE = "\x1b[13;5u"; // ctrl+enter
 
 class CommandEnterEditor extends CustomEditor {
   handleInput(data: string): void {
-    if (matchesKey(data, "enter") && this.getText().trimStart().startsWith("/")) {
+    // legacy 协议下裸 "\n"（Ctrl+J/Shift+Enter 实际发送的字节）也命中
+    // matchesKey("enter")，放行给 newLine 绑定，/ 草稿才能手动换行。
+    if (
+      matchesKey(data, "enter") &&
+      data !== "\n" &&
+      this.getText().trimStart().startsWith("/")
+    ) {
       if (this.isShowingAutocomplete()) {
         super.handleInput("\t");
       }
