@@ -200,11 +200,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1789214328,
-        "narHash": "sha256-ldHrGfwWiL8DwnP07DsqgGpppIPdXg/rF/FjDEXMNvI=",
+        "lastModified": 1789650228,
+        "narHash": "sha256-fntAX/+3dwTi344E/JBW/B/xTfzdGRzHUZaMExz7V6Y=",
         "owner": "oxcl",
         "repo": "nix-flake-helium-browser",
-        "rev": "7d7117d1154f9837913ae6216a25ebed96536478",
+        "rev": "c4fc526e08fd5a5a8639eb81bfb36a9536f1d5ce",
         "type": "github"
       },
       "original": {
@@ -220,11 +220,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1789482455,
-        "narHash": "sha256-pD3qVlQ4mUCFoTWrYtxecpSitQMsgJvJIN0FUIDZoEU=",
+        "lastModified": 1789652175,
+        "narHash": "sha256-OVgwnH7e/GlJRscTPXnJ8wwy6Mh+hk0MedEw360o8U8=",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "efa3ccb4c3cc90d832eab232976379058fa75aa3",
+        "rev": "f2785222a14e90f8c5ad2ff62474ce88453c3421",
         "type": "github"
       },
       "original": {
@@ -251,11 +251,11 @@
     "kami": {
       "flake": false,
       "locked": {
-        "lastModified": 1789454669,
-        "narHash": "sha256-hrDgL59LwYGYT41X0wpd6Iyv+yFs7nsqozJJ8A6JZP8=",
+        "lastModified": 1789614824,
+        "narHash": "sha256-6E/IpSSBb2HaAm5LvwzijmqewBQF/vPQKnEhmuWkNjM=",
         "owner": "tw93",
         "repo": "kami",
-        "rev": "0847a06355b4fd62438c9fac38652dbbffeec7c4",
+        "rev": "6b39d04567034a0b14671da3dbcf65e370dda9a8",
         "type": "github"
       },
       "original": {
@@ -275,11 +275,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1789552626,
-        "narHash": "sha256-uLUOUASz1t+YvEu6e1l71d/5eTnWC7psI+rRxTpj514=",
+        "lastModified": 1789643193,
+        "narHash": "sha256-Vd9M6YDpwLDTI2JgQxNdnx8xvWJ8mVI5tehu/yFvoMA=",
         "owner": "numtide",
         "repo": "llm-agents.nix",
-        "rev": "cbfe11b1e27e0bfde1ce9f221fcc9c88940f0602",
+        "rev": "e07b7ec56fcbb9d93383319aae2d3aedcd4631d1",
         "type": "github"
       },
       "original": {
@@ -521,11 +521,11 @@
     "waza": {
       "flake": false,
       "locked": {
-        "lastModified": 1789465469,
-        "narHash": "sha256-lhvxSR/nCDtcZy+yOlprIbt7fPYZocGdfWSlixytvDs=",
+        "lastModified": 1789614818,
+        "narHash": "sha256-KfswRxk6JOnD7U0c3aj1BpuR8QHh3VXzhp7ct+LN7JM=",
         "owner": "tw93",
         "repo": "waza",
-        "rev": "97ddbc398fcc9617610e8f48a18c35b43c916cbf",
+        "rev": "b0aa78a2b1aa4568f4ec595f4c93d4d1785c99f7",
         "type": "github"
       },
       "original": {
