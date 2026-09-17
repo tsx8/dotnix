@@ -3,3 +3,4 @@
 # obelisk 的 npm latest 是 rc 渠道版本，须允许不稳定版本号。
 obelisk --version=unstable
 pi-plugins
+piliplus
