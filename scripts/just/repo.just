@@ -11,20 +11,12 @@ lint:
   @git diff --check HEAD
 
 test:
-  nix flake check --no-update-lock-file --no-write-lock-file
+  @nix flake check --no-update-lock-file --no-write-lock-file
 
-# 逐行读取 packages/update.list，用 nix-update 检查并更新非 flake input 形态的远程源包。
-# pi-plugins 与 piliplus 的依赖 lock 须跟随刚更新的版本重生成。
+# 逐行读取 packages/update.list，用 nix-update 检查并更新非 flake input 形态的远程源包；
+# 节点顺序、重试与失败汇总见 scripts/sh/update.sh。
 pkg-update:
-  #!/usr/bin/env bash
-  set -euo pipefail
-  while read -r name extra; do
-    [[ -z "$name" || "$name" == \#* ]] && continue
-    # shellcheck disable=SC2086
-    nix-update "$name" --flake --format $extra
-  done < packages/update.list
-  scripts/sh/sync-pi-plugins-lock.sh
-  scripts/sh/sync-piliplus-locks.sh
+  scripts/sh/update.sh pkg
 
 update *inputs:
-  @bash -euo pipefail -c 'if (($# == 0)); then nix flake update; else nix flake update "$@"; fi; just repo pkg-update; scripts/sh/update-wechat.sh; scripts/sh/sync-models.sh; just repo lint; just repo test' update {{inputs}}
+  scripts/sh/update.sh all {{inputs}}
