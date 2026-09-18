@@ -3,7 +3,8 @@ set -euo pipefail
 
 # just repo update / pkg-update 的编排入口。单节点失败不中断后续节点，
 # 网络类节点失败自动重试一次；末尾汇总失败节点并保留完整日志目录，
-# 全部成功时清理日志。
+# 全部成功时清理日志。TTY 下运行中原地刷新状态行（当前活动尾行，
+# 无输出时 spinner+耗时）；非 TTY 退化为静态输出。
 
 usage() { echo "usage: $0 pkg | all [flake-input...]" >&2; }
 
@@ -24,13 +25,28 @@ cd -- "$repo_root"
 logs_dir="$(mktemp -d "${TMPDIR:-/tmp}/dotnix-update.XXXXXX")"
 keep_logs=0
 failures=()
+child_pid=
+is_tty=0
+[[ -t 1 ]] && is_tty=1
+spin_frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+
 cleanup() { ((keep_logs)) || rm -rf -- "$logs_dir"; }
 trap cleanup EXIT
-trap 'keep_logs=1; printf "\ninterrupted; logs kept at %s\n" "$logs_dir"; exit 130' INT
+on_int() {
+  keep_logs=1
+  # 终端 Ctrl-C 作用于整个前台进程组；脚本被单独 INT 时后台子 shell 收不到，需兜底。
+  if [[ -n "$child_pid" ]]; then
+    kill "$child_pid" 2>/dev/null || true
+  fi
+  printf '\ninterrupted; logs kept at %s\n' "$logs_dir"
+  exit 130
+}
+trap on_int INT
 
 # 降噪：去掉 nix-update 的命令回显与上游探测行、nix 沿用缓存版本的告警正文，
 # 把 Python traceback 压缩为最终异常行；剩余行即该节点的关键日志。
-filter_log() {
+# 同一组规则用于结束摘要与运行时活动行。
+filter_stream() {
   grep -vE \
     -e '^\$ ' \
     -e '^fetch ' \
@@ -52,9 +68,10 @@ filter_log() {
     -e '^Traceback \(most recent call last\):$' \
     -e '^  File "' \
     -e '^    ' \
-    -e '^\.\.\.' \
-    "$1" | grep -v '^$' || true
+    -e '^\.\.\.' -
 }
+
+filter_log() { filter_stream <"$1" | grep -v '^$' || true; }
 
 show_tail() { filter_log "$1" | tail -n 12 | sed 's/^/  /'; }
 show_details() { filter_log "$1" | head -n 8 | sed 's/^/  /'; }
@@ -81,25 +98,104 @@ update_flake() {
   return "$rc"
 }
 
+# flake 节点的结构化摘要：按输入名 join 前后快照，逐输入输出旧→新；
+# 新增输入单独列出；rev 截短为 7 位、lastModified 秒值转日期。
+flake_change_summary() {
+  local before=$1 after=$2 log=$3
+  local moved added n desc stale
+  moved="$(
+    join -j 1 <(sort "$before") <(sort "$after") |
+      awk '
+        function disp(v) {
+          if (v ~ /^[0-9a-f]{40}$/) return substr(v, 1, 7)
+          if (v ~ /^[0-9]{10}$/) return strftime("%Y-%m-%d", v, 1)
+          return v
+        }
+        $2 != $3 { printf "  %s %s → %s\n", $1, disp($2), disp($3) }
+      '
+  )"
+  added="$(
+    comm -13 <(cut -d' ' -f1 "$before" | sort) <(cut -d' ' -f1 "$after" | sort) |
+      sed 's/^/  +/; s/$/ new input/'
+  )"
+  n=$(grep -c . <<<"$moved" || true)
+  n=$((n + $(grep -c . <<<"$added" || true)))
+  if ((n > 0)); then desc="$n updated"; else desc="lock unchanged"; fi
+  stale="$(grep -c 'using cached version' "$log" || true)"
+  if [[ "$stale" =~ ^[0-9]+$ ]] && ((stale > 0)); then
+    desc+="; $stale inputs kept cached revisions"
+  fi
+  printf 'ok (%s)\n' "$desc"
+  if [[ -n "$moved" ]]; then printf '%s\n' "$moved"; fi
+  if [[ -n "$added" ]]; then printf '%s\n' "$added"; fi
+}
+
+# 子进程输出落盘并在结束时写 rc 文件；渲染循环以 rc 文件为完成信号，
+# 不能用 kill -0 判活（未收割的僵尸进程也能通过探测）。
+run_logged() {
+  local log=$1 rc_file=$2
+  shift 2
+  local node_rc=0
+  "$@" >>"$log" 2>&1 || node_rc=$?
+  printf '%d\n' "$node_rc" >"$rc_file"
+}
+
+# TTY 状态行：有可读日志尾行时显示尾行，否则 spinner+耗时；原地刷新。
+render_status() {
+  local name=$1 log=$2 t0=$3 tag=$4 rc_file=$5
+  local frame=0 cols avail line status
+  cols=$(tput cols 2>/dev/null || echo 100)
+  [[ "$cols" =~ ^[0-9]+$ ]] || cols=100
+  ((cols < 20)) && cols=20
+  avail=$((cols - ${#name} - 3))
+  while kill -0 "$child_pid" 2>/dev/null && [[ ! -s "$rc_file" ]]; do
+    line="$(
+      tail -c 4096 -- "$log" |
+        tr '\r' '\n' |
+        filter_stream |
+        awk 'NF {l = $0} END {if (l) {gsub(/^[ \t]+|[ \t]+$/, "", l); print l}}' || true
+    )"
+    status="${spin_frames[frame++ % ${#spin_frames[@]}]} "
+    if [[ -n "$line" ]]; then
+      status+="$line"
+    else
+      status+="$((SECONDS - t0))s"
+    fi
+    if [[ -n "$tag" ]]; then status="$tag$status"; fi
+    printf '\r%s: %.*s\e[K' "$name" "$avail" "$status"
+    sleep 0.15
+  done
+}
+
 # run_node <flake|pkg|plain> <显示名> <重试次数> <命令…>
 run_node() {
   local kind=$1 name=$2 retries=$3
   shift 3
-  local log="$logs_dir/$name.log" tries=1 rc=0 i
+  local log="$logs_dir/$name.log" rc_file="$logs_dir/$name.rc" tries=1 rc=0 i t0 tag
   ((retries > 0)) && tries=2
-  printf '%s: ' "$name"
+  ((is_tty)) || printf '%s: ' "$name"
   for ((i = 1; i <= tries; i++)); do
     if ((i > 1)); then
-      printf 'retrying '
+      ((is_tty)) || printf 'retrying '
       sleep 2
     fi
     : >"$log"
-    if "$@" >>"$log" 2>&1; then
-      rc=0
-      break
+    rm -f -- "$rc_file"
+    t0=$SECONDS
+    tag=""
+    if ((i > 1)); then tag="retry $i/$tries "; fi
+    run_logged "$log" "$rc_file" "$@" &
+    child_pid=$!
+    if ((is_tty)); then
+      render_status "$name" "$log" "$t0" "$tag" "$rc_file"
     fi
-    rc=$?
+    wait "$child_pid" || true
+    child_pid=
+    rc=$(cat -- "$rc_file" 2>/dev/null || true)
+    rc=${rc:-1}
+    if ((rc == 0)); then break; fi
   done
+  if ((is_tty)); then printf '\r\e[K%s: ' "$name"; fi
   if ((rc != 0)); then
     printf 'FAILED (exit %d)\n' "$rc"
     show_tail "$log"
@@ -115,32 +211,23 @@ run_node() {
         failures+=("$name")
         return 0
       fi
-      local changed desc stale
-      changed="$(
-        comm -13 <(sort "$logs_dir/flake-lock-before") <(sort "$logs_dir/flake-lock-after") |
-          cut -d' ' -f1 | paste -sd, -
-      )"
-      if [[ -n "$changed" ]]; then desc="updated: $changed"; else desc="lock unchanged"; fi
-      stale="$(grep -c 'using cached version' "$log" || true)"
-      if [[ "$stale" =~ ^[0-9]+$ ]] && ((stale > 0)); then
-        desc+="; $stale inputs kept cached revisions"
-      fi
-      printf 'ok (%s)\n' "$desc"
+      printf '%s\n' "$(flake_change_summary "$logs_dir/flake-lock-before" "$logs_dir/flake-lock-after" "$log")"
       ;;
     pkg)
       local m
       m="$(grep -oP 'Update \K.*(?= in )' "$log" | head -n1 || true)"
       if [[ -z "$m" ]]; then
         m="$(grep -oP 'Not updating version, already \K.*' "$log" | head -n1 || true)"
-        [[ -n "$m" ]] && m="already $m"
+        if [[ -n "$m" ]]; then m="already $m"; fi
       fi
       printf 'ok%s\n' "${m:+ ($m)}"
+      show_details "$log"
       ;;
     *)
       printf 'ok\n'
+      show_details "$log"
       ;;
   esac
-  show_details "$log"
 }
 
 if [[ $mode == "all" ]]; then
