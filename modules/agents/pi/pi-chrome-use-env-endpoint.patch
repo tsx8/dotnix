@@ -1,0 +1,243 @@
+diff -urN a/extensions/browser-execute.ts b/extensions/browser-execute.ts
+--- a/extensions/browser-execute.ts	2026-09-18 23:44:13.588624157 +0800
++++ b/extensions/browser-execute.ts	2026-09-18 23:45:00.203632420 +0800
+@@ -1,10 +1,32 @@
+ import path from "node:path";
+-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
++import {
++  DEFAULT_MAX_BYTES,
++  DEFAULT_MAX_LINES,
++  formatSize,
++  keyHint,
++  truncateTail,
++  type ExtensionAPI,
++} from "@earendil-works/pi-coding-agent";
++import { Text } from "@earendil-works/pi-tui";
+ import { Type } from "typebox";
+ import { executeBrowserCode, type BrowserExecuteParameters } from "../src/browser-execute.js";
+ 
+ const MAX_METADATA_LENGTH = 30_000;
+ 
++// TUI 渲染上限，独立于发给 LLM 的截断：折叠态只给摘要，展开态也封顶防刷屏。
++const CALL_HEAD_CHARS = 100;
++const RESULT_CONSOLE_PREVIEW = 5;
++const RESULT_VALUE_LINES = 60;
++const RESULT_HEAD_CHARS = 200;
++
++interface BrowserExecuteDetails {
++  description: string;
++  result: string;
++  output: string;
++  screenshotCount: number;
++  workspaceDir: string;
++}
++
+ const BrowserExecuteParams = Type.Object({
+   code: Type.String({
+     description:
+@@ -41,10 +63,11 @@
+ 
+ The snippet receives a persistent CDP session as \`session\` and a captured \`console\`. Connect once with \`await session.connect()\`, \`await session.connect({ wsUrl })\`, or \`await session.connect({ profileDir })\`, then attach a page target with \`await session.use(targetId)\`. The session persists across later browser_execute calls in the same Pi process/session key. Every successful \`Page.captureScreenshot\` call is returned as an image part. Reusable scripts belong in \`.pi/browser-execute-workspace\` and can be loaded with \`await import(absPath + "?t=" + Date.now())\`.
+ 
+-Security: CDP controls the connected browser. Only use this tool against browsers/endpoints the user authorized.`,
++Security: CDP controls the connected browser. Only use this tool against browsers/endpoints the user authorized. The default endpoint (BU_CDP_URL, preconfigured to the user's daily Helium browser) is auto-started when unreachable and is the only authorized browser.`,
+     promptSnippet: "Execute JavaScript snippets against a real Chromium browser via CDP.",
+     promptGuidelines: [
+       "Use browser_execute whenever the task requires driving, inspecting, or screenshotting a real browser through CDP.",
++      "The default endpoint (BU_CDP_URL, the user's daily Helium browser) is the only authorized browser: connect with a bare await session.connect(), let it auto-start the browser when down, and never launch, download, or connect to any other browser (no nix shell chromium, no headless instances).",
+       "Before using browser_execute for page operations, connect with session.connect(), choose a page target from Target.getTargets, and call session.use(targetId).",
+       "browser_execute snippets have session and console in scope; write reusable helper modules under .pi/browser-execute-workspace and import them with await import(...).",
+       "browser_execute automatically returns Page.captureScreenshot results as image parts; do not manually decode screenshots unless processing bytes is required.",
+@@ -65,7 +88,7 @@
+         },
+       });
+ 
+-      const text = [
++      const raw = [
+         result.output.trimEnd(),
+         result.result === "null" ? "" : `=> ${result.result}`,
+         result.screenshots.length > 0
+@@ -75,6 +98,13 @@
+         .filter(Boolean)
+         .join("\n\n");
+ 
++      // pi 工具输出规范：大结果截尾返回，防止单次页面提取污染 LLM 上下文。
++      const truncation = truncateTail(raw, { maxLines: DEFAULT_MAX_LINES, maxBytes: DEFAULT_MAX_BYTES });
++      let text = truncation.content;
++      if (truncation.truncated) {
++        text += `\n\n[Output truncated: showing last ${truncation.outputLines} of ${truncation.totalLines} lines (${formatSize(truncation.outputBytes)} of ${formatSize(truncation.totalBytes)}); ${truncation.totalLines - truncation.outputLines} lines (${formatSize(truncation.totalBytes - truncation.outputBytes)}) omitted.]`;
++      }
++
+       return {
+         content: [
+           { type: "text" as const, text: text || "browser_execute completed" },
+@@ -90,8 +120,109 @@
+           output: preview(result.output),
+           screenshotCount: result.screenshots.length,
+           workspaceDir,
+-        },
++        } satisfies BrowserExecuteDetails,
+       };
+     },
++
++    // 上游未定义渲染槽时 pi 走 fallback：调用只显示工具名、结果倾倒全文。
++    // 以下两槽对齐内置 bash：code 是命令性质，调用用单行摘要而非 write 式内容预览。
++    renderCall(args, theme, context) {
++      const text = (context.lastComponent as Text | undefined) ?? new Text("", 0, 0);
++      let content = theme.fg("toolTitle", theme.bold("browser_execute "));
++      content += theme.fg("accent", args.description ?? "");
++      const code = args.code ?? "";
++      if (context.expanded) {
++        for (const line of code.split("\n")) {
++          content += `\n${theme.fg("dim", line)}`;
++        }
++      } else {
++        const lines = code.split("\n");
++        const first = lines[0] ?? "";
++        const head = first.length > CALL_HEAD_CHARS ? first.slice(0, CALL_HEAD_CHARS - 1) + "…" : first;
++        const suffix =
++          lines.length > 1
++            ? theme.fg("muted", ` … (+${lines.length - 1} lines, ${keyHint("app.tools.expand", "to expand")})`)
++            : "";
++        content += `\n${theme.fg("dim", head)}${suffix}`;
++      }
++      text.setText(content);
++      return text;
++    },
++
++    renderResult(result, { expanded, isPartial }, theme, context) {
++      const text = (context.lastComponent as Text | undefined) ?? new Text("", 0, 0);
++      const details = result.details as BrowserExecuteDetails | undefined;
++      const firstText = result.content.find((part) => part.type === "text");
++      const textContent = firstText?.type === "text" ? firstText.text : "";
++
++      if (context.isError) {
++        let content = theme.fg("error", textContent.split("\n")[0]?.slice(0, RESULT_HEAD_CHARS) ?? "Error");
++        if (expanded) {
++          for (const line of textContent.split("\n").slice(1)) {
++            content += `\n${theme.fg("dim", line)}`;
++          }
++        }
++        text.setText(content);
++        return text;
++      }
++
++      if (isPartial) {
++        let content = theme.fg("warning", "Running...");
++        const tail = (details?.output ?? "")
++          .split("\n")
++          .filter((line) => line.trim())
++          .slice(-3);
++        for (const line of tail) {
++          content += `\n${theme.fg("dim", line)}`;
++        }
++        text.setText(content);
++        return text;
++      }
++
++      // 对齐内置 bash：结果只显示输出本身，无状态行；无输出无返回值则不显示。
++      const output = details?.output ?? "";
++      const outputLines = output ? output.split("\n") : [];
++      const value = details && details.result !== "null" ? details.result : undefined;
++      const valueHead = value ? value.replace(/\s+/g, " ") : "";
++      const valueTruncated = valueHead.length > RESULT_HEAD_CHARS;
++      if (outputLines.length === 0 && !value) {
++        text.setText("");
++        return text;
++      }
++
++      let content = "";
++      if (!expanded) {
++        for (const line of outputLines.slice(0, RESULT_CONSOLE_PREVIEW)) {
++          content += `${content ? "\n" : ""}${theme.fg("dim", line)}`;
++        }
++        if (value) {
++          content += `${content ? "\n" : ""}${theme.fg(
++            "dim",
++            `=> ${valueTruncated ? valueHead.slice(0, RESULT_HEAD_CHARS - 1) + "…" : valueHead}`,
++          )}`;
++        }
++        if (outputLines.length > RESULT_CONSOLE_PREVIEW || valueTruncated) {
++          content += `\n${theme.fg("muted", `... (${keyHint("app.tools.expand", "to expand")})`)}`;
++        }
++      } else {
++        for (const line of outputLines) {
++          content += `${content ? "\n" : ""}${theme.fg("dim", line)}`;
++        }
++        if (value) {
++          content += `${content ? "\n" : ""}${theme.fg("accent", "=>")}`;
++          const valueLines = value.split("\n");
++          const shown = valueLines.slice(0, RESULT_VALUE_LINES);
++          for (const line of shown) {
++            content += `\n  ${theme.fg("dim", line)}`;
++          }
++          if (valueLines.length > RESULT_VALUE_LINES) {
++            content += `\n${theme.fg("muted", `... (${valueLines.length - RESULT_VALUE_LINES} more lines)`)}`;
++          }
++        }
++      }
++
++      text.setText(content);
++      return text;
++    },
+   });
+ }
+diff -urN a/src/cdp/session.ts b/src/cdp/session.ts
+--- a/src/cdp/session.ts	2026-09-18 23:44:13.588815231 +0800
++++ b/src/cdp/session.ts	2026-09-18 23:44:13.590507458 +0800
+@@ -5,6 +5,7 @@
+  * Connect with flatten:true so all sessions share one WebSocket.
+  */
+ 
++import { spawn } from "node:child_process";
+ import { readFile, stat } from "node:fs/promises";
+ import { setTimeout as sleep } from "node:timers/promises";
+ import { bindDomains, type Domains, type Transport } from "./generated.js";
+@@ -60,7 +61,46 @@
+ 
+     const envWsUrl = process.env.BU_CDP_WS ?? process.env.BU_CDP_URL;
+     if (envWsUrl) {
+-      await this.openWs(envWsUrl, timeoutMs);
++      let wsUrl = envWsUrl;
++      if (/^http:\/\//i.test(wsUrl)) {
++        const endpoint = wsUrl.replace(/\/+$/, "");
++        const deadline = Date.now() + Math.max(timeoutMs, 20_000);
++        let lastErr: unknown = new Error("endpoint never became ready");
++        let launched = false;
++        let info: { webSocketDebuggerUrl?: string } | undefined;
++        while (Date.now() < deadline) {
++          try {
++            const res = await fetch(`${endpoint}/json/version`);
++            if (!res.ok) throw new Error(`HTTP ${res.status}`);
++            info = (await res.json()) as { webSocketDebuggerUrl?: string };
++            break;
++          } catch (error) {
++            lastErr = error;
++            const launchCmd = process.env.BU_CDP_LAUNCH;
++            if (launchCmd && !launched) {
++              launched = true;
++              try {
++                const child = spawn(launchCmd, { detached: true, stdio: "ignore" });
++                child.unref();
++              } catch (launchError) {
++                lastErr = launchError;
++                break;
++              }
++            }
++            await sleep(250);
++          }
++        }
++        if (!info?.webSocketDebuggerUrl) {
++          const hint = process.env.BU_CDP_LAUNCH
++            ? `Tried auto-starting "${process.env.BU_CDP_LAUNCH}". If the browser is already running without its debug port, restart it; without a graphical session the launch fails. `
++            : "";
++          throw new Error(
++            `Browser endpoint ${endpoint} unreachable (${String(lastErr)}). ${hint}Do not start or connect to any other browser; report this error instead.`,
++          );
++        }
++        wsUrl = info.webSocketDebuggerUrl;
++      }
++      await this.openWs(wsUrl, timeoutMs);
+       return;
+     }
+ 

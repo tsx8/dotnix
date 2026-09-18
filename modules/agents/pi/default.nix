@@ -9,17 +9,33 @@
       # 只注入主入口：kami/waza 插件无 agents/MCP/hooks 组件，
       # pi-subagents/jiti 仅供未注入的可选入口，不入 node_modules 闭包。
       piPlugins = config.flake.packages.${system}.pi-plugins;
+      # 上游 auto-detect 依赖的 DevToolsActivePort 在 Chromium 147+ 不再写出，
+      # env 路径又只接受完整 ws:// URL（UUID 每次启动变化），故打补丁：
+      # BU_CDP_URL 支持 http:// 端点（运行时取活 wsUrl），不可达时按
+      # BU_CDP_LAUNCH 拉起浏览器，工具指南声明默认端点为唯一授权浏览器。
+      # 另补 renderCall/renderResult 与 LLM 输出截断：上游无渲染槽时
+      # pi 走 fallback，调用参数不显示、结果全文倾倒且不可折叠。
+      piChromeUse = pkgs.applyPatches {
+        name = "pi-chrome-use-env-endpoint";
+        src = inputs.pi-chrome-use;
+        patches = [ ./pi-chrome-use-env-endpoint.patch ];
+      };
     in
     {
       environment.systemPackages = [
         (pkgs.writeShellScriptBin "pi" ''
           export PATH="${pkgs.bash}/bin:$PATH"
           export BASH_ENV=/etc/direnv/bash-env
+          # pi-chrome-use 的 CDP 端点，对应 helium 常驻调试端口；
+          # 不可达时扩展按 BU_CDP_LAUNCH 拉起日常 profile 的 helium。
+          export BU_CDP_URL=http://127.0.0.1:9222
+          export BU_CDP_LAUNCH=helium
           exec ${pi}/bin/pi \
             --extension ${adapter}/index.ts \
             --extension ${piPlugins}/dist/pi/extension.js \
             --extension ${./compact-1e.ts} \
             --extension ${./slash-enter.ts} \
+            --extension ${piChromeUse}/extensions/browser-execute.ts \
             "$@"
         '')
       ];
@@ -69,6 +85,10 @@
       # 避免触发旧格式迁移写回。
       home.file.".pi/agent/models.json".source = ./models.json;
       home.file.".pi/agent/keybindings.json".source = ./keybindings.json;
+
+      # MCP adapter 行为设置：结果用 boxed 渲染（自带 Box 背景）；
+      # 上游把行为设置混在 mcp.json 的 settings 节，无独立插件配置接口。
+      home.file.".pi/agent/mcp.json".source = ./mcp.json;
 
       # settings.json 必须保持真实可写文件（pi /settings 原地写入），
       # 故不用 home.file symlink，而在激活时按声明键深合并（zed/vscode mutableUserSettings 模式）。

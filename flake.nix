@@ -81,6 +81,11 @@
       flake = false;
     };
 
+    pi-chrome-use = {
+      url = "github:citrolabs/pi-chrome-use";
+      flake = false;
+    };
+
     simple-live-app = {
       url = "github:xiaoyaocz/dart_simple_live";
       flake = false;
