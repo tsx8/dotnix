@@ -15,6 +15,9 @@ let
       ./mapped-tap.patch
       ./command-events.patch
       ./idle-grab.patch
+      # 锁定键解锁在松开时才落地，长按的翻转改为脉冲输出才能在超时时刻对称生效；
+      # 脉冲后把锁定态镜像到 rime ascii，输入指示才能跟随白/en/A。
+      ./lock-hold-pulse.patch
     ];
   };
   runtime = callPackage "${source}/nix/toshy-runtime.nix" { toshySrc = source; };

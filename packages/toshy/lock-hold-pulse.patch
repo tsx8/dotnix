@@ -1,0 +1,65 @@
+diff --git a/vendors/xwaykeyz-main/src/xwaykeyz/transform.py b/vendors/xwaykeyz-main/src/xwaykeyz/transform.py
+index 19c6609..d0f1ae7 100644
+--- a/vendors/xwaykeyz-main/src/xwaykeyz/transform.py
++++ b/vendors/xwaykeyz-main/src/xwaykeyz/transform.py
+@@ -35,6 +35,27 @@ from .models.modmap import Modmap, MultiModmap
+ from .models.timeout_rule import TimeoutRule
+ from .output import Output
+ 
++
++def _mirror_lock_state():
++    # Caps Lock state is invisible to fcitx5; mirror every toggle into the
++    # Rime ascii option (delayed past the compositor's LED update) so the
++    # input indicator tracks the physical lock. Best effort: a missed mirror
++    # self-corrects at the next toggle.
++    def worker():
++        try:
++            import glob
++            import dbus
++            time.sleep(0.15)
++            on = any(open(p).read().strip() == "1" for p in glob.glob(
++                "/sys/class/leds/*::capslock/brightness"))
++            bus = dbus.SessionBus()
++            bus.get_object("org.fcitx.Fcitx5", "/rime").SetAsciiMode(
++                on, dbus_interface="org.fcitx.Fcitx.Rime1", timeout=0.5)
++        except Exception:
++            pass
++    import threading
++    threading.Thread(target=worker, daemon=True).start()
++
+ _MODMAPS: 'list[Modmap]' = None
+ _MULTI_MODMAPS: 'list[MultiModmap]' = None
+ _KEYMAPS: 'list[Keymap]' = None
+@@ -451,6 +472,15 @@ def resume_keys():
+                 )
+                 if not special_shift_case:
+                     ks.resolve_as_modifier()
++                    # A lock key (Caps Lock) latches on press and only clears
++                    # on release, so leaving the key held would postpone the
++                    # unlock until the physical release. Pulse the key so the
++                    # toggle lands at the hold timeout instead.
++                    if not ks.exerted_on_output:
++                        ks.exerted_on_output = True
++                        _output.send_key_action(ks.key, Action.PRESS)
++                        _output.send_key_action(ks.key, Action.RELEASE)
++                        _mirror_lock_state()
+                 else:
+                     # Special case: keep as momentary
+                     pass
+@@ -1055,6 +1085,7 @@ def on_key(keystate: Keystate, ctx):
+                 if not ks.exerted_on_output:
+                     _output.send_key_action(ks.key, Action.PRESS)
+                     ks.exerted_on_output = True
++                    _mirror_lock_state()
+ 
+     # Continue with normal processing...
+     if Modifier.is_key_modifier(key):
+@@ -1081,6 +1112,8 @@ def on_key(keystate: Keystate, ctx):
+     elif action.is_released:
+         if _output.is_key_pressed(key):
+             _output.send_key_action_fast(key, action)
++            if key == Key.CAPSLOCK:
++                _mirror_lock_state()
+         if keystate.is_multi:
+             # debug("multi released early", key)
+             debug("Multipurpose key released before timeout expired", key)

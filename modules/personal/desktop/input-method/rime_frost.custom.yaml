@@ -56,9 +56,11 @@ patch:
   recognizer/patterns: {}
 
   # ascii_composer 运行时读原始 default.yaml（预设路径不经编译补丁），
-  # 所以 Shift 的 noop 必须写进方案本身才生效。
+  # 所以 noop 必须写进方案本身才生效。Caps_Lock 若设 clear，长按大写
+  # 透传的真实 CapsLock 会被 rime 解释成中英切换，英文态残留后点按
+  # 只能在 en/A 间循环；CapsLock 只承担大写锁定，中英切换交给点按。
   ascii_composer/switch_key:
-    Caps_Lock: clear
+    Caps_Lock: noop
     Control_L: noop
     Control_R: noop
     Shift_L: noop
