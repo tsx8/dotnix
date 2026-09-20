@@ -7,29 +7,7 @@
 }:
 
 let
-  # 上游 lock 缺以下嵌套依赖的 integrity 字段，逐项预取补齐；上游修复后可删。
-  integrityFixups = {
-    "node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-agent-core" =
-      "sha256-qq0hg7Xsl66lQgE6/quhNlM4lLCWADwnXBm6Y85V7j8=";
-    "node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-ai" =
-      "sha256-araJGJ58s95c2xJjEqPmDorDX+XuXxtj0A9xHIpDDHM=";
-    "node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-client" =
-      "sha256-iK/HOxkwWCcQ2DYPT6k6XYHwUu4fX7A7DkCH3xPfYBSo=";
-    "node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-protocol" =
-      "sha256-Ldxtomn/+a36btSLk5OjoViWCLzdNbvT3sp4KNENlYo=";
-    "node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-telemetry" =
-      "sha256-o57d7wAXG7ZRAVklvrirF2LksRJyAqOOaKny4Ry1PqU=";
-    "node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-tui" =
-      "sha256-meHzu/jZ8DdT/KxmODHfYc+VssRfskkUJvlc8o2Coi0=";
-  };
   upstreamLock = lib.importJSON "${adapterSrc}/package-lock.json";
-  lock = upstreamLock // {
-    packages =
-      upstreamLock.packages
-      // (builtins.mapAttrs (
-        path: integrity: upstreamLock.packages.${path} // { inherit integrity; }
-      ) integrityFixups);
-  };
   # node_modules 按 lock 记录的树直接解包物化：npm 离线安装会在理想树与 lock
   # 分歧时回源 registry（ENOTCACHED），且不可复现；解包与 --ignore-scripts 等价。
   # 上游 lock 含 devDependencies 闭包，仅安装生产可达条目。
@@ -39,7 +17,7 @@ let
     && (!(v ? cpu) || builtins.elem "x64" v.cpu || builtins.elem "any" v.cpu);
   wanted = lib.filterAttrs (
     path: v: path != "" && v ? resolved && !(v.dev or false) && compatible v
-  ) lock.packages;
+  ) upstreamLock.packages;
   sources = lib.mapAttrs (
     _: v:
     fetchurl {
