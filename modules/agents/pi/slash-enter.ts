@@ -27,10 +27,11 @@ class CommandEnterEditor extends CustomEditor {
   }
 }
 
+// pi 0.86 起默认将 spinner 内嵌编辑器边框，自定义编辑器需显式 opt-in。
 export default function (pi: ExtensionAPI) {
   pi.on("session_start", (_event, ctx) => {
     ctx.ui.setEditorComponent((tui, theme, keybindings) =>
-      new CommandEnterEditor(tui, theme, keybindings)
+      new CommandEnterEditor(tui, theme, keybindings, { embedWorkingStatus: true })
     );
   });
 }
