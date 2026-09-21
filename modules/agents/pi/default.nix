@@ -65,14 +65,14 @@
         # reserveTokens = contextWindow − floor(contextWindow/e)，
         # codex 系窗口取 models.json 覆盖的 1,050,000。
         compaction.modelOverrides = {
-          "zai-coding-cn/glm-5.3" = 632121;
-          "zai-coding-cn/glm-5.3-flash" = 632121;
-          "zai-coding-cn/glm-5.3-highspeed" = 632121;
-          "openai-codex/gpt-5.6-luna" = 663727;
-          "openai-codex/gpt-5.6-terra" = 663727;
-          "openai-codex/gpt-5.6-sol" = 663727;
-          "openai-codex/gpt-6-astra" = 663727;
-          "google/gemini-flash-latest" = 662827;
+          "zai-coding-cn/glm-5.3".reserveTokens = 632121;
+          "zai-coding-cn/glm-5.3-flash".reserveTokens = 632121;
+          "zai-coding-cn/glm-5.3-highspeed".reserveTokens = 632121;
+          "openai-codex/gpt-5.6-luna".reserveTokens = 663727;
+          "openai-codex/gpt-5.6-terra".reserveTokens = 663727;
+          "openai-codex/gpt-5.6-sol".reserveTokens = 663727;
+          "openai-codex/gpt-6-astra".reserveTokens = 663727;
+          "google/gemini-flash-latest".reserveTokens = 662827;
         };
       };
       # 市场与插件全量声明，激活时由 plugin-ensure.sh 登记/安装；store 路径随
