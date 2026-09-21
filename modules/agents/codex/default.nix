@@ -50,6 +50,5 @@
   dotnix.modules.home = {
     # 源文件保持 .txt 后缀，避免被按目录级 AGENTS.md 扫描的工具误拾取。
     home.file.".codex/AGENTS.md".source = ../AGENTS-md.txt;
-    home.file.".codex/skills/obelisk".source = "${inputs.obelisk-skill}/skills/obelisk";
   };
 }

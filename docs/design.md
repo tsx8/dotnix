@@ -5,10 +5,10 @@
 ## 配置组织
 
 - flake-parts 提供顶层模块系统，import-tree 递归导入 `modules/` 中的功能模块，排除 `*.data.nix` 数据文件。功能目录中的 `default.nix` 本身就是顶层模块，不重复导入已经扫描到的文件。
-- 功能按机器运行、个人使用、配置维护、代理能力组织；系统配置与 Home Manager 配置共同归属功能，专属数据与配置放在同一目录。简单功能保留单文件。
+- 功能按机器运行、个人使用、配置维护、代理能力组织；系统配置与 Home Manager 配置共同归属功能，专属数据与配置放在同一目录。简单功能保留单文件。`modules/agents/` 内分三类：代理本体（pi、codex）、代理工具（`tools/`，如 bex、obelisk：包发布与接入接线）、代理技能（装配在域根模块，本地与外部技能统一装到 `~/.agents/skills/`）；跨代理的共享设施（全局指令、环境入口）同在域根。
 - `dotnix.modules.nixos` 和 `dotnix.modules.home` 以 `deferredModule` 合并各功能的贡献；`assembly.nix` 将它们装配为唯一的 `nixosConfigurations.maco`。
 - `dotnix.host` 保存当前单机的名称、平台和账户绑定，供功能共享；路径等派生信息仍从系统与用户配置读取，避免形成第二份配置来源。
-- 本地包的构建定义与源码归 `packages/<name>/`，由所属功能发布 flake 包输出，不参加模块自动导入。
+- 本地包的构建定义与源码归 `packages/<name>/`，本地技能内容归 `skills/<name>/`，均由所属功能发布 flake 输出或接线，不参加模块自动导入。
 - Just 模块与 Shell 实现分别位于 `scripts/just/` 和 `scripts/sh/`，配方从仓库根执行。安装生成的硬件报告、磁盘设备输入归主机和存储功能；共享加密文件归身份功能，具体秘密声明归消费者。
 
 ## 工具边界
