@@ -33,7 +33,6 @@
           exec ${pi}/bin/pi \
             --extension ${adapter}/index.ts \
             --extension ${piPlugins}/dist/pi/extension.js \
-            --extension ${./compact-1e.ts} \
             --extension ${./slash-enter.ts} \
             --extension ${piChromeUse}/extensions/browser-execute.ts \
             "$@"
@@ -62,6 +61,19 @@
         quietStartup = true;
         defaultProjectTrust = "always";
         tuiMode = "fullscreen";
+        # 阈值 contextWindow/e 主动压缩（ChatGPT/Codex auto_compact 语义）：
+        # reserveTokens = contextWindow − floor(contextWindow/e)，
+        # codex 系窗口取 models.json 覆盖的 1,050,000。
+        compaction.modelOverrides = {
+          "zai-coding-cn/glm-5.3" = 632121;
+          "zai-coding-cn/glm-5.3-flash" = 632121;
+          "zai-coding-cn/glm-5.3-highspeed" = 632121;
+          "openai-codex/gpt-5.6-luna" = 663727;
+          "openai-codex/gpt-5.6-terra" = 663727;
+          "openai-codex/gpt-5.6-sol" = 663727;
+          "openai-codex/gpt-6-astra" = 663727;
+          "google/gemini-flash-latest" = 662827;
+        };
       };
       # 市场与插件全量声明，激活时由 plugin-ensure.sh 登记/安装；store 路径随
       # 输入变化时重建重装。
