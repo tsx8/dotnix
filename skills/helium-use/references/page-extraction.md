@@ -28,15 +28,19 @@ Rules that keep the envelope small and the facts exact:
 
 ## Navigation
 
-New tab: `Target.createTarget({url})` → `use(targetId)` → sleep 3–5 s for JS-heavy
-apps (or poll for a marker selector). Same tab: `Page.navigate` via
-`await session.Page.navigate({url})` then wait for load the same way.
+New page: `bex run --tab <url> file.js` — the tab is hidden, owned by the run,
+and dies with it; wait for JS-heavy apps by polling for a marker selector
+(sleeps are unreliable). In-page navigation via `session.Page.navigate` is
+allowed on your own tab; the context pin then fails fast with
+`CONTEXT_DESTROYED` — call `await session.resetContextPin()` and re-derive
+state before continuing. Attaching the human's tabs is refused (`FOREIGN_TARGET`);
+extract by opening the URL in your own tab.
 
 ## Stale targets
 
-`TARGET_GONE` / `No target with given id` means the tab closed or was replaced —
-`bex targets`, re-resolve, re-`use`. A targetId is valid only while that tab
-lives.
+`TARGET_GONE` means the tab is gone (closed or its run ended) — nothing to
+re-resolve; reopen by URL in a fresh `--tab` run. `SESSION_LOST` means the
+tab lives but the CDP session detached — re-`use(targetId)` and retry.
 
 ## Verification discipline
 

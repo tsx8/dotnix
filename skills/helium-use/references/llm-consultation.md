@@ -1,96 +1,128 @@
 # Driving ChatGPT-like chat UIs
 
-Workflow proven end-to-end against chatgpt.com (GPT-5.6 Sol, Extra High). Every
-step below encodes a failure that actually happened; do not skip the checks.
+Workflow proven end-to-end against chatgpt.com (GPT-5.6 Sol, Extra High) in
+hidden throwaway tabs. Every step below encodes a failure that actually
+happened; do not skip the checks.
 
-## 1. Locate or open the conversation
+## 0. Transaction shape
 
-```js
-// bex targets first; open a fresh chat if needed:
-const { targetId } = await session.Target.createTarget({ url: "https://chatgpt.com/" });
-await session.use(targetId);
-await new Promise((r) => setTimeout(r, 4000));   // wait for app shell
-return { targetId };
+One consultation = one `bex run --tab` transaction when it fits the timeout
+(observed full cycle: ~5–8 min; `--timeout` max 600000). The tab dies with the
+run; the conversation lives server-side. Follow-ups reopen the SAME
+conversation by URL in a fresh `--tab` run — that is the only state that
+outlives a run.
+
+```bash
+bex run --tab https://chatgpt.com/c/<conversation-id> --timeout 580000 consult.js
 ```
 
-Persist `targetId` in your notes; reuse it across runs while the tab lives.
+## 1. Find or resume the conversation
 
-## 2. Model / reasoning selection
+- Fresh chat: `--tab https://chatgpt.com/`.
+- Resume: you need the conversation URL. Sidebar history links do NOT render
+  in hidden tabs — read the account's local cache instead (proven):
 
-- Find the picker by innerText (`"Extra High"`, etc.); `aria-label`s are unreliable.
-- Synthetic `element.click()` is often intercepted — use real mouse events at the
-  button's coordinates:
-
-```js
-const pos = await session.Runtime.evaluate({ expression: `(function(){
-  const b = [...document.querySelectorAll('button')].find(x => (x.innerText||'').trim()==='Extra High');
-  if (!b) return JSON.stringify(null);
-  const r = b.getBoundingClientRect();
-  return JSON.stringify({ x: Math.round(r.x+r.width/2), y: Math.round(r.y+r.height/2) });
-})()`, returnByValue: true });
-const p = JSON.parse(pos.result.value);
-await session.Input.dispatchMouseEvent({ type: "mouseMoved", x: p.x, y: p.y });
-await session.Input.dispatchMouseEvent({ type: "mousePressed", x: p.x, y: p.y, button: "left", clickCount: 1 });
-await session.Input.dispatchMouseEvent({ type: "mouseReleased", x: p.x, y: p.y, button: "left", clickCount: 1 });
-// then read [role="menu"] items and click the one matching the model name
-```
-
-## 3. Insert long text (never per-key)
-
-```js
-await session.Runtime.evaluate({ expression: `(function(){
-  (document.querySelector('#prompt-textarea') || document.querySelector('div[contenteditable="true"]')).focus();
-  return 'focused';
-})()`, returnByValue: true });
-await session.Input.insertText({ text: PROMPT });
-// verify: query the composer's textContent length and the send button's disabled state
-```
-
-## 4. Send and confirm streaming started
-
-Click `button[data-testid="send-button"]`; within seconds a Stop button must
-appear — that is your confirmation the message went out.
-
-## 5. Completion detection — beware false completion
-
-High reasoning effort streams in segments with long silent pauses (thinking,
-web search). Observed: reply stable at 1688 chars for minutes, finally 17047.
-"Stop button gone + text stable once" is NOT completion. Require all of:
-
-- assistant message exists and `length` above a sane threshold (not 0/short),
-- no streaming indicator (Stop button, thinking animation),
-- length identical across two checks several seconds apart,
-- no `thinking`/activity element present.
-
-```js
-for (let i = 0; i < 44; i++) {
-  await new Promise((r) => setTimeout(r, 12000));
-  const st = await session.Runtime.evaluate({ expression: `(function(){
-    const a = document.querySelectorAll('[data-message-author-role="assistant"]');
-    const stop = document.querySelector('button[aria-label="Stop streaming"], button[aria-label*="Stop"]');
-    const anim = document.querySelector('[class*="animate-pulse"], [class*="animate-bounce"]');
-    return JSON.stringify({ n: a.length, len: a.length ? a[a.length-1].innerText.length : 0,
-      streaming: !!stop, anim: !!anim });
+  ```js
+  // inside a --tab https://chatgpt.com/ run, after the shell is up:
+  const r = await session.Runtime.evaluate({ expression: `(function(){
+    const k = Object.keys(localStorage).find(k => /conversation-history$/.test(k));
+    const items = k ? JSON.parse(localStorage.getItem(k)).value.pages[0].items : [];
+    return JSON.stringify(items.slice(0, 10).map(i => ({ id: i.id, title: i.title })));
   })()`, returnByValue: true });
-  const s = JSON.parse(st.result.value);
-  if (s.n > 0 && s.len > 500 && !s.streaming && !s.anim) {
-    await new Promise((r) => setTimeout(r, 8000));   // second stability check
-    // …re-read len; return done only if unchanged…
-  }
+  return JSON.parse(r.result.value);
+  ```
+
+Persist conversation ids in your notes. Conversations keep their model and
+effort settings; a fresh tab inherits the account defaults.
+
+## 2. Wait for the shell (hydration is slow and variable)
+
+Poll instead of sleeping once — 6s is sometimes not enough:
+
+```js
+const ev = async (e) => { const r = await session.Runtime.evaluate({ expression: e, returnByValue: true });
+  return JSON.parse(r.result.value); };
+let pre;
+for (let i = 0; i < 8; i++) {
+  pre = await ev(`(function(){
+    const c = document.querySelector('#prompt-textarea') || document.querySelector('div[contenteditable="true"]');
+    return JSON.stringify({ composer: !!c, users: document.querySelectorAll('[data-message-author-role="user"]').length,
+      assistants: document.querySelectorAll('[data-message-author-role="assistant"]').length });
+  })()`);
+  if (pre.composer) break;
+  await new Promise((r) => setTimeout(r, 1500));
 }
-return { done: false, msg: "timeout, still generating" };
 ```
 
-Run with `--timeout 580000` or similar.
+## 3. Compose and send (the proven recipe)
 
-## 6. Extract the reply
+ChatGPT auto-restores composer drafts across tabs; typing on top of a restored
+draft makes button clicks AND Enter silently do nothing. Clear, type, submit
+the form directly:
 
-`innerText` of the last assistant message; long replies: slice into parts and
-return each part as its own run. Strip citation chips (standalone lines like
-`+1`, `GitHub`, `npm`) with a line filter. Keep your return compact.
+```js
+// 3.1 clear any auto-restored draft
+await ev(`(function(){
+  const c = document.querySelector('#prompt-textarea') || document.querySelector('div[contenteditable="true"]');
+  c.focus(); document.execCommand('selectAll', false, null); document.execCommand('delete', false, null);
+  return true;
+})()`);
+// 3.2 inject (never per-key)
+await session.Input.insertText({ text: PROMPT });
+// 3.3 submit the form — coordinate clicks and Enter events are unreliable here
+await ev(`(function(){
+  const c = document.querySelector('#prompt-textarea') || document.querySelector('div[contenteditable="true"]');
+  c.closest('form').requestSubmit(); return true;
+})()`);
+```
 
-## 7. Interrupt recovery
+Confirm the send: user-message count increments, or a Stop button appears.
+If neither, inspect state before retrying — a half-dispatched send with
+`outcomeUnknown` must not be blindly replayed.
 
-If a run died mid-way (e.g. `NOT_CONNECTED`), the browser state is untouched:
-reconnect is automatic on the next `bex run`; re-`use(targetId)` and continue —
-the conversation, the streaming reply, everything survives in the tab.
+## 4. Completion detection — beware false completion
+
+High reasoning effort streams in segments with long silent pauses. Observed:
+reply stable at 1688 chars for minutes, finally 17047. Also observed: a
+transient placeholder of ~100 chars captured as the "final" length — the final
+snapshot must be re-derived, not trusted. Require all of:
+
+- a NEW assistant message beyond the pre-send count, `length > 500`,
+- no streaming indicator (Stop button), no thinking animation,
+- length identical across two checks ~8s apart.
+
+```js
+let stableLen = -1, stableAt = 0, final = null;
+for (let i = 0; i < 44; i++) {
+  const s = await ev(`(function(){
+    const a = document.querySelectorAll('[data-message-author-role="assistant"]');
+    const stop = [...document.querySelectorAll('button')].some(b => /stop|停止/i.test(b.getAttribute('aria-label')||''));
+    const anim = document.querySelector('[class*="animate-pulse"], [class*="animate-bounce"]');
+    return JSON.stringify({ n: a.length, len: a.length ? a[a.length-1].innerText.length : 0, stop, anim: !!anim });
+  })()`);
+  final = s;
+  if (s.n > priorAssistants && s.len > 500 && !s.stop && !s.anim) {
+    if (stableLen === s.len && Date.now() - stableAt >= 8000) break;
+    if (stableLen !== s.len) { stableLen = s.len; stableAt = Date.now(); }
+  } else { stableLen = -1; }
+  await new Promise((r) => setTimeout(r, 12000));
+}
+```
+
+## 5. Extract
+
+`innerText` of the last assistant message; strip citation chips. The envelope
+caps at 20 KB — slice ~1900 chars per part and return one part per run,
+reopening the conversation by URL each time. If the extracted length looks like
+a placeholder (~100 chars), re-open and re-extract before believing it.
+
+## 6. Failure recovery
+
+- Run died mid-generation: the conversation and any in-flight reply survive
+  server-side. Reopen by URL; if generation finished while you were away, the
+  full text is there.
+- `CONTEXT_DESTROYED`: the tab was navigated (by the app, not you) — stop and
+  re-derive; do not continue a flow whose page identity you cannot confirm.
+- Draft residue after a killed run: the draft store may re-inject your text
+  into the next tab's composer — step 3.1 exists for this; also clear
+  `localStorage['oai/apps/conversationDrafts']` if it holds an orphan.

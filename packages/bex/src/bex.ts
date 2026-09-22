@@ -1,9 +1,18 @@
 // bex — CDP-generic browser snippet runner: run / targets / shot / api.
 // 零浏览器特有逻辑：端点与拉起命令来自环境变量（BU_CDP_URL / BU_CDP_LAUNCH），
 // 由 NixOS 包装脚本覆盖式固化，CLI 不提供任何指向其他浏览器的入口。
+//
+// Gate A（纯自动化）契约：
+// - 页面工作走隐形事务：--tab 创建 hidden target，run 结束随连接销毁（无跨 run 持久）。
+// - 片段只能操作本 run 创建的 target（provenance 白名单）；Storage 等账号级
+//   域与窗口操作被工具层拒绝，不依赖片段自律。
+// - Runtime.evaluate 钉 uniqueContextId：导航后显式失败（CONTEXT_DESTROYED），
+//   不静默落入新 document；session.resetContextPin() 供刻意导航后重新钉扎。
+// - 超时/崩溃若发生在副作用派发之后，envelope 标记 outcomeUnknown（防重放）。
+// - -t / shot 是人工通道：默认 RESTRICTED，BEX_UNRESTRICTED=1 解锁且不装策略。
 
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { closeSync, mkdirSync, openSync, readFileSync, statSync, unlinkSync, writeFileSync, writeSync } from "node:fs";
 import { isMainThread, parentPort, workerData, Worker } from "node:worker_threads";
 import vm from "node:vm";
 import { Session } from "@cdp/session";
@@ -18,6 +27,7 @@ const VALUE_MAX_BYTES = 20_000;
 const LOGS_MAX_BYTES = 8_192;
 const LOG_ENTRY_MAX = 1_000;
 const LOG_MAX_ENTRIES = 200;
+const LAUNCH_LOCK_STALE_MS = 15_000;
 
 class BexError extends Error {
   code: string;
@@ -34,9 +44,10 @@ type ShotMeta = { path: string; bytes: number };
 
 function usage(): never {
   process.stderr.write(`usage:
-  ${PROG} run [-t targetId] [--timeout ms] <file>   run a snippet (async function body)
+  ${PROG} run [--tab <url>] [--timeout ms] <file>   run a snippet in a hidden throwaway tab
+  ${PROG} run [-t targetId] [--timeout ms] <file>   attach an existing target (BEX_UNRESTRICTED=1)
   ${PROG} targets [--table]                         list browser pages (JSON by default)
-  ${PROG} shot -t targetId [-o path]                viewport PNG + size/DPR metadata
+  ${PROG} shot -t targetId [-o path]                viewport PNG (BEX_UNRESTRICTED=1)
   ${PROG} api [--domain D] [--method M]             CDP surface from the vendored protocol
 
 snippet contract: the file is an async function body, not an ES module —
@@ -45,11 +56,49 @@ design (vm sandbox). In scope: session (pre-connected CDP Session, every CDP
 domain is a property, e.g. await session.Target.getTargets({})), console,
 setTimeout/clearTimeout. Return a JSON-serializable value; it arrives in the
 envelope as "value".
+
+--tab mode: the tab is created hidden, owned by this run, and destroyed when the
+run ends. Page state that outlives a run must live in the application itself
+(conversation URLs etc.). Snippets may create further tabs via
+session.Target.createTarget — they are forced hidden and auto-destroyed the same
+way. Only targets created by this run can be attached or closed; Storage.* and
+window operations are denied at the tool level. Evaluations are pinned to the
+attached document's execution context: after navigation they fail with
+CONTEXT_DESTROYED — call: await session.resetContextPin() after deliberate
+navigation, then re-derive page state.
 `);
   process.exit(2);
 }
 
 // ---------- endpoint resolution (http -> live wsUrl, auto-launch once) ----------
+
+// 冷启动竞态：多个 bex 并发时只允许一个进程 spawn 拉起命令。O_EXCL 锁 +
+// 陈旧检测（持锁进程死亡时由 mtime 兜底），无运行时依赖。
+function acquireLaunchLock(dir: string): boolean {
+  const lock = `${dir}/launch.lock`;
+  const attempt = (): boolean => {
+    try {
+      const fd = openSync(lock, "wx");
+      writeSync(fd, String(process.pid));
+      closeSync(fd);
+      return true;
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code === "EEXIST") return false;
+      throw e;
+    }
+  };
+  if (attempt()) return true;
+  try {
+    if (Date.now() - statSync(lock).mtimeMs > LAUNCH_LOCK_STALE_MS) {
+      unlinkSync(lock);
+      return attempt();
+    }
+  } catch {
+    // 锁文件消失即重试一次
+    return attempt();
+  }
+  return false;
+}
 
 async function resolveWsUrl(): Promise<string> {
   const env = process.env.BU_CDP_URL;
@@ -67,7 +116,9 @@ async function resolveWsUrl(): Promise<string> {
   const endpoint = env.replace(/\/+$/, "");
   const launch = process.env.BU_CDP_LAUNCH;
   const deadline = Date.now() + CONNECT_TIMEOUT_MS;
+  const lockDir = `${process.env.XDG_RUNTIME_DIR ?? "/tmp"}/${PROG}`;
   let launched = false;
+  let holdLock = false;
   let lastErr: unknown = new Error("endpoint never became ready");
   while (Date.now() < deadline) {
     try {
@@ -75,17 +126,28 @@ async function resolveWsUrl(): Promise<string> {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const info = (await res.json()) as { webSocketDebuggerUrl?: string };
       if (!info.webSocketDebuggerUrl) throw new Error("endpoint returned no webSocketDebuggerUrl");
+      if (holdLock) {
+        try { unlinkSync(`${lockDir}/launch.lock`); } catch { /* 已被清理 */ }
+      }
       return info.webSocketDebuggerUrl;
     } catch (error) {
       lastErr = error;
       if (launch && !launched) {
-        launched = true;
-        try {
-          const child = spawn(launch, { detached: true, stdio: "ignore" });
-          child.unref();
-        } catch (launchError) {
-          lastErr = launchError;
-          break;
+        mkdirSync(lockDir, { recursive: true, mode: 0o700 });
+        if (acquireLaunchLock(lockDir)) {
+          holdLock = true;
+          launched = true;
+          try {
+            const child = spawn(launch, { detached: true, stdio: "ignore" });
+            child.unref();
+          } catch (launchError) {
+            lastErr = launchError;
+            try { unlinkSync(`${lockDir}/launch.lock`); } catch { /* 同上 */ }
+            break;
+          }
+        } else {
+          // 其他进程持锁拉起中，本进程只等待端点就绪
+          launched = true;
         }
       }
       await new Promise((r) => setTimeout(r, 250));
@@ -106,6 +168,11 @@ function shotDir(): string {
   const dir = process.env.BEX_SHOT_DIR ?? `${process.env.XDG_RUNTIME_DIR ?? "/tmp"}/${PROG}`;
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   return dir;
+}
+
+// 并发进程同毫秒生成同名截图的碰撞由 pid + 随机后缀消除
+function shotName(prefix: string): string {
+  return `${prefix}-${Date.now()}-${process.pid.toString(36)}-${Math.random().toString(36).slice(2, 8)}.png`;
 }
 
 function safeStringify(value: unknown): string | undefined {
@@ -172,7 +239,14 @@ function classifyError(e: unknown): { code: string; message: string; hint?: stri
     return {
       code: "TARGET_GONE",
       message,
-      hint: "That tab no longer exists. Run `bex targets` and re-resolve the page.",
+      hint: "That tab no longer exists. Hidden tabs die with their run; state that must outlive a run belongs to the application (URLs).",
+    };
+  }
+  if (/unique.?context/i.test(message) || /default execution context/i.test(message) || /execution context .*(destroyed|cleared|not found)/i.test(message)) {
+    return {
+      code: "CONTEXT_DESTROYED",
+      message,
+      hint: "The attached document was navigated or replaced; the pinned execution context is gone. After a deliberate navigation call session.resetContextPin(), then re-derive page state.",
     };
   }
   if (/Not connected/i.test(message)) {
@@ -188,9 +262,96 @@ function printEnvelope(envelope: Record<string, unknown>): void {
   process.stdout.write(`${JSON.stringify(envelope)}\n`);
 }
 
-// ---------- `run` worker: vm sandbox + screenshot interception ----------
+// ---------- 强制策略（Gate A：provenance 白名单 + 域过滤 + 上下文钉扎） ----------
 
-type RunData = { wsUrl: string; targetId?: string; code: string; dir: string };
+type PolicyState = {
+  owned: Set<string>;
+  pinnedUniqueId?: string;
+  candidates: string[]; // 最近在前：全部 default 主世界候选，验证式取号
+  mutated: boolean;
+  crashed: boolean;
+  bootstrap: boolean;
+};
+
+// 只在 run 的 worker 内安装；拦截一切 CDP 调用（bindDomains 统一走 _call）。
+function installPolicy(session: Session, st: PolicyState): void {
+  const orig = session._call.bind(session);
+  const deny = (code: string, what: string, hint?: string) =>
+    Promise.reject(new BexError(code, `${what} is denied by bex policy.`, hint));
+  session._call = async (method: string, params: Record<string, unknown> = {}) => {
+    // 副作用追踪：供主进程在 TIMEOUT 时标注 outcomeUnknown（引导导航除外）
+    if (!st.bootstrap && !st.mutated && (method.startsWith("Input.") || method === "Page.navigate" || method === "Page.reload")) {
+      st.mutated = true;
+      parentPort?.postMessage({ type: "mutated" });
+    }
+    if (method === "Target.createTarget") {
+      // agent 的 tab 一律隐形后台：不可见即不可被误触
+      const r = (await orig(method, { hidden: true, background: true, ...params })) as { targetId?: string };
+      if (r?.targetId) st.owned.add(r.targetId);
+      return r;
+    }
+    if (method === "Target.attachToTarget" || method === "Target.closeTarget") {
+      const tid = params.targetId as string | undefined;
+      if (!tid || !st.owned.has(tid)) {
+        throw new BexError(
+          "FOREIGN_TARGET",
+          `Refusing ${method} on a target this run did not create.`,
+          "bex only operates targets it created. Pass --tab <url> to work on a page; human tabs are never attachable from a run.",
+        );
+      }
+      const r = await orig(method, params);
+      if (method === "Target.closeTarget") st.owned.delete(tid);
+      return r;
+    }
+    if (method === "Target.activateTarget" || method.startsWith("Target.setAutoAttach")) {
+      return deny("NOT_ALLOWED", method, "Hidden targets cannot be materialized; auto-attach is not available in this mode.");
+    }
+    if (method.startsWith("Storage.")) {
+      return deny("NOT_ALLOWED", `Storage.${method.slice(8)}`, "The Storage domain touches the shared account context (cookies, origin data) and is denied.");
+    }
+    if (method === "Browser.close" || method.startsWith("Browser.setWindowBounds")) {
+      return deny("NOT_ALLOWED", method, "Browser-level window/lifecycle mutation is denied from runs.");
+    }
+    if (method === "Runtime.evaluate") {
+      const p = params ?? {};
+      if (st.pinnedUniqueId && !p.contextId && !p.uniqueContextId) {
+        params = { ...p, uniqueContextId: st.pinnedUniqueId };
+      }
+    }
+    return orig(method, params);
+  };
+  session.onEvent((method, params) => {
+    if (method === "Runtime.executionContextCreated") {
+      const ctx = (params as { context?: { auxData?: { isDefault?: boolean }; uniqueId?: string } }).context;
+      if (ctx?.auxData?.isDefault && ctx.uniqueId) st.candidates.unshift(ctx.uniqueId);
+      if (st.candidates.length > 16) st.candidates.length = 16;
+    } else if (method === "Target.targetCrashed") {
+      st.crashed = true;
+    }
+  });
+  // 片段可调用的钉扎重置：刻意导航后重新验证候选并重新锚定
+  (session as unknown as Record<string, unknown>).resetContextPin = async (): Promise<string | null> =>
+    pinByValidation(orig, st);
+}
+
+// 验证式取号：一次导航可产生多个 default 候选（主帧 + 瞬态帧），逐个试评，
+// 能评的即当前主世界。比按 frameId 猜测更稳，天然跨进程替换。
+async function pinByValidation(orig: (m: string, p?: unknown) => Promise<unknown>, st: PolicyState): Promise<string | null> {
+  for (const uid of st.candidates) {
+    try {
+      await orig("Runtime.evaluate", { expression: "1", uniqueContextId: uid });
+      st.pinnedUniqueId = uid;
+      return uid;
+    } catch {
+      // 候选已随导航/帧销毁失效，试下一个
+    }
+  }
+  return null;
+}
+
+// ---------- `run` worker: vm sandbox + screenshot interception + policy ----------
+
+type RunData = { wsUrl: string; targetId?: string; tabUrl?: string; code: string; dir: string };
 
 function makeConsole(logs: LogEntry[]): Console {
   const emit = (level: string) => (...args: unknown[]) => {
@@ -217,6 +378,7 @@ async function workerRun(data: RunData): Promise<void> {
   const started = Date.now();
   const logs: LogEntry[] = [];
   const screenshots: ShotMeta[] = [];
+  const st: PolicyState = { owned: new Set(), candidates: [], mutated: false, crashed: false, bootstrap: false };
   try {
     post({ type: "phase", phase: "connect" });
     const session = new Session();
@@ -225,7 +387,7 @@ async function workerRun(data: RunData): Promise<void> {
     session.onCallResult((method, _params, result) => {
       const r = result as { data?: string } | null;
       if (method === "Page.captureScreenshot" && r && typeof r.data === "string") {
-        const path = `${data.dir}/shot-${Date.now()}-${String(screenshots.length + 1).padStart(2, "0")}.png`;
+        const path = `${data.dir}/${shotName("shot")}`;
         const buf = Buffer.from(r.data, "base64");
         writeFileSync(path, buf, { mode: 0o600 });
         screenshots.push({ path, bytes: buf.length });
@@ -235,10 +397,27 @@ async function workerRun(data: RunData): Promise<void> {
     });
     await session.connect({ wsUrl: data.wsUrl, timeoutMs: CONNECT_TIMEOUT_MS });
 
-    let sessionId: string | undefined;
-    if (data.targetId) {
+    let attachedTo: string | undefined;
+    if (!process.env.BEX_UNRESTRICTED) installPolicy(session, st);
+
+    if (data.tabUrl) {
       post({ type: "phase", phase: "attach" });
-      sessionId = await session.use(data.targetId);
+      const { targetId } = (await session.Target.createTarget({ url: "about:blank" })) as { targetId: string };
+      await session.use(targetId);
+      st.bootstrap = true;
+      await session.Runtime.enable({}).catch(() => undefined);
+      if (data.tabUrl !== "about:blank") {
+        await session.Page.navigate({ url: data.tabUrl }).catch(() => undefined);
+        await new Promise((r) => setTimeout(r, 400)); // 等导航产生的 context 事件落地
+        await pinByValidation((session as unknown as { _call: (m: string, p?: unknown) => Promise<unknown> })._call.bind(session), st);
+      }
+      st.bootstrap = false;
+      attachedTo = targetId;
+    } else if (data.targetId) {
+      post({ type: "phase", phase: "attach" });
+      await session.use(data.targetId);
+      st.owned.add(data.targetId); // -t 仅在 BEX_UNRESTRICTED 人工模式下可达，策略未安装
+      attachedTo = data.targetId;
     }
     post({ type: "phase", phase: "script" });
 
@@ -263,7 +442,7 @@ async function workerRun(data: RunData): Promise<void> {
       type: "done",
       envelope: {
         ok: true,
-        targetId: data.targetId ?? null,
+        targetId: attachedTo ?? null,
         ...capped,
         ...cappedLogs,
         screenshots,
@@ -271,12 +450,35 @@ async function workerRun(data: RunData): Promise<void> {
       },
     });
   } catch (e) {
+    const err = classifyError(e);
+    // -32001 细分：会话丢失不等于页面消失，浏览器级复查后定性
+    if (/Session with given id not found/i.test(err.message)) {
+      try {
+        const session2 = new Session();
+        await session2.connect({ wsUrl: data.wsUrl, timeoutMs: 5_000 });
+        const { targetInfos } = (await session2.Target.getTargets({})) as { targetInfos: Array<{ targetId: string }> };
+        session2.close();
+        const alive = data.targetId
+          ? targetInfos.some((t) => t.targetId === data.targetId)
+          : [...st.owned].some((t) => targetInfos.some((x) => x.targetId === t));
+        err.code = alive ? "SESSION_LOST" : "TARGET_GONE";
+        err.hint = alive
+          ? "The tab lives but this CDP session was detached; re-attach with session.use(targetId) and retry."
+          : "The tab is gone (closed or its run ended). Re-derive state; long-lived state belongs to the application, not the tab.";
+      } catch {
+        /* 复查失败保留原分类 */
+      }
+    }
+    if (err.code === "SCRIPT_ERROR" && st.crashed) {
+      err.code = "TARGET_CRASHED";
+      err.hint = "The page renderer crashed mid-run. Retry with a fresh --tab; tab-local state is lost.";
+    }
     post({
       type: "done",
       envelope: {
         ok: false,
         targetId: data.targetId ?? null,
-        error: classifyError(e),
+        error: err,
         logs: truncateLogs(logs).logs,
         screenshots,
         elapsedMs: Date.now() - started,
@@ -287,11 +489,13 @@ async function workerRun(data: RunData): Promise<void> {
 
 function cmdRun(args: string[]): void {
   let targetId: string | undefined;
+  let tabUrl: string | undefined;
   let timeoutMs = DEFAULT_TIMEOUT_MS;
   let file: string | undefined;
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === "-t" || a === "--target") targetId = args[++i];
+    else if (a === "--tab") tabUrl = args[++i];
     else if (a === "--timeout") {
       timeoutMs = Number(args[++i]);
       if (!Number.isFinite(timeoutMs)) usage();
@@ -299,6 +503,18 @@ function cmdRun(args: string[]): void {
     else usage();
   }
   if (!file) usage();
+  if (targetId && tabUrl) usage();
+  if (targetId && !process.env.BEX_UNRESTRICTED) {
+    printEnvelope({
+      ok: false,
+      error: {
+        code: "RESTRICTED",
+        message: "`run -t <targetId>` attaches a target the run did not create.",
+        hint: "Agents: use `run --tab <url>` (hidden throwaway tab). Humans: prefix BEX_UNRESTRICTED=1 for direct manual access.",
+      },
+    });
+    process.exit(2);
+  }
   timeoutMs = Math.min(Math.max(Math.trunc(timeoutMs), 1_000), MAX_TIMEOUT_MS);
 
   let code: string;
@@ -311,10 +527,11 @@ function cmdRun(args: string[]): void {
 
   resolveWsUrl().then((wsUrl) => {
     const worker = new Worker(new URL(import.meta.url), {
-      workerData: { wsUrl, targetId, code, dir: shotDir() } satisfies RunData,
+      workerData: { wsUrl, targetId, tabUrl, code, dir: shotDir() } satisfies RunData,
     });
     let phase = "connect";
     let printed = false;
+    let mutated = false;
     const finish = (envelope: Record<string, unknown>, exitCode: number) => {
       if (printed) return;
       printed = true;
@@ -327,11 +544,14 @@ function cmdRun(args: string[]): void {
         {
           ok: false,
           targetId: targetId ?? null,
+          outcomeUnknown: mutated || undefined,
           error: {
             code: "TIMEOUT",
             phase,
             message: `run exceeded ${timeoutMs}ms and was force-terminated during phase "${phase}".`,
-            hint: "Raise --timeout (max 600000) or shorten the script; long waits belong inside one run.",
+            hint: mutated
+              ? "Input/navigation was dispatched before the kill: the page may have acted on it. Do NOT blindly replay side effects — inspect state first."
+              : "Raise --timeout (max 600000) or shorten the script; long waits belong inside one run.",
           },
         },
         3,
@@ -339,6 +559,7 @@ function cmdRun(args: string[]): void {
     }, timeoutMs);
     worker.on("message", (m: { type: string; phase?: string; envelope?: Record<string, unknown> }) => {
       if (m.type === "phase" && m.phase) phase = m.phase;
+      if (m.type === "mutated") mutated = true;
       if (m.type === "done" && m.envelope) {
         clearTimeout(timer);
         finish(m.envelope, m.envelope.ok ? 0 : 1);
@@ -346,11 +567,11 @@ function cmdRun(args: string[]): void {
     });
     worker.on("error", (e) => {
       clearTimeout(timer);
-      finish({ ok: false, error: { code: "WORKER_CRASH", message: String(e) } }, 1);
+      finish({ ok: false, outcomeUnknown: mutated || undefined, error: { code: "WORKER_CRASH", message: String(e) } }, 1);
     });
     worker.on("exit", (code) => {
       clearTimeout(timer);
-      finish({ ok: false, error: { code: "WORKER_CRASH", message: `worker exited unexpectedly (code ${code})` } }, 1);
+      finish({ ok: false, outcomeUnknown: mutated || undefined, error: { code: "WORKER_CRASH", message: `worker exited unexpectedly (code ${code})` } }, 1);
     });
   }).catch((e) => {
     printEnvelope({ ok: false, error: classifyError(e) });
@@ -382,6 +603,17 @@ async function cmdTargets(table: boolean): Promise<void> {
 // ---------- `shot` ----------
 
 async function cmdShot(targetId: string | undefined, out: string | undefined): Promise<void> {
+  if (!process.env.BEX_UNRESTRICTED) {
+    printEnvelope({
+      ok: false,
+      error: {
+        code: "RESTRICTED",
+        message: "`shot` captures a target the caller did not create (hidden tabs cannot be captured).",
+        hint: "Humans: prefix BEX_UNRESTRICTED=1. Note: screenshots hang on hidden targets; capture real tabs only.",
+      },
+    });
+    process.exit(2);
+  }
   if (!targetId) {
     printEnvelope({ ok: false, error: { code: "USAGE", message: "shot requires -t <targetId>", hint: "Run `bex targets` to list pages." } });
     process.exit(2);
@@ -389,6 +621,15 @@ async function cmdShot(targetId: string | undefined, out: string | undefined): P
   const wsUrl = await resolveWsUrl();
   const session = new Session();
   await session.connect({ wsUrl, timeoutMs: CONNECT_TIMEOUT_MS });
+  let done = false;
+  // 隐形 target 上 captureScreenshot 会无限挂起，必须有时限兜底
+  const timer = setTimeout(() => {
+    if (done) return;
+    done = true;
+    session.close();
+    printEnvelope({ ok: false, error: { code: "SHOT_TIMEOUT", message: "captureScreenshot did not return within 20s (hidden targets never paint)." } });
+    process.exit(3);
+  }, 20_000);
   try {
     await session.use(targetId);
     const vp = await session.Runtime.evaluate({
@@ -402,8 +643,10 @@ async function cmdShot(targetId: string | undefined, out: string | undefined): P
     };
     const shot = (await session.Page.captureScreenshot({ format: "png" })) as { data: string };
     const buf = Buffer.from(shot.data, "base64");
-    const path = out ?? `${shotDir()}/shot-${Date.now()}.png`;
+    const path = out ?? `${shotDir()}/${shotName("shot")}`;
     writeFileSync(path, buf, { mode: 0o600 });
+    done = true;
+    clearTimeout(timer);
     printEnvelope({
       ok: true,
       targetId,
@@ -415,6 +658,10 @@ async function cmdShot(targetId: string | undefined, out: string | undefined): P
     });
     process.exit(0);
   } finally {
+    if (!done) {
+      done = true;
+      clearTimeout(timer);
+    }
     session.close();
   }
 }

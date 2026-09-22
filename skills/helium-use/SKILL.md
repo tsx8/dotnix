@@ -33,28 +33,35 @@ Read this once; it prevents every classic first-call error.
 
 - The snippet file is an **async function body**, not an ES module: top-level `await` yes; `return <value>` is the output. No static `import`, no `require`, no fs/net/process — it runs in a vm sandbox. Reusable logic lives in real script files you keep, not in imports.
 - In scope: `session`, `console`, `setTimeout`/`clearTimeout`.
-- `session` arrives **pre-connected**. Every CDP domain is a property:
+- `session` arrives **pre-connected**. With `--tab <url>` bex creates a hidden
+tab (about:blank → navigate), attaches, and pins the page's execution context:
 
   ```js
-  const { targetInfos } = await session.Target.getTargets({});
-  await session.use(targetId);                       // attach to one page
   const r = await session.Runtime.evaluate({ expression: `JSON.stringify({...})`, returnByValue: true });
   return JSON.parse(r.result.value);
   ```
 
 - Page code (`document`, `window`) exists only inside `Runtime.evaluate` expression strings. The snippet itself runs in Node.
-- `targetId` survives across `bex` invocations while that tab exists. Variables, attached-target state, and RemoteObject ids do not — re-derive them each run.
+- The hidden tab lives exactly as long as the run — variables, attached-target
+state, RemoteObject ids, and the tab itself all die at exit. State that must
+outlive a run lives in the application (conversation URLs), not the tab; reopen
+by URL in the next run.
 - Unknown API surface? `bex api` lists domains; `bex api --domain Target` lists methods with params.
 - Ephemeral snippets go to `$XDG_RUNTIME_DIR`/`/tmp`; deliberate reusable scripts go to the project's `.pi/browser/`.
 
 ## Commands
 
 ```bash
-bex targets                                  # list pages (JSON: targetId/url/title)
-bex run [-t targetId] [--timeout ms] file    # run snippet; single JSON envelope on stdout
-bex shot -t targetId [-o out.png]            # viewport PNG + size/DPR metadata
-bex api [--domain D] [--method M]            # CDP surface from the vendored protocol
+bex run --tab <url> [--timeout ms] file   # 事务：隐形一次性 tab，结束即焚
+bex run [--timeout ms] file               # browser 级片段（getTargets 等）
+bex targets                               # list pages (JSON: targetId/url/title)
+bex api [--domain D] [--method M]         # CDP surface from the vendored protocol
 ```
+
+`bex run -t <targetId>` and `bex shot` are human-only channels: they exit with
+`RESTRICTED` unless the caller sets `BEX_UNRESTRICTED=1`, and unrestricted runs
+have no policy installed. Agents never use them — page work goes through
+`--tab`.
 
 Success envelope:
 
@@ -62,15 +69,30 @@ Success envelope:
 {"ok":true,"targetId":"…","value":…,"logs":[],"screenshots":[],"truncated":false,"elapsedMs":1234}
 ```
 
-Error envelope: `{"ok":false,"error":{"code":"TIMEOUT|API_SHAPE|PAGE_CONTEXT|TARGET_GONE|CONNECT|NO_EMIT|…","phase":"connect|attach|script","message":…,"hint":…}}`.
-Exit codes: 0 ok, 1 error, 2 usage, 3 timeout. `Page.captureScreenshot` inside a run is auto-saved to `$XDG_RUNTIME_DIR/bex/` and the snippet receives `{savedTo}` instead of base64.
+Error envelope: `{"ok":false,"error":{"code":"TIMEOUT|API_SHAPE|PAGE_CONTEXT|TARGET_GONE|SESSION_LOST|CONTEXT_DESTROYED|TARGET_CRASHED|FOREIGN_TARGET|NOT_ALLOWED|RESTRICTED|CONNECT|NOT_CONNECTED|NO_EMIT|…","phase":"connect|attach|script","message":…,"hint":…}}`.
+Exit codes: 0 ok, 1 error, 2 usage, 3 timeout. `Page.captureScreenshot` inside a run is auto-saved to `$XDG_RUNTIME_DIR/bex/` and the snippet receives `{savedTo}` instead of base64 — but note hidden tabs never paint, so captures only work on unrestricted targets.
+
+## Tool Policy (enforced, not etiquette)
+
+- Only targets created by the current run can be attached or closed —
+`session.use()` on anything else fails with `FOREIGN_TARGET`. Snippet-created
+tabs via `session.Target.createTarget` are forced `hidden` and die with the run.
+- `Storage.*`, `Browser.close`, window-bounds mutation, `Target.activateTarget`
+and auto-attach are denied (`NOT_ALLOWED`) — they touch the shared account or
+the human's screen surface.
+- Evaluations are pinned to the attached document. After a deliberate
+navigation call `await session.resetContextPin()` and re-derive state; a
+stale pin surfaces as `CONTEXT_DESTROYED` instead of silently evaluating the
+new document.
+- A TIMEOUT (or worker crash) envelope may carry `outcomeUnknown: true` —
+input/navigation was dispatched before the kill and the page may have acted on
+it. Inspect state; never blindly replay side effects.
 
 ## Quick Start
 
 ```bash
-bex targets                       # 1. see what's open, pick a targetId
-# 2. write the snippet (see Execution Model), then:
-bex run -t <targetId> /tmp/probe.js
+# 1. write the snippet (see Execution Model), then:
+bex run --tab https://example.com/ /tmp/probe.js   # hidden throwaway tab
 ```
 
 ## Task Patterns
@@ -86,9 +108,13 @@ bex run -t <targetId> /tmp/probe.js
 | Symptom | Cause | Fix |
 | --- | --- | --- |
 | `session.send is not a function` | bare-CDP prior; bex has no `send` | `session.Domain.method(params)`; `bex api` for the surface |
-| `emit is not defined` | affordance leaked from another snippet tool | `return` a value; `console.log` for intermediate output |
+| `FOREIGN_TARGET` | tried to `use()` a tab this run didn't create | agents: `--tab <url>`; never operate the human's tabs |
+| `CONTEXT_DESTROYED` | the attached document navigated/replaced under you | after deliberate navigation: `await session.resetContextPin()`, re-derive; otherwise treat as drift and stop |
+| `SESSION_LOST` | CDP session detached but the tab lives | re-`use(targetId)` and retry |
+| `TARGET_GONE` | the tab closed / its run ended | reopen by URL in a fresh `--tab` run; long-lived state belongs to the app |
+| `RESTRICTED` | used `-t`/`shot` without `BEX_UNRESTRICTED` | agents: don't; humans: prefix the env |
+| `outcomeUnknown: true` on TIMEOUT | side effects were dispatched before the kill | inspect page state first; do not replay blindly |
 | `window/document is not defined` | page code at snippet top level | move it into `session.Runtime.evaluate({expression})` |
-| `TARGET_GONE` / `No target with given id` | tab closed or replaced | `bex targets`, re-resolve, re-`use` |
 | Reply "done" but text truncated/growing | mid-generation thinking pause (false completion) | require length threshold + no activity indicator + repeated stability; see llm-consultation.md |
 | Envelope `truncated:true` | value exceeded 20 KB | slice DOM text (`innerText.slice(0,N)`) and cap arrays in the snippet |
 
@@ -105,4 +131,4 @@ bex run -t <targetId> /tmp/probe.js
 
 - `--timeout` default 60000, max 600000 ms; hard-killed (envelope `code:"TIMEOUT"`, `phase` tells where).
 - Value cap 20 KB, logs cap 8 KB / 200 entries.
-- Snippets have no fs access; to persist artifacts use `bex shot -o` or return data and write it yourself.
+- Snippets have no fs access; to persist artifacts return data and write it yourself (human shot channel: `BEX_UNRESTRICTED=1 bex shot -o`).

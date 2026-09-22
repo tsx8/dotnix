@@ -10,7 +10,7 @@
 # CLI 入口；协议 JSON 随包内联，供 `bex api` 离线发现。
 stdenvNoCC.mkDerivation {
   pname = "bex";
-  version = "0.1.0";
+  version = "0.2.0";
 
   src = ./src;
 
