@@ -11,12 +11,14 @@ in
     };
 
     users.users.${userName}.shell = pkgs.fish;
+    # pi 等终端程序复制依赖 wl-copy 访问 Wayland 剪贴板，本机无其他来源提供
     environment.systemPackages = with pkgs; [
       curl
       wget
       jq
       fd
       ripgrep
+      wl-clipboard
     ];
   };
   dotnix.modules.home = {
