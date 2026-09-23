@@ -1,20 +1,23 @@
-// bex — CDP-generic browser snippet runner: run / targets / shot / api.
+// bex — CDP-generic browser runner: transactions and owned, volatile jobs.
 // 零浏览器特有逻辑：端点与拉起命令来自环境变量（BU_CDP_URL / BU_CDP_LAUNCH），
 // 由 NixOS 包装脚本覆盖式固化，CLI 不提供任何指向其他浏览器的入口。
 //
 // Gate A（纯自动化）契约：
 // - 页面工作走隐形事务：--tab 创建 hidden target，run 结束随连接销毁（无跨 run 持久）。
-// - 片段只能操作本 run 创建的 target（provenance 白名单）；Storage 等账号级
-//   域与窗口操作被工具层拒绝，不依赖片段自律。
+// - 常规 CDP API 受 provenance/域策略约束；vm 不是恶意 JS 的安全沙箱，
+//   只接收受信任的片段，绝不在可交接凭据页面运行任意片段。
 // - Runtime.evaluate 钉 uniqueContextId：导航后显式失败（CONTEXT_DESTROYED），
 //   不静默落入新 document；session.resetContextPin() 供刻意导航后重新钉扎。
 // - 超时/崩溃若发生在副作用派发之后，envelope 标记 outcomeUnknown（防重放）。
 // - -t / shot 是人工通道：默认 RESTRICTED，BEX_UNRESTRICTED=1 解锁且不装策略。
 
 import { spawn } from "node:child_process";
+import { cmdJob, jobOwner, jobWorker } from "./job.js";
+import { handoffWorker } from "./handoff.js";
 import { closeSync, mkdirSync, openSync, readFileSync, statSync, unlinkSync, writeFileSync, writeSync } from "node:fs";
 import { isMainThread, parentPort, workerData, Worker } from "node:worker_threads";
 import vm from "node:vm";
+// CDP transport and protocol definitions are vendored from pi-chrome-use in ./cdp/.
 import { Session } from "./cdp/session.js";
 import browserProtocol from "./cdp/browser_protocol.json";
 import jsProtocol from "./cdp/js_protocol.json";
@@ -29,7 +32,7 @@ const LOG_ENTRY_MAX = 1_000;
 const LOG_MAX_ENTRIES = 200;
 const LAUNCH_LOCK_STALE_MS = 15_000;
 
-class BexError extends Error {
+export class BexError extends Error {
   code: string;
   hint?: string;
   constructor(code: string, message: string, hint?: string) {
@@ -39,20 +42,28 @@ class BexError extends Error {
   }
 }
 
-type LogEntry = { level: string; text: string };
+export type LogEntry = { level: string; text: string };
 type ShotMeta = { path: string; bytes: number };
 
 function usage(): never {
   process.stderr.write(`usage:
   ${PROG} run [--tab <url>] [--timeout ms] <file>   run a snippet in a hidden throwaway tab
   ${PROG} run [-t targetId] [--timeout ms] <file>   attach an existing target (BEX_UNRESTRICTED=1)
+  ${PROG} job start <url>                           start an owned, volatile hidden page
+  ${PROG} job start --handoff <url>                 start a parked handoff window (no snippets)
+  ${PROG} job run <id> [--timeout ms] <file>        serialize a hidden-page snippet
+  ${PROG} job action <id> <json-file>               declarative handoff-page action
+  ${PROG} job handoff <id> <reason>                 revoke writes and show the window
+  ${PROG} job release <id> <origin> <clean-url> [sel]  verify, clear and re-park
+  ${PROG} job status <id>                          inspect live state or last-known snapshot
+  ${PROG} job stop <id>                            destroy the job and its page
   ${PROG} targets [--table]                         list browser pages (JSON by default)
   ${PROG} shot -t targetId [-o path]                viewport PNG (BEX_UNRESTRICTED=1)
   ${PROG} api [--domain D] [--method M]             CDP surface from the vendored protocol
 
 snippet contract: the file is an async function body, not an ES module —
-top-level await yes; static import / require / fs / net / process are absent by
-design (vm sandbox). In scope: session (pre-connected CDP Session, every CDP
+top-level await yes; static import / require are not in scope. The vm is not
+a security sandbox for untrusted JS. In scope: session (pre-connected CDP Session, every CDP
 domain is a property, e.g. await session.Target.getTargets({})), console,
 setTimeout/clearTimeout. Return a JSON-serializable value; it arrives in the
 envelope as "value".
@@ -100,7 +111,7 @@ function acquireLaunchLock(dir: string): boolean {
   return false;
 }
 
-async function resolveWsUrl(): Promise<string> {
+export async function resolveWsUrl(): Promise<string> {
   const env = process.env.BU_CDP_URL;
   if (!env) {
     throw new BexError(
@@ -164,7 +175,7 @@ async function resolveWsUrl(): Promise<string> {
 
 // ---------- shared helpers ----------
 
-function shotDir(): string {
+export function shotDir(): string {
   const dir = process.env.BEX_SHOT_DIR ?? `${process.env.XDG_RUNTIME_DIR ?? "/tmp"}/${PROG}`;
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   return dir;
@@ -175,7 +186,7 @@ function shotName(prefix: string): string {
   return `${prefix}-${Date.now()}-${process.pid.toString(36)}-${Math.random().toString(36).slice(2, 8)}.png`;
 }
 
-function safeStringify(value: unknown): string | undefined {
+export function safeStringify(value: unknown): string | undefined {
   try {
     return JSON.stringify(value, (_k, v) => (typeof v === "bigint" ? String(v) : v));
   } catch {
@@ -183,7 +194,7 @@ function safeStringify(value: unknown): string | undefined {
   }
 }
 
-function truncateLogs(logs: LogEntry[]): { logs: LogEntry[]; truncated: boolean } {
+export function truncateLogs(logs: LogEntry[]): { logs: LogEntry[]; truncated: boolean } {
   let total = 0;
   for (let i = 0; i < logs.length; i++) {
     const bytes = Buffer.byteLength(logs[i].text);
@@ -195,7 +206,7 @@ function truncateLogs(logs: LogEntry[]): { logs: LogEntry[]; truncated: boolean 
   return { logs, truncated: false };
 }
 
-function capValue(value: unknown): { value: unknown; truncated: boolean } {
+export function capValue(value: unknown): { value: unknown; truncated: boolean } {
   const s = safeStringify(value);
   if (s === undefined) {
     return {
@@ -210,7 +221,7 @@ function capValue(value: unknown): { value: unknown; truncated: boolean } {
   };
 }
 
-function classifyError(e: unknown): { code: string; message: string; hint?: string } {
+export function classifyError(e: unknown): { code: string; message: string; hint?: string } {
   if (e instanceof BexError) return { code: e.code, message: e.message, hint: e.hint };
   const message = e instanceof Error ? e.message : String(e);
   const stack = e instanceof Error ? (e.stack ?? "").split("\n").slice(0, 3).join("\n") : undefined;
@@ -258,35 +269,39 @@ function classifyError(e: unknown): { code: string; message: string; hint?: stri
   return { code: "SCRIPT_ERROR", message, hint: stack };
 }
 
-function printEnvelope(envelope: Record<string, unknown>): void {
+export function printEnvelope(envelope: Record<string, unknown>): void {
   process.stdout.write(`${JSON.stringify(envelope)}\n`);
 }
 
-// ---------- 强制策略（Gate A：provenance 白名单 + 域过滤 + 上下文钉扎） ----------
+// ---------- 常规 CDP 调用保护（不构成不可信 JS 的安全沙箱） ----------
 
-type PolicyState = {
+export type PolicyState = {
   owned: Set<string>;
   pinnedUniqueId?: string;
-  candidates: string[]; // 最近在前：全部 default 主世界候选，验证式取号
+  candidates: Array<{ id: string; frameId: string }>; // 最近在前；仅主帧候选能钉扎
   mutated: boolean;
   crashed: boolean;
   bootstrap: boolean;
 };
 
 // 只在 run 的 worker 内安装；拦截一切 CDP 调用（bindDomains 统一走 _call）。
-function installPolicy(session: Session, st: PolicyState): void {
+export function installPolicy(session: Session, st: PolicyState): void {
   const orig = session._call.bind(session);
   const deny = (code: string, what: string, hint?: string) =>
     Promise.reject(new BexError(code, `${what} is denied by bex policy.`, hint));
   session._call = async (method: string, params: Record<string, unknown> = {}) => {
-    // 副作用追踪：供主进程在 TIMEOUT 时标注 outcomeUnknown（引导导航除外）
-    if (!st.bootstrap && !st.mutated && (method.startsWith("Input.") || method === "Page.navigate" || method === "Page.reload")) {
+    // 任意页面命令（包括 JS 求值）都可能触发副作用；无法证明未执行就保守标未知。
+    // 引导导航与钉扎探测走 orig，不计入用户命令。
+    if (!st.bootstrap && !st.mutated && !["Target.getTargets", "Target.getTargetInfo", "Browser.getVersion"].includes(method)) {
       st.mutated = true;
       parentPort?.postMessage({ type: "mutated" });
     }
     if (method === "Target.createTarget") {
-      // agent 的 tab 一律隐形后台：不可见即不可被误触
-      const r = (await orig(method, { hidden: true, background: true, ...params })) as { targetId?: string };
+      // 不能用 newWindow/focus 等参数把页面变为可见；只接收 URL。
+      if (Object.keys(params).some((key) => !["url", "background"].includes(key))) {
+        throw new BexError("NOT_ALLOWED", "Target.createTarget only accepts url/background in hidden runs.");
+      }
+      const r = (await orig(method, { url: params.url, hidden: true, background: true })) as { targetId?: string };
       if (r?.targetId) st.owned.add(r.targetId);
       return r;
     }
@@ -303,45 +318,45 @@ function installPolicy(session: Session, st: PolicyState): void {
       if (method === "Target.closeTarget") st.owned.delete(tid);
       return r;
     }
-    if (method === "Target.activateTarget" || method.startsWith("Target.setAutoAttach")) {
-      return deny("NOT_ALLOWED", method, "Hidden targets cannot be materialized; auto-attach is not available in this mode.");
+    if (method.startsWith("Target.") && !["Target.getTargets", "Target.getTargetInfo"].includes(method)) {
+      return deny("NOT_ALLOWED", method);
+    }
+    if (method.startsWith("Browser.") && method !== "Browser.getVersion") {
+      return deny("NOT_ALLOWED", method);
     }
     if (method.startsWith("Storage.")) {
       return deny("NOT_ALLOWED", `Storage.${method.slice(8)}`, "The Storage domain touches the shared account context (cookies, origin data) and is denied.");
     }
-    if (method === "Browser.close" || method.startsWith("Browser.setWindowBounds")) {
-      return deny("NOT_ALLOWED", method, "Browser-level window/lifecycle mutation is denied from runs.");
-    }
-    if (method === "Runtime.evaluate") {
-      const p = params ?? {};
-      if (st.pinnedUniqueId && !p.contextId && !p.uniqueContextId) {
-        params = { ...p, uniqueContextId: st.pinnedUniqueId };
-      }
+    if (method === "Runtime.evaluate" && !st.bootstrap) {
+      if (!st.pinnedUniqueId) throw new BexError("CONTEXT_NOT_READY", "No verified main-frame execution context is pinned.");
+      params = { ...params, uniqueContextId: st.pinnedUniqueId };
     }
     return orig(method, params);
   };
   session.onEvent((method, params) => {
     if (method === "Runtime.executionContextCreated") {
-      const ctx = (params as { context?: { auxData?: { isDefault?: boolean }; uniqueId?: string } }).context;
-      if (ctx?.auxData?.isDefault && ctx.uniqueId) st.candidates.unshift(ctx.uniqueId);
+      const ctx = (params as { context?: { auxData?: { isDefault?: boolean; frameId?: string }; uniqueId?: string } }).context;
+      if (ctx?.auxData?.isDefault && ctx.uniqueId && ctx.auxData.frameId) st.candidates.unshift({ id: ctx.uniqueId, frameId: ctx.auxData.frameId });
       if (st.candidates.length > 16) st.candidates.length = 16;
-    } else if (method === "Target.targetCrashed") {
+    } else if (method === "Target.targetCrashed" && st.owned.has((params as { targetId?: string }).targetId ?? "")) {
       st.crashed = true;
     }
   });
   // 片段可调用的钉扎重置：刻意导航后重新验证候选并重新锚定
   (session as unknown as Record<string, unknown>).resetContextPin = async (): Promise<string | null> =>
-    pinByValidation(orig, st);
+    awaitPin(orig, st);
 }
 
-// 验证式取号：一次导航可产生多个 default 候选（主帧 + 瞬态帧），逐个试评，
-// 能评的即当前主世界。比按 frameId 猜测更稳，天然跨进程替换。
-async function pinByValidation(orig: (m: string, p?: unknown) => Promise<unknown>, st: PolicyState): Promise<string | null> {
-  for (const uid of st.candidates) {
+// 导航会产生多个 default 候选；先按当前主帧 frameId 过滤，再验证 context 活性。
+// 不把晚到的子帧或已销毁的主帧误认为当前文档。
+export async function pinByValidation(orig: (m: string, p?: unknown) => Promise<unknown>, st: PolicyState): Promise<string | null> {
+  const { frameTree } = (await orig("Page.getFrameTree", {})) as { frameTree: { frame: { id: string } } };
+  const main = frameTree.frame.id;
+  for (const candidate of st.candidates.filter((c) => c.frameId === main)) {
     try {
-      await orig("Runtime.evaluate", { expression: "1", uniqueContextId: uid });
-      st.pinnedUniqueId = uid;
-      return uid;
+      await orig("Runtime.evaluate", { expression: "1", uniqueContextId: candidate.id });
+      st.pinnedUniqueId = candidate.id;
+      return candidate.id;
     } catch {
       // 候选已随导航/帧销毁失效，试下一个
     }
@@ -349,11 +364,24 @@ async function pinByValidation(orig: (m: string, p?: unknown) => Promise<unknown
   return null;
 }
 
-// ---------- `run` worker: vm sandbox + screenshot interception + policy ----------
+export async function awaitPin(orig: (m: string, p?: unknown) => Promise<unknown>, st: PolicyState): Promise<string> {
+  st.pinnedUniqueId = undefined;
+  const deadline = Date.now() + 5_000;
+  while (Date.now() < deadline) {
+    try {
+      const pin = await pinByValidation(orig, st);
+      if (pin) return pin;
+    } catch { /* navigation may still be replacing the frame tree */ }
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  throw new BexError("CONTEXT_NOT_READY", "No live main-frame context appeared within five seconds.");
+}
+
+// ---------- `run` worker: vm execution + screenshot interception + policy ----------
 
 type RunData = { wsUrl: string; targetId?: string; tabUrl?: string; code: string; dir: string };
 
-function makeConsole(logs: LogEntry[]): Console {
+export function makeConsole(logs: LogEntry[]): Console {
   const emit = (level: string) => (...args: unknown[]) => {
     if (logs.length >= LOG_MAX_ENTRIES) {
       if (logs.length === LOG_MAX_ENTRIES) logs.push({ level: "warn", text: "[bex] log limit reached; further logs dropped" });
@@ -406,11 +434,9 @@ async function workerRun(data: RunData): Promise<void> {
       await session.use(targetId);
       st.bootstrap = true;
       await session.Runtime.enable({}).catch(() => undefined);
-      if (data.tabUrl !== "about:blank") {
-        await session.Page.navigate({ url: data.tabUrl }).catch(() => undefined);
-        await new Promise((r) => setTimeout(r, 400)); // 等导航产生的 context 事件落地
-        await pinByValidation((session as unknown as { _call: (m: string, p?: unknown) => Promise<unknown> })._call.bind(session), st);
-      }
+      if (data.tabUrl === "about:blank") await session.Page.navigate({ url: "data:text/html," });
+      await session.Page.navigate({ url: data.tabUrl });
+      await awaitPin(session._call.bind(session), st);
       st.bootstrap = false;
       attachedTo = targetId;
     } else if (data.targetId) {
@@ -421,8 +447,7 @@ async function workerRun(data: RunData): Promise<void> {
     }
     post({ type: "phase", phase: "script" });
 
-    // vm 沙箱：仅 session/console/定时器。fs/net/process/require 不进上下文，
-    // 片段可触达的世界只有目标浏览器。
+    // vm 隔离误用的全局 API，不是恶意 JS 的安全边界；只运行受信任片段。
     const sandboxConsole = makeConsole(logs);
     const ctx = vm.createContext({
       session,
@@ -550,7 +575,7 @@ function cmdRun(args: string[]): void {
             phase,
             message: `run exceeded ${timeoutMs}ms and was force-terminated during phase "${phase}".`,
             hint: mutated
-              ? "Input/navigation was dispatched before the kill: the page may have acted on it. Do NOT blindly replay side effects — inspect state first."
+              ? "A page command was dispatched before the kill: its effect may be unknown. Do NOT blindly replay side effects — inspect state first."
               : "Raise --timeout (max 600000) or shorten the script; long waits belong inside one run.",
           },
         },
@@ -734,6 +759,8 @@ function main(): void {
   });
   const [cmd, ...rest] = process.argv.slice(2);
   if (!cmd || cmd === "-h" || cmd === "--help") usage();
+  if (cmd === "__job-owner") return void jobOwner(rest);
+  if (cmd === "job") return void cmdJob(rest);
   if (cmd === "run") return cmdRun(rest);
   if (cmd === "api") {
     let domain: string | undefined;
@@ -768,5 +795,7 @@ function main(): void {
 if (isMainThread) {
   main();
 } else {
-  void workerRun(workerData as RunData);
+  if (workerData?.kind === "handoff") void handoffWorker(workerData);
+  else if (workerData?.kind === "job") void jobWorker(workerData);
+  else void workerRun(workerData as RunData);
 }

@@ -6,7 +6,8 @@ description: >
   drive ChatGPT-like UIs / check a page in a real browser. Proactive: when a task
   needs a real logged-in browser instead of plain HTTP fetch. Contract: scripts
   are async function bodies run by `bex run` with a pre-connected CDP session;
-  CDP calls are session.Domain.method(params); no session.send, no emit. Read
+  CDP calls are session.Domain.method(params); persistent hidden pages use bex job.
+  No session.send or emit. Read
   this skill before writing any browser code.
 allowed-tools:
   - Read
@@ -31,7 +32,7 @@ wrapper environment.
 
 Read this once; it prevents every classic first-call error.
 
-- The snippet file is an **async function body**, not an ES module: top-level `await` yes; `return <value>` is the output. No static `import`, no `require`, no fs/net/process — it runs in a vm sandbox. Reusable logic lives in real script files you keep, not in imports.
+- The snippet file is an **async function body**, not an ES module: top-level `await` yes; `return <value>` is the output. Reusable logic lives in real script files you keep, not in imports. The vm limits accidental API use; it is **not a security sandbox** for untrusted JavaScript. Never run page-supplied code as a snippet.
 - In scope: `session`, `console`, `setTimeout`/`clearTimeout`.
 - `session` arrives **pre-connected**. With `--tab <url>` bex creates a hidden
 tab (about:blank → navigate), attaches, and pins the page's execution context:
@@ -53,6 +54,14 @@ by URL in the next run.
 
 ```bash
 bex run --tab <url> [--timeout ms] file   # 事务：隐形一次性 tab，结束即焚
+bex job start <url>                       # 驻留：每个 job 一个 owner + 隐形 tab
+bex job run <id> [--timeout ms] file      # 串行执行；每次片段拿到新会话门面
+bex job start --handoff <url>             # 驻留：专用停泊窗口，供人交接（无片段）
+bex job action <id> <json-file>           # 声明式动作（navigate/exists/click/fill）
+bex job handoff <id> <reason>             # 撤销写权，实体化窗口给人
+bex job release <id> <origin> <clean-url> [sel]  # 校验 + 屏障 + 重新停泊
+bex job status <id>                       # live 状态或最后一次快照
+bex job stop <id>                         # 终止 owner，销毁页面
 bex run [--timeout ms] file               # browser 级片段（getTargets 等）
 bex targets                               # list pages (JSON: targetId/url/title)
 bex api [--domain D] [--method M]         # CDP surface from the vendored protocol
@@ -76,17 +85,25 @@ Exit codes: 0 ok, 1 error, 2 usage, 3 timeout. `Page.captureScreenshot` inside a
 
 - Only targets created by the current run can be attached or closed —
 `session.use()` on anything else fails with `FOREIGN_TARGET`. Snippet-created
-tabs via `session.Target.createTarget` are forced `hidden` and die with the run.
+tabs via `session.Target.createTarget({url})` are forced `hidden` and die with the run; window/focus parameters are rejected.
 - `Storage.*`, `Browser.close`, window-bounds mutation, `Target.activateTarget`
 and auto-attach are denied (`NOT_ALLOWED`) — they touch the shared account or
 the human's screen surface.
-- Evaluations are pinned to the attached document. After a deliberate
+- Evaluations are pinned to the verified main-frame document. After deliberate
 navigation call `await session.resetContextPin()` and re-derive state; a
-stale pin surfaces as `CONTEXT_DESTROYED` instead of silently evaluating the
-new document.
+stale pin surfaces as `CONTEXT_DESTROYED`, and an unavailable new pin as
+`CONTEXT_NOT_READY`, rather than silently evaluating another document.
 - A TIMEOUT (or worker crash) envelope may carry `outcomeUnknown: true` —
-input/navigation was dispatched before the kill and the page may have acted on
+a page command was dispatched before the kill and the page may have acted on
 it. Inspect state; never blindly replay side effects.
+- A job's ID is its only control locator, not a tab title or URL. Commands queue
+at the owner; a timed-out command terminates the job and its page. A dead
+socket means page-local state is gone. `status` may return a last-known
+snapshot (`live:false`), which is not recovery. After an uncertain result,
+inspect external state before any side-effect retry. Explicitly `stop` jobs you
+no longer need. Hidden jobs never attach to human tabs; flows that need the
+human's hands use a handoff surface instead (see Task Patterns) — never a
+human tab.
 
 ## Quick Start
 
@@ -100,6 +117,7 @@ bex run --tab https://example.com/ /tmp/probe.js   # hidden throwaway tab
 | Task | Read |
 | --- | --- |
 | Driving ChatGPT-like chat UIs: compose, send, wait for Extra-High replies, extract | [references/llm-consultation.md](references/llm-consultation.md) |
+| Flows that need the human's hands: login, OAuth, 2FA, CAPTCHA, payment | [references/hitl-handoff.md](references/hitl-handoff.md) |
 | Extracting/verifying page data in one round-trip | [references/page-extraction.md](references/page-extraction.md) |
 | Screenshot verification and vision workflows | [references/shot-verification.md](references/shot-verification.md) |
 
@@ -122,7 +140,9 @@ bex run --tab https://example.com/ /tmp/probe.js   # hidden throwaway tab
 
 1. Return compact values: slice DOM text, cap arrays; the envelope truncates at 20 KB but you should not rely on it.
 2. Verify after acting: after click/send/insert, re-evaluate state before claiming success.
-3. Long waits happen inside ONE run (`--timeout` up to 600000), never as many small calls.
+3. Use one run for tasks that fit its lifetime; use a job only when page-local
+state must survive multiple calls. Long waits inside one command use `--timeout`
+up to 600000 ms.
 4. Screenshots only when vision is required; prefer DOM extraction for facts.
 5. One authorized browser: never launch or connect to another endpoint; report endpoint errors verbatim.
 6. Report `elapsedMs`/latency facts as measured, never invented.

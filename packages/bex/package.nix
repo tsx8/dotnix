@@ -9,7 +9,7 @@
 # vendored 源码与 CLI 一起打包，运行及构建均不依赖上游 flake。
 stdenvNoCC.mkDerivation {
   pname = "bex";
-  version = "0.2.0";
+  version = "0.4.0";
 
   src = ./src;
 
