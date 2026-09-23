@@ -1955,7 +1955,7 @@
         "sysfs_id": "/class/block/zram0",
         "unix_device_names": [
           "/dev/disk/by-label/zram0",
-          "/dev/disk/by-uuid/68d0ec50-8183-4ea5-81da-809855ef787d",
+          "/dev/disk/by-uuid/f8e874bc-450b-4419-87c0-174e912e46a7",
           "/dev/zram0"
         ],
         "resources": [
@@ -2157,7 +2157,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 7.2.5 xhci-hcd",
+          "name": "Linux 7.2.7 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -2171,7 +2171,7 @@
           "value": 0
         },
         "serial": "0000:c7:00.3",
-        "model": "Linux 7.2.5 xhci-hcd xHCI Host Controller",
+        "model": "Linux 7.2.7 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.3/usb6/6-0:1.0",
         "sysfs_bus_id": "6-0:1.0",
         "detail": {
@@ -2234,7 +2234,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 7.2.5 xhci-hcd",
+          "name": "Linux 7.2.7 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -2248,7 +2248,7 @@
           "value": 0
         },
         "serial": "0000:c7:00.0",
-        "model": "Linux 7.2.5 xhci-hcd xHCI Host Controller",
+        "model": "Linux 7.2.7 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.0/usb3/3-0:1.0",
         "sysfs_bus_id": "3-0:1.0",
         "resources": [
@@ -2321,7 +2321,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 7.2.5 xhci-hcd",
+          "name": "Linux 7.2.7 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -2335,7 +2335,7 @@
           "value": 0
         },
         "serial": "0000:c7:00.4",
-        "model": "Linux 7.2.5 xhci-hcd xHCI Host Controller",
+        "model": "Linux 7.2.7 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.4/usb7/7-0:1.0",
         "sysfs_bus_id": "7-0:1.0",
         "resources": [
@@ -2408,7 +2408,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 7.2.5 xhci-hcd",
+          "name": "Linux 7.2.7 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -2422,7 +2422,7 @@
           "value": 0
         },
         "serial": "0000:c7:00.0",
-        "model": "Linux 7.2.5 xhci-hcd xHCI Host Controller",
+        "model": "Linux 7.2.7 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.0/usb4/4-0:1.0",
         "sysfs_bus_id": "4-0:1.0",
         "detail": {
@@ -2485,7 +2485,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 7.2.5 xhci-hcd",
+          "name": "Linux 7.2.7 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -2499,7 +2499,7 @@
           "value": 0
         },
         "serial": "0000:c7:00.4",
-        "model": "Linux 7.2.5 xhci-hcd xHCI Host Controller",
+        "model": "Linux 7.2.7 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.4/usb8/8-0:1.0",
         "sysfs_bus_id": "8-0:1.0",
         "detail": {
@@ -2562,7 +2562,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 7.2.5 xhci-hcd",
+          "name": "Linux 7.2.7 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -2576,7 +2576,7 @@
           "value": 0
         },
         "serial": "0000:c5:00.4",
-        "model": "Linux 7.2.5 xhci-hcd xHCI Host Controller",
+        "model": "Linux 7.2.7 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:08.1/0000:c5:00.4/usb1/1-0:1.0",
         "sysfs_bus_id": "1-0:1.0",
         "resources": [
@@ -2649,7 +2649,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 7.2.5 xhci-hcd",
+          "name": "Linux 7.2.7 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -2663,7 +2663,7 @@
           "value": 0
         },
         "serial": "0000:c7:00.3",
-        "model": "Linux 7.2.5 xhci-hcd xHCI Host Controller",
+        "model": "Linux 7.2.7 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.3/usb5/5-0:1.0",
         "sysfs_bus_id": "5-0:1.0",
         "resources": [
@@ -2736,7 +2736,7 @@
         },
         "vendor": {
           "hex": "1d6b",
-          "name": "Linux 7.2.5 xhci-hcd",
+          "name": "Linux 7.2.7 xhci-hcd",
           "value": 7531
         },
         "device": {
@@ -2750,7 +2750,7 @@
           "value": 0
         },
         "serial": "0000:c5:00.4",
-        "model": "Linux 7.2.5 xhci-hcd xHCI Host Controller",
+        "model": "Linux 7.2.7 xhci-hcd xHCI Host Controller",
         "sysfs_id": "/devices/pci0000:00/0000:00:08.1/0000:c5:00.4/usb2/2-0:1.0",
         "sysfs_bus_id": "2-0:1.0",
         "detail": {
@@ -3377,6 +3377,9 @@
         "sysfs_id": "/devices/pci0000:00/0000:00:08.3/0000:c7:00.0/usb3/3-4/3-4:1.0",
         "sysfs_bus_id": "3-4:1.0",
         "unix_device_names": [
+          "/dev/input/by-id/usb-CHERRY_K37_Dongle-event-if00",
+          "/dev/input/by-path/pci-0000:c7:00.0-usb-0:4:1.0-event",
+          "/dev/input/by-path/pci-0000:c7:00.0-usbv2-0:4:1.0-event",
           "/dev/input/event9"
         ],
         "resources": [

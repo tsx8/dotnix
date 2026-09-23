@@ -52,10 +52,12 @@
           "zai-coding-cn/glm-5.3".reserveTokens = 632121;
           "zai-coding-cn/glm-5.3-flash".reserveTokens = 632121;
           "zai-coding-cn/glm-5.3-highspeed".reserveTokens = 632121;
+          "openai-codex/gpt-6-astra".reserveTokens = 663727;
+          "openai-codex/gpt-6-sol".reserveTokens = 663727;
+          "openai-codex/gpt-6-luna".reserveTokens = 663727;
           "openai-codex/gpt-5.6-luna".reserveTokens = 663727;
           "openai-codex/gpt-5.6-terra".reserveTokens = 663727;
           "openai-codex/gpt-5.6-sol".reserveTokens = 663727;
-          "openai-codex/gpt-6-astra".reserveTokens = 663727;
           "google/gemini-flash-latest".reserveTokens = 662827;
         };
       };
