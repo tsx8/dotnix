@@ -30,7 +30,7 @@
       flags = [
         "--ozone-platform-hint=auto"
         "--enable-wayland-ime=true"
-        # CDP 调试端口仅绑本机回环，供 pi 的 pi-chrome-use 扩展操作浏览器；
+        # CDP 调试端口仅绑本机回环，供 bex 操作浏览器；
         # 意味着本机任意进程可经它执行任意 JS，接受此风险面。
         "--remote-debugging-port=9222"
       ];

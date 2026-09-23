@@ -2,12 +2,11 @@
   esbuild,
   lib,
   nodejs_24,
-  piChromeUseSrc,
   stdenvNoCC,
 }:
 
-# 复用 pi-chrome-use 的 src/cdp 库（零运行时依赖，原生 WebSocket），bex 只加
-# CLI 入口；协议 JSON 随包内联，供 `bex api` 离线发现。
+# src/cdp 复用 pi-chrome-use 的 CDP 传输层与协议定义（MIT，见 src/cdp/LICENSE）；
+# vendored 源码与 CLI 一起打包，运行及构建均不依赖上游 flake。
 stdenvNoCC.mkDerivation {
   pname = "bex";
   version = "0.2.0";
@@ -24,9 +23,6 @@ stdenvNoCC.mkDerivation {
     esbuild "$src/bex.ts" \
       --bundle --platform=node --format=esm --target=node24 \
       --legal-comments=none \
-      --alias:@cdp/session=${piChromeUseSrc}/src/cdp/session.ts \
-      --alias:@cdp/browser-protocol=${piChromeUseSrc}/src/cdp/browser_protocol.json \
-      --alias:@cdp/js-protocol=${piChromeUseSrc}/src/cdp/js_protocol.json \
       --outfile="bex.mjs"
 
     runHook postBuild
@@ -36,6 +32,7 @@ stdenvNoCC.mkDerivation {
         runHook preInstall
 
         install -Dm644 bex.mjs "$out/lib/bex/bex.mjs"
+        install -Dm644 "$src/cdp/LICENSE" "$out/share/licenses/bex/pi-chrome-use-LICENSE"
         mkdir -p "$out/bin"
         cat > "$out/bin/bex" <<EOF
     #!/bin/sh

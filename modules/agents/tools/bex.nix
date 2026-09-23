@@ -1,9 +1,7 @@
-{ config, inputs, ... }:
+{ config, ... }:
 {
   perSystem = { pkgs, ... }: {
-    packages.bex = pkgs.callPackage ../../../packages/bex/package.nix {
-      piChromeUseSrc = inputs.pi-chrome-use;
-    };
+    packages.bex = pkgs.callPackage ../../../packages/bex/package.nix { };
   };
 
   dotnix.modules.nixos = { pkgs, ... }: {

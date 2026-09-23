@@ -372,22 +372,6 @@
         "type": "github"
       }
     },
-    "pi-chrome-use": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1785136131,
-        "narHash": "sha256-od6A/++vWEGtFACjXQUcmmjwK7MnMtJh5yw6KbNEkRE=",
-        "owner": "citrolabs",
-        "repo": "pi-chrome-use",
-        "rev": "f9231eaa6fcb41b6754d620d9002e493f08d5782",
-        "type": "github"
-      },
-      "original": {
-        "owner": "citrolabs",
-        "repo": "pi-chrome-use",
-        "type": "github"
-      }
-    },
     "pi-mcp-adapter": {
       "flake": false,
       "locked": {
@@ -434,7 +418,6 @@
         "mcp-nixos": "mcp-nixos",
         "nixpkgs": "nixpkgs",
         "obelisk-skill": "obelisk-skill",
-        "pi-chrome-use": "pi-chrome-use",
         "pi-mcp-adapter": "pi-mcp-adapter",
         "rime-frost": "rime-frost",
         "simple-live-app": "simple-live-app",

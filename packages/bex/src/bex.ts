@@ -15,9 +15,9 @@ import { spawn } from "node:child_process";
 import { closeSync, mkdirSync, openSync, readFileSync, statSync, unlinkSync, writeFileSync, writeSync } from "node:fs";
 import { isMainThread, parentPort, workerData, Worker } from "node:worker_threads";
 import vm from "node:vm";
-import { Session } from "@cdp/session";
-import browserProtocol from "@cdp/browser-protocol";
-import jsProtocol from "@cdp/js-protocol";
+import { Session } from "./cdp/session.js";
+import browserProtocol from "./cdp/browser_protocol.json";
+import jsProtocol from "./cdp/js_protocol.json";
 
 const PROG = "bex";
 const DEFAULT_TIMEOUT_MS = 60_000;
