@@ -36,8 +36,8 @@
 
 - `mcp-dotnix` 将只读诊断与 `run_privileged` 分开，后者由客户端在执行前取得用户批准。系统授权仅覆盖本机用户调用固定的 Nix store 入口，执行入口与 sudo 规则由 [同一个包输出](../modules/maintenance/mcp.nix) 连接。同账户其他程序也可调用该入口，操作系统不验证客户端审批；不能把客户端审批视为系统级隔离。调用契约与故障处理见 [开发文档](development.md#mcp)。
 - `mcp-dotnix` 由本仓库维护；`mcp-nixos` 复用官方 flake，查询也须遵守仓库的 lock 保护约束。两个服务独立构建和运行，避免应用依赖相互污染，底层依赖由 Nix 复用。
-- 两个服务都通过 `scripts/sh/mcp.sh` 用系统 Nix 从项目锁启动，stdio 直接传递。Codex 的项目配置在 `.codex/config.toml`；Pi 通过固定版本的 `pi-mcp-adapter` 加载 `.pi/mcp.json`。客户端分别维护工具筛选与超时，不引入配置同步脚本。
-- Pi 的 MCP 入口只暴露只读诊断和 Nix 查询，适配器使用工具白名单过滤，不注册 `run_privileged`。这不改变系统 sudo 规则，也不是对 Bash 工具的权限隔离。适配器由 Nix 打包，通过 Pi 启动参数加载，不依赖用户目录中的 npm 安装或 `settings.json`。
+- 两个服务都通过 `scripts/sh/mcp.sh` 用系统 Nix 从项目锁启动，stdio 直接传递。Codex 的项目配置在 `.codex/config.toml`；Pi 的内建 MCP 读取 `.pi/mcp.json`。客户端分别维护工具筛选与超时，不引入配置同步脚本。
+- Pi 的 MCP 入口仅将指定的只读诊断和 Nix 查询工具设为可达，其余工具（包括 `run_privileged`）保持隐藏；新增工具不会自动暴露。这不改变系统 sudo 规则，也不是对 Bash 工具的权限隔离。
 
 ## 配置 label
 

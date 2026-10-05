@@ -8,19 +8,18 @@
         "mcp-dotnix",
         "mcp-dotnix"
       ],
-      "lifecycle": "eager",
-      "directTools": true,
-      "requestTimeoutMs": 600000,
-      "includeTools": [
-        "system_status",
-        "unit_status",
-        "unit_journal",
-        "kernel_log",
-        "boot_list",
-        "disk_status",
-        "network_status",
-        "nixos_generations"
-      ]
+      "exposure": "hidden",
+      "timeout": 600,
+      "toolExposure": {
+        "system_status": "direct",
+        "unit_status": "direct",
+        "unit_journal": "direct",
+        "kernel_log": "direct",
+        "boot_list": "direct",
+        "disk_status": "direct",
+        "network_status": "direct",
+        "nixos_generations": "direct"
+      }
     },
     "mcp-nixos": {
       "command": "bash",
@@ -30,10 +29,12 @@
         "mcp-nixos",
         "mcp-nixos"
       ],
-      "lifecycle": "eager",
-      "directTools": true,
-      "requestTimeoutMs": 120000,
-      "includeTools": [ "nix", "nix_versions" ]
+      "exposure": "hidden",
+      "timeout": 120,
+      "toolExposure": {
+        "nix": "direct",
+        "nix_versions": "direct"
+      }
     }
   }
 }

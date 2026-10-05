@@ -20,7 +20,9 @@
             };
           }
           ''
-            install -Dm644 "$src" "$out/share/fonts/truetype/PingFang.ttc"
+            # 保留对原始字体的 store 引用，使系统闭包保护构建输入不被 GC 清理。
+            install -d "$out/share/fonts/truetype"
+            ln -s "$src" "$out/share/fonts/truetype/PingFang.ttc"
           ''
         )
         noto-fonts-cjk-sans

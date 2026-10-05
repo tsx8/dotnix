@@ -77,7 +77,7 @@ if ! jq -e '
   (.fetched_at | type == "string") and
   (.models | type == "array" and length > 0)
 ' "$tmp_dir/cache.json" > /dev/null; then
-  echo "error: Codex did not write a fresh remote model catalog; existing models.json retained" >&2
+  echo "error: Codex did not write a fresh remote model catalog; existing models.json retained. If ChatGPT sign-in expired, sign in with Codex and retry." >&2
   exit 1
 fi
 fetched_at="$(date -d "$(jq -r '.fetched_at' "$tmp_dir/cache.json")" +%s)"

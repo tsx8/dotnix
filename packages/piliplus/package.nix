@@ -13,13 +13,13 @@
 }:
 
 let
-  version = "2.1.4";
+  version = "2.1.5";
 
   src = fetchFromGitHub {
     owner = "bggRGjQaUbCoE";
     repo = "PiliPlus";
     tag = version;
-    hash = "sha256-nOnRm0aClyZXX0CS+UmrTB98ybOdJvftz2ParPEk964=";
+    hash = "sha256-0yWyMEU1SCgsvhN+R6fFg9iUgUMUESEpUR4bGxxdS48=";
   };
 
   # 与上游 CI（lib/scripts/patch.ps1 的公共集合 + Linux 分支）保持一致：

@@ -5,7 +5,6 @@
     let
       system = pkgs.stdenv.hostPlatform.system;
       pi = inputs.llm-agents.packages.${system}.pi;
-      adapter = config.flake.packages.${system}.pi-mcp-adapter;
       # 只注入主入口：kami/waza 插件无 agents/MCP/hooks 组件，
       # pi-subagents/jiti 仅供未注入的可选入口，不入 node_modules 闭包。
       piPlugins = config.flake.packages.${system}.pi-plugins;
@@ -16,7 +15,6 @@
           export PATH="${pkgs.bash}/bin:$PATH"
           export BASH_ENV=/etc/direnv/bash-env
           exec ${pi}/bin/pi \
-            --extension ${adapter}/index.ts \
             --extension ${piPlugins}/dist/pi/extension.js \
             --extension ${./slash-enter.ts} \
             "$@"
@@ -25,9 +23,6 @@
     };
 
   perSystem = { pkgs, ... }: {
-    packages.pi-mcp-adapter = pkgs.callPackage ../../../packages/pi-mcp-adapter/package.nix {
-      adapterSrc = inputs.pi-mcp-adapter;
-    };
     packages.pi-plugins = pkgs.callPackage ../../../packages/pi-plugins/package.nix { };
   };
 
@@ -44,7 +39,6 @@
         enableInstallTelemetry = false;
         quietStartup = true;
         defaultProjectTrust = "always";
-        tuiMode = "fullscreen";
         # 阈值 contextWindow/e 主动压缩（ChatGPT/Codex auto_compact 语义）：
         # reserveTokens = contextWindow − floor(contextWindow/e)，
         # codex 系窗口取 models.json 覆盖的 1,050,000。
@@ -82,10 +76,6 @@
       # 避免触发旧格式迁移写回。
       home.file.".pi/agent/models.json".source = ./models.json;
       home.file.".pi/agent/keybindings.json".source = ./keybindings.json;
-
-      # MCP adapter 行为设置：结果用 boxed 渲染（自带 Box 背景）；
-      # 上游把行为设置混在 mcp.json 的 settings 节，无独立插件配置接口。
-      home.file.".pi/agent/mcp.json".source = ./mcp.json;
 
       # settings.json 必须保持真实可写文件（pi /settings 原地写入），
       # 故不用 home.file symlink，而在激活时按声明键深合并（zed/vscode mutableUserSettings 模式）。

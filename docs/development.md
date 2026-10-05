@@ -59,7 +59,7 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 
 ## Codex 模型目录
 
-`just repo update` 同步当前 ChatGPT 账号的远端模型目录；传入指定输入名时也会同步。也可单独运行 [scripts/sh/sync-models.sh](../scripts/sh/sync-models.sh)。需已有 ChatGPT 登录和模型缓存文件，以及 PATH 中的 Codex 或 ChatGPT 桌面包。同步过程不修改现有 Codex 配置或缓存。
+`just repo update` 同步当前 ChatGPT 账号的远端模型目录；传入指定输入名时也会同步。也可单独运行 [scripts/sh/sync-models.sh](../scripts/sh/sync-models.sh)。需已有 ChatGPT 登录和模型缓存文件，以及 PATH 中的 Codex 或 ChatGPT 桌面包。同步过程不修改现有 Codex 配置、缓存或凭据；认证过期时需由用户在 Codex 中重新登录后重试。
 
 刷新失败、目标模型缺失或目录校验失败时保留原文件。成功后审阅 `git diff HEAD -- modules/agents/codex/models.json`，按系统配置变更流程检查、构建和应用；脚本不自动暂存或应用系统。
 
@@ -86,7 +86,7 @@ nix build --no-link --no-update-lock-file --no-write-lock-file .#mcp-dotnix .#mc
 ```
 
 - Codex 首次打开项目时确认项目信任；项目配置 `.codex/config.toml` 声明两个 MCP，启动命令是仓库根下的 `scripts/sh/mcp.sh`。
-- Pi 从仓库根目录启动，系统入口加载 `pi-mcp-adapter`，项目配置 `.pi/mcp.json` 使用同一启动脚本。通过 `/mcp` 查看连接和工具状态；只读工具直接注册，`run_privileged` 不对 Pi 暴露。连接失败不影响基础编码工具；构建或服务问题解决后可用 `/mcp reconnect` 重连。
+- Pi 从仓库根目录启动，内建 MCP 读取项目配置 `.pi/mcp.json`，使用同一启动脚本。仅列出的只读诊断和 Nix 查询工具直接注册，其余工具（包括 `run_privileged`）不可达。交互会话中用 `/mcp` 检查或重连；项目已保存信任决定后，也可用 `pi mcp list` 检查连接与工具暴露状态（未保存信任时该命令跳过项目服务器）。列表仍会显示服务器提供的隐藏工具，是否可调用以暴露状态为准。连接失败不影响基础编码工具。
 - Codex 中两个 MCP 默认采用 `auto`；只读诊断（含日志）和 mcp-nixos 查询直接调用，`run_privileged` 单独配置为 `prompt`。执行仍须遵守当前权限和项目操作边界。
 - `run_privileged(program, args, cwd, reason, impact)` 通过专用入口免密执行 root 命令；程序与目录须为绝对路径，参数按数组传递，不展开 shell 语法。审批请求须展示完整命令、工作目录、需要 root 的具体原因，以及受影响的文件、服务或系统状态和预期变化。Codex 在调用前审批；sudo 仅为本机用户调用固定的 Nix store 入口配置免密，同账户其他程序也能直接调用该入口。命令环境由 sudo 过滤，stdin 关闭；输出每路最多返回 32 KiB，并尽力脱敏。
 - 免密规则需由用户运行 `just os switch` 应用系统后生效。工具使用 `sudo -k -n`，不使用或更新密码缓存；规则不可用时直接返回 sudo 错误，不弹出密码窗口。入口内容或其 Bash 依赖变化后，需重新应用系统以更新规则中的路径。

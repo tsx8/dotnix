@@ -23,7 +23,8 @@ if [[ -z "$version" ]]; then
 fi
 
 lock_tmp="$(mktemp)"
-trap 'rm -f -- "$lock_tmp"' EXIT
+hashes_tmp=""
+trap 'rm -f -- "$lock_tmp"; [[ -z "$hashes_tmp" ]] || rm -f -- "$hashes_tmp"' EXIT
 
 curl -fsSL --max-time 60 \
   "https://raw.githubusercontent.com/bggRGjQaUbCoE/PiliPlus/$version/pubspec.lock" \
@@ -34,11 +35,12 @@ if cmp -s -- "$lock_tmp" "$pkg_dir/pubspec.lock.json"; then
   exit 0
 fi
 
-# 哈希脚本与构建侧使用同一份锁定 nixpkgs，保证预取口径一致。
-nixpkgs_out="$(nix eval --raw --no-update-lock-file "$repo_root#inputs.nixpkgs.outPath")"
+# 从本仓库的 flake 输入取路径，沿用锁定的 rev 和 narHash。
+nixpkgs_out="$(cd -- "$repo_root" && nix eval --impure --raw --no-update-lock-file --no-write-lock-file --expr '(builtins.getFlake (toString ./.)).inputs.nixpkgs.outPath')"
 hashes_tmp="$(mktemp)"
+# nix-prefetch-git 重置 HOME，导致依赖 BASH_ENV 定位 direnv 授权的代理会话在脚本启动时失败。
 nix shell nixpkgs#python3 nixpkgs#nix-prefetch-git --command \
-  python3 "$nixpkgs_out/pkgs/development/compilers/dart/fetch-git-hashes.py" \
+  env -u BASH_ENV python3 "$nixpkgs_out/pkgs/development/compilers/dart/fetch-git-hashes.py" \
   --input "$lock_tmp" --output "$hashes_tmp"
 
 mv -- "$lock_tmp" "$pkg_dir/pubspec.lock.json"
