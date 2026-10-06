@@ -13,7 +13,7 @@
 
 ## 工具边界
 
-- 系统提供跨项目通用工具和加载项目环境所需的 Nix、direnv；仓库专属命令、检查工具与 MCP 由 [项目环境模块](../modules/maintenance/development/default.nix) 供应。项目工具随仓库锁定版本，避免依赖宿主机上的另一套版本。
+- 系统提供跨项目通用工具和加载项目环境所需的 Nix、direnv；仓库专属命令、检查工具及开发使用的 MCP 由 [项目环境模块](../modules/maintenance/development/default.nix) 供应。项目工具随仓库锁定版本，避免依赖宿主机上的另一套版本。
 - `modules/maintenance/` 是项目开发环境的模块边界，影响 devShell 的模块定义集中于此。direnv 监视此目录和环境依赖的本地工具源码，普通系统配置与应用数据不触发环境刷新。
 - Home Manager 只管理用户级配置，不管理应用。
 - [终端模块](../modules/personal/terminal.nix) 管理 direnv 与 fish；[agents 模块](../modules/agents/default.nix) 提供非交互 Bash 的环境加载入口 [bash-env.sh](../modules/agents/bash-env.sh)，并抑制代理命令的 direnv 状态日志（加载错误不受影响）。Codex 与 Pi 分别设置 `BASH_ENV` 使用此入口，复用 direnv 授权和 nix-direnv 缓存，使每次命令按工作目录取得环境；不设置全局 `BASH_ENV`。Codex 通过命令环境配置接入，不参与其父进程和快照生成；Pi 通过启动包装传递给子进程。环境加载不改变代理权限，两个入口分别在 [Codex 模块](../modules/agents/codex/default.nix) 与 [Pi 模块](../modules/agents/pi/default.nix)。
@@ -36,8 +36,8 @@
 
 - `mcp-dotnix` 将只读诊断与 `run_privileged` 分开，后者由客户端在执行前取得用户批准。系统授权仅覆盖本机用户调用固定的 Nix store 入口，执行入口与 sudo 规则由 [同一个包输出](../modules/maintenance/mcp.nix) 连接。同账户其他程序也可调用该入口，操作系统不验证客户端审批；不能把客户端审批视为系统级隔离。调用契约与故障处理见 [开发文档](development.md#mcp)。
 - `mcp-dotnix` 由本仓库维护；`mcp-nixos` 复用官方 flake，查询也须遵守仓库的 lock 保护约束。两个服务独立构建和运行，避免应用依赖相互污染，底层依赖由 Nix 复用。
-- 两个服务都通过 `scripts/sh/mcp.sh` 用系统 Nix 从项目锁启动，stdio 直接传递。Codex 的项目配置在 `.codex/config.toml`；Pi 的内建 MCP 读取 `.pi/mcp.json`。客户端分别维护工具筛选与超时，不引入配置同步脚本。
-- Pi 的 MCP 入口仅将指定的只读诊断和 Nix 查询工具设为可达，其余工具（包括 `run_privileged`）保持隐藏；新增工具不会自动暴露。这不改变系统 sudo 规则，也不是对 Bash 工具的权限隔离。
+- Codex 的项目配置在 `.codex/config.toml`，通过 `scripts/sh/mcp.sh` 用系统 Nix 从项目锁启动。Pi 的内建 MCP 读取全局 `~/.pi/agent/mcp.json`，使用系统构建的固定可执行路径，不依赖仓库工作目录；服务继承会话目录，以便查询当前项目。客户端分别维护工具筛选与超时，不引入配置同步脚本。
+- Pi 的 MCP 配置保持可写以支持 `/mcp`；系统激活深合并声明字段，未声明的用户配置保留。仅将指定的只读诊断和 Nix 查询工具设为 deferred，供工具搜索或 codemode 调用，其余工具（包括 `run_privileged`）保持隐藏；新增工具不会自动暴露。这不改变系统 sudo 规则，也不是对 Bash 工具的权限隔离。
 
 ## 配置 label
 

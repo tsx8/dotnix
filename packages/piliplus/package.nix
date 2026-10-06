@@ -13,13 +13,13 @@
 }:
 
 let
-  version = "2.1.5";
+  version = "2.1.6";
 
   src = fetchFromGitHub {
     owner = "bggRGjQaUbCoE";
     repo = "PiliPlus";
     tag = version;
-    hash = "sha256-0yWyMEU1SCgsvhN+R6fFg9iUgUMUESEpUR4bGxxdS48=";
+    hash = "sha256-HfGbqVhz7YbGR/b0YuIm8WGmTzNbSC3lovbP3HfTWHM=";
   };
 
   # 与上游 CI（lib/scripts/patch.ps1 的公共集合 + Linux 分支）保持一致：
@@ -27,6 +27,7 @@ let
   # 否则应用源码引用的 StandardBottomSheet、TabBarState 等类型不存在。
   # 补丁文件随源码 tag 滚动，无需单独维护版本。
   frameworkPatches = map (name: "${src}/lib/scripts/${name}") [
+    "double_tap_gesture.patch"
     "draggable_scrollable_sheet.patch"
     "editable_text.patch"
     "fab.patch"
