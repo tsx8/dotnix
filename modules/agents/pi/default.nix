@@ -75,12 +75,11 @@
               "PYTHONPATH"
               (lib.getExe mcpPackages.mcp-dotnix)
             ];
-            description = "Read-only diagnostics for the local NixOS host: units, journals, disks, networking, and generations.";
+            description = "Local NixOS diagnostics and root command execution with desktop polkit authentication for each call.";
             exposure = "hidden";
             timeout = 600;
             toolExposure = {
-              # 单工具覆盖优先于服务器默认值，故显式隐藏提权入口。
-              run_privileged = "hidden";
+              run_privileged = "deferred";
               system_status = "deferred";
               unit_status = "deferred";
               unit_journal = "deferred";

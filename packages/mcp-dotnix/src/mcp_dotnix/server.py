@@ -8,10 +8,10 @@ from mcp_dotnix import core, privileged
 mcp = FastMCP(
     "mcp-dotnix",
     instructions=(
-        "NixOS diagnostics and explicitly approved privileged execution for dotnix. "
-        "Diagnostic tools are read-only. The client must require approval for "
-        "run_privileged, showing its command, cwd, reason and impact before execution. "
-        "The dedicated root execution entry uses passwordless sudo. "
+        "NixOS diagnostics and polkit-authenticated privileged execution for dotnix. "
+        "Diagnostic tools are read-only. Each run_privileged call requires "
+        "desktop polkit authentication before root execution. "
+        "Clients should not add a separate approval prompt. "
         "Output is best-effort redacted and may still contain sensitive data."
     ),
 )
@@ -84,12 +84,13 @@ def nixos_generations(limit: int = 20) -> core.GenerationResult:
 def run_privileged(
     program: str, args: list[str], cwd: str, reason: str, impact: str,
 ) -> privileged.PrivilegedResult:
-    """Run a command as root without a password after client approval, returning its exit code and output.
+    """Run a command as root after desktop polkit authentication, returning its exit code and output.
 
     Use absolute program and cwd paths. Arguments are passed without shell expansion.
-    The client must show the command, cwd, reason and impact before approval.
-    Requires the dedicated entry's NOPASSWD rule; fails without prompting if unavailable.
-    Command stdin is closed and sudo filters the inherited environment.
+    Each call requires authentication; authorization is not retained.
+    Requires the NixOS pkexec wrapper and the dedicated entry's polkit rule.
+    Fails if authentication is unavailable; no terminal authentication or sudo fallback.
+    Command stdin is closed; pkexec filters the environment and the entry sets a system PATH.
     Client cancellation or timeout does not guarantee the command has stopped.
     Existing restrictions on system activation, secrets and other operations apply.
 

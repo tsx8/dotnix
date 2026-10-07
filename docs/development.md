@@ -18,7 +18,7 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 
 本项目环境求值失败时停止，不回退到旧缓存，加载不更新或写入 `flake.lock`。其他项目的 `.envrc` 若自行忽略错误，初始化入口无法将其识别为失败。需要更新输入时执行 `just repo update`。
 
-环境缓存失效时由 direnv 重新求值；加载环境不自动 fmt、lint、test、update 或应用系统。仓库为 Codex 声明 `sandbox_mode = "danger-full-access"`、`approval_policy = "on-request"`、`approvals_reviewer = "user"`，配置需应用系统并重启 Codex 后生效。执行以当前会话实际权限为准；完全访问权限不取消 `.envrc` 授权、MCP 工具审批和项目操作边界。权限受阻时按当前环境允许的方式处理，不假定可以申请提权。
+环境缓存失效时由 direnv 重新求值；加载环境不自动 fmt、lint、test、update 或应用系统。仓库为 Codex 声明 `sandbox_mode = "danger-full-access"`、`approval_policy = "on-request"`、`approvals_reviewer = "user"`，配置需应用系统并重启 Codex 后生效。执行以当前会话实际权限为准；完全访问权限不取消 `.envrc` 授权、提权认证和项目操作边界。权限受阻时按当前环境允许的方式处理，不假定可以申请提权。
 
 影响 devShell 的模块定义放在 `modules/maintenance/`。新增开发环境的本地源码依赖时，同步更新 [.envrc](../.envrc) 的监视范围，使内容修改及文件增删都能触发刷新；普通系统配置与应用数据不触发环境刷新。新增 flake 可见文件先精确 `git add`，避免 Nix 与基于 Git 文件清单的检查漏掉文件。模块装配与环境职责见 [架构设计](design.md)。
 
@@ -85,11 +85,12 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 nix build --no-link --no-update-lock-file --no-write-lock-file .#mcp-dotnix .#mcp-nixos
 ```
 
-- Codex 首次打开项目时确认项目信任；项目配置 `.codex/config.toml` 声明两个 MCP，启动命令是仓库根下的 `scripts/sh/mcp.sh`。
-- Pi 内建 MCP 读取全局 `~/.pi/agent/mcp.json`，使用系统构建的固定可执行路径，在仓库外也可用。仅列出的只读诊断和 Nix 查询工具设为 deferred，可由工具搜索加载或从 codemode 调用，其余工具（包括 `run_privileged`）不可达。交互会话中用 `/mcp` 检查或重连，也可用 `pi mcp list` 检查连接与工具暴露状态。列表仍会显示服务器提供的隐藏工具，是否可调用以暴露状态为准。连接失败不影响基础编码工具。
-- 全局 MCP 文件可由 `/mcp` 回写；系统激活重申声明的启动与暴露配置，保留未声明字段（包括启用状态）及额外服务器。项目 `.pi/mcp.json` 的同名条目可以覆盖全局配置。
-- Codex 中两个 MCP 默认采用 `auto`；只读诊断（含日志）和 mcp-nixos 查询直接调用，`run_privileged` 单独配置为 `prompt`。执行仍须遵守当前权限和项目操作边界。
-- `run_privileged(program, args, cwd, reason, impact)` 通过专用入口免密执行 root 命令；程序与目录须为绝对路径，参数按数组传递，不展开 shell 语法。审批请求须展示完整命令、工作目录、需要 root 的具体原因，以及受影响的文件、服务或系统状态和预期变化。Codex 在调用前审批；sudo 仅为本机用户调用固定的 Nix store 入口配置免密，同账户其他程序也能直接调用该入口。命令环境由 sudo 过滤，stdin 关闭；输出每路最多返回 32 KiB，并尽力脱敏。
-- 免密规则需由用户运行 `just os switch` 应用系统后生效。工具使用 `sudo -k -n`，不使用或更新密码缓存；规则不可用时直接返回 sudo 错误，不弹出密码窗口。入口内容或其 Bash 依赖变化后，需重新应用系统以更新规则中的路径。
-- `mcp-dotnix` 的调用超时为 600 秒；Pi 的 `mcp-nixos` 请求超时为 120 秒，包含连接初始化。客户端取消或超时不保证 root 命令已停止，重试前须确认实际状态。新增工具需重启 MCP 连接；系统审批配置需先由用户应用系统并重启 Codex。其他客户端若暴露提权工具，必须自行配置调用审批，直接调用服务不会触发服务端确认。
-- 启动失败时检查：Pi 全局配置中的可执行路径是否存在；Codex 则检查包是否可构建、Nix daemon 是否可用、`scripts/sh/mcp.sh` 是否能解析 Git 根。`required = false`，服务器不可用时 Codex 会报告，Agent 不应编造查询结果。
+- Codex 读取用户级 `~/.codex/config.toml` 中的 MCP 配置，两个服务使用系统构建的固定可执行路径，在仓库外也可用。Home Manager 激活时合并声明字段，保留未声明的用户设置及额外服务器；配置保持可写，但 TOML 注释、排版和键顺序可能变化。其他项目仍可通过项目配置覆盖用户配置。
+- Pi 内建 MCP 读取全局 `~/.pi/agent/mcp.json`，同样使用系统构建的固定可执行路径。指定的只读诊断、Nix 查询和 `run_privileged` 设为 deferred，可由工具搜索加载或从 codemode 调用，其余工具不可达。交互会话中用 `/mcp` 检查或重连，也可用 `pi mcp list` 检查连接与工具暴露状态。列表仍会显示服务器提供的隐藏工具，是否可调用以暴露状态为准。连接失败不影响基础编码工具。
+- Pi 全局 MCP 文件可由 `/mcp` 回写；系统激活重申声明的启动与暴露配置，保留未声明字段（包括启用状态）及额外服务器。项目 `.pi/mcp.json` 的同名条目可以覆盖全局配置。
+- Codex 中两个 MCP 默认采用 `auto`；只读诊断（含日志）和 mcp-nixos 查询直接调用。`run_privileged` 单独配置为 `approve`，由 polkit 认证，不再经过客户端审批；`auto` 仍会依据危险性标注要求审批。执行仍须遵守当前权限和项目操作边界。
+- `run_privileged(program, args, cwd, reason, impact)` 在执行 root 命令前要求 KDE 标准 polkit 认证，每次调用独立认证，不保留授权。程序与目录须为绝对路径，参数按数组传递，不展开 shell 语法。`reason` 和 `impact` 说明提权原因、影响对象与预期变化，不另行定制认证窗口。密码由系统认证代理处理，MCP 不接收密码。同账户其他程序也可向固定入口发起认证请求。命令环境由 pkexec 过滤，入口设置系统 PATH，stdin 关闭；输出每路最多返回 32 KiB，并尽力脱敏。
+- 取消、拒绝或认证失败时不执行目标命令；没有可用的桌面认证代理时失败，不转入终端认证，也不回退到 sudo。失败按实际退出码和错误输出报告，不自动重试。
+- 应用前由用户备份两个客户端的可写 MCP 配置，再运行 `just os switch`，重启或重连客户端。入口内容或其 Bash 依赖变化后，需重新应用系统以更新授权规则中的路径。回退时须同时恢复用户配置，系统 generation 回滚不能撤销已合并的配置。
+- `mcp-dotnix` 的调用超时为 600 秒；Pi 的 `mcp-nixos` 请求超时为 120 秒，包含连接初始化。客户端取消或超时不保证 root 命令已停止，重试前须确认实际状态。其他客户端可直接接入提权工具，系统认证不依赖客户端审批。
+- 启动失败时检查用户级配置中的可执行路径是否存在；提权失败时检查 pkexec wrapper、polkit 服务和桌面认证代理。`required = false`，服务器不可用时 Codex 会报告，Agent 不应编造查询结果。

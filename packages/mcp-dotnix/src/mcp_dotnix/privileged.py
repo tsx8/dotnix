@@ -7,7 +7,7 @@ from typing import TypedDict
 
 from mcp_dotnix.core import redact_text
 
-SUDO = "/run/wrappers/bin/sudo"
+PKEXEC = "/run/wrappers/bin/pkexec"
 PRIVILEGED_RUNNER = "@privileged_runner@"
 OUTPUT_LIMIT = 32768
 
@@ -25,8 +25,7 @@ def run_privileged(program: str, args: list[str], cwd: str) -> PrivilegedResult:
             raise ValueError("program, cwd and arguments must not contain NUL")
     if not Path(program).is_absolute() or not Path(cwd).is_absolute():
         raise ValueError("program and cwd must be absolute paths")
-    # Ignore cached credentials so a missing NOPASSWD rule fails without prompting.
-    command = [SUDO, "-k", "-n", "-u", "root", "--", PRIVILEGED_RUNNER, cwd, program, *args]
+    command = [PKEXEC, "--disable-internal-agent", "--user", "root", PRIVILEGED_RUNNER, cwd, program, *args]
     # File-backed capture bounds memory for commands with large output.
     with tempfile.TemporaryFile() as stdout, tempfile.TemporaryFile() as stderr:
         completed = subprocess.run(

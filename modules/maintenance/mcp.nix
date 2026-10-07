@@ -4,22 +4,22 @@ let
 in
 {
   dotnix.modules.nixos = { pkgs, ... }: {
-    security.sudo.extraRules = [
-      {
-        users = [ userName ];
-        runAs = "root";
-        commands = [
-          {
-            # 免密只匹配不可修改的专用入口；同账户程序也能直接调用它。
-            command = "${self.packages.${pkgs.stdenv.hostPlatform.system}.mcp-dotnix.privilegedRunner}";
-            options = [
-              "NOPASSWD"
-              "NOSETENV"
-            ];
+    security.polkit = {
+      enable = true;
+      enablePkexecWrapper = true;
+      extraConfig = ''
+        polkit.addRule(function(action, subject) {
+          if (action.id === "org.freedesktop.policykit.exec" &&
+              action.lookup("program") === ${builtins.toJSON "${self.packages.${pkgs.stdenv.hostPlatform.system}.mcp-dotnix.privilegedRunner}"}) {
+            if (subject.user === ${builtins.toJSON userName} && action.lookup("user") === "root") {
+              // 授权缓存不区分命令参数，不能使用 AUTH_ADMIN_KEEP。
+              return polkit.Result.AUTH_ADMIN;
+            }
+            return polkit.Result.NO;
           }
-        ];
-      }
-    ];
+        });
+      '';
+    };
   };
 
   perSystem =

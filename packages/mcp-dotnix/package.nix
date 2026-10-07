@@ -7,6 +7,8 @@ let
       echo "usage: mcp-dotnix-run-privileged /cwd /program [args...]" >&2
       exit 2
     fi
+    # pkexec 的安全 PATH 不包含 NixOS 系统命令目录。
+    export PATH=/run/wrappers/bin:/run/current-system/sw/bin
     cd -- "$1"
     shift
     exec -- "$@"
