@@ -6,12 +6,16 @@ NIX_CONFIG="$(printf '%s\n%s\n' \
   'experimental-features = nix-command flakes')"
 export NIX_CONFIG
 
-if [[ $# -ne 1 ]]; then
-  echo "usage: $0 /dev/disk/by-id/<device>" >&2
+if [[ $# -ne 1 || ( "$1" != system && "$1" != data ) ]]; then
+  echo "usage: $0 <system|data>" >&2
   exit 2
 fi
 
-device="$1"
+role="$1"
+root_mount=/mnt
+if [[ "$role" == data ]]; then
+  root_mount=/mnt-data
+fi
 
 repo_root="$(
   cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.."
@@ -19,6 +23,29 @@ repo_root="$(
 )"
 
 cd "$repo_root"
+
+device="$(
+  nix eval --no-update-lock-file --no-write-lock-file --raw \
+    .#diskoConfigurations --apply "
+      configs:
+      if !builtins.hasAttr \"$role\" configs then
+        throw \"Storage role $role is not configured\"
+      else
+        let disks = configs.$role.disko.devices.disk; in
+        assert builtins.attrNames disks == [ \"$role\" ];
+        disks.$role.device
+    "
+)"
+
+configured_device="$(
+  nix eval --no-update-lock-file --no-write-lock-file --raw \
+    ".#nixosConfigurations.maco.config.disko.devices.disk.$role.device"
+)"
+
+if [[ "$configured_device" != "$device" ]]; then
+  echo "error: operation and runtime configurations disagree for $role" >&2
+  exit 1
+fi
 
 if [[ "$device" != /dev/disk/by-id/* ]]; then
   echo "error: device must use a persistent /dev/disk/by-id/... path" >&2
@@ -33,14 +60,33 @@ fi
 real_device="$(realpath "$device")"
 device_type="$(lsblk -dnro TYPE "$real_device")"
 
-if [[ "$device_type" != "disk" ]]; then
+if [[ "$device_type" != disk ]]; then
   echo "error: target must be a whole disk, not a partition" >&2
   echo "resolved target: $real_device ($device_type)" >&2
   exit 1
 fi
 
+# disko 会递归卸载操作根，不能让其中混入另一块盘。
+mounts="$(findmnt --noheadings --raw --output TARGET,SOURCE)"
+while read -r mountpoint source; do
+  if [[ "$mountpoint" != "$root_mount" && "$mountpoint" != "$root_mount/"* ]]; then
+    continue
+  fi
+  source="${source%%\[*}"
+  if [[ ! -b "$source" ]]; then
+    echo "error: unrelated mount under $root_mount: $mountpoint" >&2
+    exit 1
+  fi
+  parent="$(lsblk -dnro PKNAME "$(realpath "$source")")"
+  if [[ "$(realpath "$source")" != "$real_device" &&
+        ( -z "$parent" || "$(realpath "/dev/$parent")" != "$real_device" ) ]]; then
+    echo "error: $mountpoint belongs to a different disk" >&2
+    exit 1
+  fi
+done <<< "$mounts"
+
 echo
-echo "Target disk:"
+echo "Target disk ($role):"
 echo "  persistent path: $device"
 echo "  resolved path:   $real_device"
 echo
@@ -57,28 +103,11 @@ if [[ "$confirmation" != "$device" ]]; then
   exit 1
 fi
 
-tmp="$(mktemp "$repo_root/modules/machine/storage/.disk-device.data.nix.XXXXXX")"
-trap 'rm -f "$tmp"' EXIT
-
-printf '"%s"\n' "$device" > "$tmp"
-mv "$tmp" "$repo_root/modules/machine/storage/disk-device.data.nix"
-trap - EXIT
-
-configured_device="$(
-  nix eval --raw \
-    .#nixosConfigurations.maco.config.disko.devices.disk.main.device
-)"
-
-if [[ "$configured_device" != "$device" ]]; then
-  echo "error: NixOS configuration did not resolve to the selected disk" >&2
-  echo "expected: $device" >&2
-  echo "actual:   $configured_device" >&2
-  exit 1
-fi
-
 disko="$(
   nix build \
     --no-link \
+    --no-update-lock-file \
+    --no-write-lock-file \
     --print-out-paths \
     .#disko
 )/bin/disko"
@@ -89,4 +118,5 @@ echo
 
 sudo "$disko" \
   --mode destroy,format,mount \
-  --flake ".#maco"
+  --root-mountpoint "$root_mount" \
+  --flake ".#$role"

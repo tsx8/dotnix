@@ -18,37 +18,63 @@ repo_root="$(
 
 cd "$repo_root"
 
-require_mount() {
-  local path="$1"
+configured_device="$(
+  nix eval --no-update-lock-file --no-write-lock-file --raw \
+    .#nixosConfigurations.maco.config.disko.devices.disk.system.device
+)"
 
-  if ! findmnt --mountpoint "$path" >/dev/null 2>&1; then
-    echo "error: $path is not mounted" >&2
-    echo "run scripts/sh/disk.sh first" >&2
+if [[ "$configured_device" != /dev/disk/by-id/* || ! -L "$configured_device" || ! -b "$configured_device" ]]; then
+  echo "error: configure a valid system disk in modules/machine/storage/layout.data.nix" >&2
+  exit 1
+fi
+
+real_device="$(realpath "$configured_device")"
+if [[ "$(lsblk -dnro TYPE "$real_device")" != disk ]]; then
+  echo "error: the system role must refer to a whole disk" >&2
+  exit 1
+fi
+
+require_mount() {
+  local path="$1" expected_device="$2" expected_root="$3" expected_type="$4"
+  local source parent
+
+  if ! source="$(findmnt --mountpoint "$path" --noheadings --raw --output SOURCE)"; then
+    echo "error: $path is not mounted; run scripts/sh/disk.sh system first" >&2
+    exit 1
+  fi
+  source="${source%%\[*}"
+
+  if [[ ! -b "$expected_device" || ! -b "$source" || "$(realpath "$source")" != "$(realpath "$expected_device")" ]]; then
+    echo "error: $path is not mounted from $expected_device" >&2
+    exit 1
+  fi
+
+  parent="$(lsblk -dnro PKNAME "$(realpath "$expected_device")")"
+  if [[ -z "$parent" || "$(realpath "/dev/$parent")" != "$real_device" ]]; then
+    echo "error: $path is not on the configured system disk" >&2
+    exit 1
+  fi
+
+  if [[ "$(findmnt --mountpoint "$path" --noheadings --raw --output FSROOT)" != "$expected_root" ||
+        "$(findmnt --mountpoint "$path" --noheadings --raw --output FSTYPE)" != "$expected_type" ]]; then
+    echo "error: $path has the wrong filesystem or subvolume" >&2
     exit 1
   fi
 }
 
-require_mount /mnt
-require_mount /mnt/boot
-require_mount /mnt/home
-require_mount /mnt/nix
-
-configured_device="$(
-  nix eval --raw \
-    .#nixosConfigurations.maco.config.disko.devices.disk.main.device
+root_device="$(
+  nix eval --no-update-lock-file --no-write-lock-file --raw \
+    '.#nixosConfigurations.maco.config.fileSystems."/".device'
+)"
+boot_device="$(
+  nix eval --no-update-lock-file --no-write-lock-file --raw \
+    '.#nixosConfigurations.maco.config.fileSystems."/boot".device'
 )"
 
-if [[ "$configured_device" == *REPLACE-ME* ]]; then
-  echo "error: modules/machine/storage/disk-device.data.nix still contains the placeholder device" >&2
-  echo "run scripts/sh/disk.sh first" >&2
-  exit 1
-fi
-
-if [[ ! -L "$configured_device" || ! -b "$configured_device" ]]; then
-  echo "error: configured disk is not a valid block-device symlink:" >&2
-  echo "  $configured_device" >&2
-  exit 1
-fi
+require_mount /mnt "$root_device" /@root btrfs
+require_mount /mnt/home "$root_device" /@home btrfs
+require_mount /mnt/nix "$root_device" /@nix btrfs
+require_mount /mnt/boot "$boot_device" / vfat
 
 facter_enabled="$(
   nix eval \

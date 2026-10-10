@@ -32,12 +32,12 @@
       settings = pkgs.writeText "backup-disks.json" (
         builtins.toJSON {
           source = {
-            disk = config.disko.devices.disk.main.device;
+            disk = config.disko.devices.disk.system.device;
             device = config.fileSystems.${sourceMount}.device;
             mount = sourceMount;
           };
           target = {
-            disk = lib.removeSuffix "-part1" config.fileSystems."/data".device;
+            disk = config.disko.devices.disk.data.device;
             device = config.fileSystems."/data".device;
             mount = targetMount;
             directory = targetDirectory;
@@ -61,7 +61,7 @@
         '';
       };
     in
-    {
+    lib.mkIf (config.disko.devices.disk ? data) {
       environment.systemPackages = [ backupDisks ];
       environment.etc."btrbk/maco.conf".source = btrbkConfig;
       system.build.backupDisks = backupDisks;

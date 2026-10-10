@@ -28,11 +28,17 @@ lsblk
 ls -l /dev/disk/by-id/
 ```
 
-将 `<target-disk>` 替换为目标磁盘的实际标识。以下操作会清空该磁盘，并将目标系统挂载到 `/mnt`：
+在 `modules/machine/storage/layout.data.nix` 中核对设备的 by-id 路径和布局：`disk.system` 必需，`disk.data` 可选。长期单盘系统移除整个 `disk.data` 声明，不生成冷盘挂载、Home 链接或跨盘备份；已声明的数据盘暂时未连接时，保留原配置，不自动把资料改存到系统盘。
+
+以下操作只清空声明的系统盘，并将目标系统挂载到 `/mnt`；不要求数据盘在场，也不会修改布局文件：
 
 ```bash
-./scripts/sh/disk.sh /dev/disk/by-id/<target-disk>
+./scripts/sh/disk.sh system
 ```
+
+只有需要清空并初始化数据盘时，才单独批准并运行 `./scripts/sh/disk.sh data`。已有数据盘不要执行此命令。数据盘操作使用独立的 `/mnt-data` 挂载根，不卸载 `/mnt` 下的系统安装树；操作根下若混入其他磁盘或非块设备挂载，脚本拒绝继续。每次操作都要求输入所选设备的完整 by-id 路径，并保留 disko 自身的确认。
+
+破坏性操作只能使用上述按角色隔离的入口，不要对完整的 `nixosConfigurations.maco` 运行 disko 的 `destroy,format,mount`。系统安装脚本会核对 `/mnt`、`/mnt/boot`、`/mnt/home`、`/mnt/nix` 的设备与子卷归属，不以“目录已挂载”代替校验。
 
 ## 4. 初始化机器密钥
 
@@ -73,11 +79,11 @@ cd ~/dotnix
 git status
 ```
 
-确认以下机器相关文件的修改：
+确认以下机器相关文件的修改；磁盘布局由安装前明确编辑，不由分区脚本改写：
 
 ```text
 modules/machine/host/facter.json
-modules/machine/storage/disk-device.data.nix
+modules/machine/storage/layout.data.nix
 modules/machine/identity/.sops.yaml
 modules/machine/identity/secrets.yaml
 ```
@@ -106,7 +112,7 @@ just os build
 `os build` 包含 lint/test，不激活系统。确认最终内容和适用检查无误后，提交安装生成的修改：
 
 ```bash
-git add modules/machine/host/facter.json modules/machine/storage/disk-device.data.nix modules/machine/identity/.sops.yaml modules/machine/identity/secrets.yaml
+git add modules/machine/host/facter.json modules/machine/storage/layout.data.nix modules/machine/identity/.sops.yaml modules/machine/identity/secrets.yaml
 git commit -m "configure maco"
 ```
 
