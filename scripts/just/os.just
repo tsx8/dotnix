@@ -1,13 +1,13 @@
 set working-directory := "../.."
 
-gate:
-  just repo lint
+gate BASE:
+  just repo lint {{quote(BASE)}}
   just repo test
 
-build: gate
+build BASE: (gate BASE)
   nh os build --hostname maco --no-update-lock-file --no-write-lock-file .#maco
 
-test: gate
+test BASE: (gate BASE)
   nh os test --hostname maco --ask --no-update-lock-file --no-write-lock-file .#maco
 
 switch LABEL="":

@@ -6,7 +6,7 @@ set -euo pipefail
 # 全部成功时清理日志。TTY 下运行中原地刷新状态行（当前活动尾行，
 # 无输出时 spinner+耗时）；非 TTY 退化为静态输出。
 
-usage() { echo "usage: $0 pkg | all [flake-input...]" >&2; }
+usage() { echo "usage: $0 pkg | all BASE [flake-input...]" >&2; }
 
 if [[ ${1:-} != "pkg" && ${1:-} != "all" ]]; then
   usage
@@ -21,6 +21,16 @@ fi
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd -- "$repo_root"
+
+if [[ $mode == "all" ]]; then
+  if (($# == 0)); then
+    usage
+    exit 2
+  fi
+  base=$1
+  shift
+  just repo _check-base "$base"
+fi
 
 logs_dir="$(mktemp -d "${TMPDIR:-/tmp}/dotnix-update.XXXXXX")"
 keep_logs=0
@@ -246,7 +256,7 @@ run_node plain "piliplus lock" 1 scripts/sh/sync-piliplus-locks.sh
 if [[ $mode == "all" ]]; then
   run_node plain "wechat" 1 scripts/sh/update-wechat.sh
   run_node plain "models" 1 scripts/sh/sync-models.sh
-  run_node plain "lint" 0 just repo lint
+  run_node plain "lint" 0 just repo lint "$base"
   run_node plain "test" 0 just repo test
 fi
 

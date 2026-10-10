@@ -19,6 +19,12 @@
 - Home Manager 只管理用户级配置，不管理应用。
 - [终端模块](../modules/personal/terminal.nix) 管理 direnv 与 fish；[agents 模块](../modules/agents/default.nix) 提供非交互 Bash 的环境加载入口 [bash-env.sh](../modules/agents/bash-env.sh)，并抑制代理命令的 direnv 状态日志（加载错误不受影响）。Codex 与 Pi 分别设置 `BASH_ENV` 使用此入口，复用 direnv 授权和 nix-direnv 缓存，使每次命令按工作目录取得环境；不设置全局 `BASH_ENV`。Codex 通过命令环境配置接入，不参与其父进程和快照生成；Pi 通过启动包装传递给子进程。环境加载不改变代理权限，两个入口分别在 [Codex 模块](../modules/agents/codex/default.nix) 与 [Pi 模块](../modules/agents/pi/default.nix)。
 
+## 版本管理
+
+日常版本操作由 jj 负责，使用 Git 后端和共存工作区；Git 继续提供源码文件清单、属性感知的差异检查及工作树 tree hash，远端仍使用 GitHub。安装引导可使用纯 Git 工作区，检查接口不要求 jj 已初始化，也不隐式记录快照或修改 bookmark。
+
+任务按工作目录顺序执行，已有无关修改或部分 Git 暂存状态不交给 jj 接管。差异检查以调用方记录的完整 Git commit ID 为基线，避免创建或改写 change 后检查范围随 HEAD 移动；不另建任务登记或基线存储。检查入口拒绝未忽略、未跟踪文件，防止未纳入版本管理的源码被 Nix 静默遗漏。操作步骤见 [开发文档](development.md#版本管理与任务基线)。
+
 ## 文档与约束
 
 - 安装操作在 `docs/install.md`，环境入口、命令和验证步骤在 `docs/development.md`，开发 Harness 的架构设计理由在本文；README 保留仓库概览、简短命令和文档入口。内容归属遵循 [AGENTS.md 的文档边界](../AGENTS.md#文档边界)。

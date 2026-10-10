@@ -77,9 +77,10 @@ sudo reboot
 ```bash
 cd ~/dotnix
 git status
+BASE="$(git rev-parse HEAD)"
 ```
 
-确认以下机器相关文件的修改；磁盘布局由安装前明确编辑，不由分区脚本改写：
+这里沿用纯 Git 安装引导。`BASE` 是安装修改的固定检查起点，后续提交后也不重取；跨会话操作时保留这个完整 commit ID。确认以下机器相关文件的修改；磁盘布局由安装前明确编辑，不由分区脚本改写：
 
 ```text
 modules/machine/host/facter.json
@@ -102,11 +103,12 @@ direnv allow
 just secrets edit
 ```
 
-机器私钥只保存在 `/var/lib/sops-nix/key.txt`，不要提交到仓库。完成必要编辑后，按 [验证要求](development.md#验证要求) 检查最终内容。系统配置修改执行：
+机器私钥只保存在 `/var/lib/sops-nix/key.txt`，不要提交到仓库。完成必要编辑后，先让安装生成的新文件进入 Git 文件清单，再按 [验证要求](development.md#验证要求) 检查最终内容：
 
 ```bash
+git add -N modules/machine/host/facter.json modules/machine/storage/layout.data.nix modules/machine/identity/.sops.yaml modules/machine/identity/secrets.yaml
 just repo fmt
-just os build
+just os build "$BASE"
 ```
 
 `os build` 包含 lint/test，不激活系统。确认最终内容和适用检查无误后，提交安装生成的修改：
@@ -131,7 +133,7 @@ git push
 若相对已安装系统还有需要生效的配置修改，取得用户明确批准后激活：
 
 ```bash
-just os test
+just os test "$BASE"
 ```
 
-需要更改默认启动项时使用 `just os switch`。它不自动运行 lint/test，可复用当前内容已通过的 `os build` 检查结果；相关内容变化后须重新验证。没有需要生效的修改时，无需再次应用系统。
+需要更改默认启动项时使用 `just os switch`。它不自动运行 lint/test，可复用当前内容已通过的 `os build` 检查结果；相关内容变化后须重新验证。没有需要生效的修改时，无需再次应用系统。安装修改保存且工作树、暂存区干净后，按 [版本管理与任务基线](development.md#版本管理与任务基线) 初始化 jj 共存工作区。

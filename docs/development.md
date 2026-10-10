@@ -6,33 +6,59 @@
 
 Codex 与系统安装的 `pi` 入口使用非登录 Bash，通过 `BASH_ENV` 在每次命令启动时按工作目录加载环境。Pi 使用默认 Bash 工具；改用其他 `shellPath` 时不保证执行此入口。初始化不会自动授权 `.envrc`，未授权、已拒绝、语法错误或 direnv 报告加载失败时，项目命令不会执行。当前目录及其父目录都没有 `.envrc` 时，普通命令正常执行；新的 Bash 启动于项目之外时，会卸载继承的 direnv 环境。
 
-以环境加载结果和项目工具是否可用判断入口是否生效，不只看 `BASH_ENV` 或 `IN_NIX_SHELL` 变量；已有成功结果无需每次重复探测。自动入口配置变更需应用系统并重启对应代理。未配置自动入口的会话中，每次项目命令使用显式入口，例如：
+以环境加载结果和项目工具是否可用判断入口是否生效，不只看 `BASH_ENV` 或 `IN_NIX_SHELL` 变量；已有成功结果无需每次重复探测。自动入口配置变更需应用系统并重启对应代理。未配置自动入口的会话中，每次项目命令使用显式入口，`BASE` 按下文 [版本管理与任务基线](#版本管理与任务基线) 记录，例如：
 
 ```bash
-nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
+nix develop --no-update-lock-file --no-write-lock-file --command just repo lint "$BASE"
 ```
 
 检测到 `.envrc` 未授权或加载失败时，先解决该状态，不用显式入口绕过。非登录 `/bin/sh` 不读取 `BASH_ENV`，可用于诊断和修复初始化，不应据此跳过项目环境继续检查。
 
 `--command` 只影响本次子进程，不会为下一次独立命令保留环境。Bash 启动后在同一条命令中跨项目 `cd` 不会重新加载环境，应直接指定目标工作目录，或使用 `direnv exec <目录> <命令>`。
 
-本项目环境求值失败时停止，不回退到旧缓存，加载不更新或写入 `flake.lock`。其他项目的 `.envrc` 若自行忽略错误，初始化入口无法将其识别为失败。需要更新输入时执行 `just repo update`。
+本项目环境求值失败时停止，不回退到旧缓存，加载不更新或写入 `flake.lock`。其他项目的 `.envrc` 若自行忽略错误，初始化入口无法将其识别为失败。需要更新输入时执行 `just repo update "$BASE"`。
 
 环境缓存失效时由 direnv 重新求值；加载环境不自动 fmt、lint、test、update 或应用系统。仓库为 Codex 声明 `sandbox_mode = "danger-full-access"`、`approval_policy = "on-request"`、`approvals_reviewer = "user"`，配置需应用系统并重启 Codex 后生效。执行以当前会话实际权限为准；完全访问权限不取消 `.envrc` 授权、提权认证和项目操作边界。权限受阻时按当前环境允许的方式处理，不假定可以申请提权。
 
-影响 devShell 的模块定义放在 `modules/maintenance/`。新增开发环境的本地源码依赖时，同步更新 [.envrc](../.envrc) 的监视范围，使内容修改及文件增删都能触发刷新；普通系统配置与应用数据不触发环境刷新。新增 flake 可见文件先精确 `git add`，避免 Nix 与基于 Git 文件清单的检查漏掉文件。模块装配与环境职责见 [架构设计](design.md)。
+影响 devShell 的模块定义放在 `modules/maintenance/`。新增开发环境的本地源码依赖时，同步更新 [.envrc](../.envrc) 的监视范围，使内容修改及文件增删都能触发刷新；普通系统配置与应用数据不触发环境刷新。新增 flake 可见文件先精确 `jj file track`，再用 `jj status` 同步 Git 文件清单；需要显式导入的新文件同步后再接入引用，避免环境求值先遇到不可见依赖。模块装配与环境职责见 [架构设计](design.md)。
+
+## 版本管理与任务基线
+
+日常使用 jj 的 Git 后端共存工作区，保留 `.jj` 和 `.git`；提交、拆分和历史整理使用 jj，Git 继续提供检查和 label 所需接口。纯 Git 安装引导仍可使用这些检查入口。jj 及其用户配置随系统配置提供；首次转换已有 Git 工作区前，确认配置已生效、工作树和暂存区均无待处理修改，再执行：
+
+```bash
+jj git init --colocate
+jj bookmark track master@origin
+```
+
+任务独占工作目录和历史修改。已有无关修改或部分 Git 暂存状态时保留原状，改用独立副本，不自动 stash、提交或清空。不要在 jj 工作区中交替使用 Git 的提交、重排和重置操作。
+
+开始新任务时，确认 `master` 是选定的起点，再创建工作 change 并记录其父提交的完整 Git commit ID：
+
+```bash
+jj new master
+BASE="$(git rev-parse HEAD)"
+```
+
+`BASE` 是后续 lint、构建和更新的必填参数，记录在任务会话和交接中。创建或改写 change 后不重取，续做任务时沿用原值；不能用分支名、bookmark、change ID 或缩写代替。检查入口验证提交对象和完整 ID，不替调用方判断任务起点是否正确。
+
+新增或重命名后的新路径精确 `jj file track`，不得通过全量跟踪消除未跟踪文件提示。检查前用 `jj status` 确认任务内容，再执行下文命令。`jj commit` 或 `jj new` 不会自动推进 `master`；发布前明确选择已经检查、审阅的提交，再移动 bookmark，获批后才 push。不要把临时文件或未获准操作的秘密纳入快照。
+
+恢复前先查看 `jj op log`，确认目标操作和影响范围。`jj op restore` 恢复共享仓库状态，不是目录私有的撤销；不得在其他任务仍修改历史时执行恢复，也不得绕过已有操作审批。检查命令不隐式运行 jj 快照、提交或 bookmark 操作。
 
 ## 常用命令
 
 | 命令 | 执行内容与副作用 |
 | --- | --- |
 | `just repo fmt` | 用 nixfmt-tree 格式化 Nix 文件，修改工作树 |
-| `just repo lint` | 依次运行 nixfmt 检查、nixf-diagnose、statix、ShellCheck 和 Git 空白检查 |
+| `just repo lint BASE` | 依次运行 nixfmt 检查、nixf-diagnose、statix、ShellCheck 和相对 BASE 的 Git 空白检查 |
 | `just repo test` | 运行 `nix flake check`，构建已声明 checks，不使用 `--no-build`，不激活系统 |
-| `just os build` | 先运行 repo lint、repo test，再构建系统，不激活 |
-| `just os test` | 先运行 repo lint、repo test，再构建并经确认激活系统，不改变默认启动项；须经用户明确批准 |
+| `just os build BASE` | 先运行 repo lint、repo test，再构建系统，不激活 |
+| `just os test BASE` | 先运行 repo lint、repo test，再构建并经确认激活系统，不改变默认启动项；须经用户明确批准 |
 | `just os switch [label]` | 经 `scripts/sh/os.sh` 构建并经确认激活系统、切换默认启动项，不自动运行 lint/test；须经用户明确批准 |
-| `just repo update [输入名…]` | 依次更新 flake 输入、经 `packages/update.list` 用 nix-update 检查登记的包（随后重生成 pi-plugins/piliplus 依赖 lock）、同步 WeChat 滚动产物、同步模型目录、运行 lint、test；不传输入名则更新全部输入；逐节点显示状态，编排见 [scripts/sh/update.sh](../scripts/sh/update.sh) |
+| `just repo update BASE [输入名…]` | 依次更新 flake 输入、经 `packages/update.list` 用 nix-update 检查登记的包（随后重生成 pi-plugins/piliplus 依赖 lock）、同步 WeChat 滚动产物、同步模型目录、运行 lint、test；不传输入名则更新全部输入；逐节点显示状态，编排见 [scripts/sh/update.sh](../scripts/sh/update.sh) |
+
+fmt、lint、test 在检查前拒绝未忽略、未跟踪文件，只列路径，不自动跟踪或删除。将应交付的文件精确跟踪，临时文件放到仓库外，必要的忽略规则维护在 `.gitignore`；纯 Git 安装引导可精确 `git add -N` 使新文件进入源码清单。lint 检查最终工作树相对 `BASE` 的改动，不要求每个中间草稿都通过检查。repo update 在开始更新前验证 `BASE`，更新产物若有未跟踪文件，须明确处理后复验。
 
 `os switch` 切换前须有当前内容的适用检查结果；已通过 `os build` 且相关内容未变化时复用。`repo update` 指定单个输入时也会同步模型目录，详见 [Codex 模型目录](#codex-模型目录)；单个节点失败不中断后续节点，网络类节点自动重试一次，已经完成的更新不回滚，失败时保留各节点完整日志并在末尾打印目录；GitHub API 令牌由 sops 渲染的用户级 nix.conf 提供（`modules/machine/identity/secrets.yaml` 的 `gh-auth-token`），避免匿名限额。
 
@@ -49,9 +75,9 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 | 改动影响 | 必需验证 |
 | --- | --- |
 | 讨论、设计、只读调查 | 取得支持结论的证据，不要求格式化或构建 |
-| 仅文档和常驻指令 | 核对[内容归属](../AGENTS.md#文档边界)、授权边界、命令调用链、路径及链接，运行 `git diff --check HEAD`；需要时做命令静态检查或 dry-run，不执行破坏性示例 |
-| 开发环境、脚本、工具、本地包等可执行行为 | `just repo fmt`、`just repo lint`、`just repo test`，并验证成功及必要失败路径；变更包须定向构建，不能用 flake check 代替 |
-| 系统配置或影响系统的依赖 | `just repo fmt` 后运行 `just os build`，复用其内置 lint/test，并补足构建未覆盖的必要行为验证 |
+| 仅文档和常驻指令 | 核对[内容归属](../AGENTS.md#文档边界)、授权边界、命令调用链、路径及链接，运行 `git diff --check "$BASE"`；需要时做命令静态检查或 dry-run，不执行破坏性示例 |
+| 开发环境、脚本、工具、本地包等可执行行为 | `just repo fmt`、`just repo lint "$BASE"`、`just repo test`，并验证成功及必要失败路径；变更包须定向构建，不能用 flake check 代替 |
+| 系统配置或影响系统的依赖 | `just repo fmt` 后运行 `just os build "$BASE"`，复用其内置 lint/test，并补足构建未覆盖的必要行为验证 |
 
 同时影响系统的开发工具、脚本或包走系统验证流程，并补足该对象的定向验证；已被系统构建覆盖的包无需重复构建。相同内容且条件仍适用的结果可复用，新修改、失败或证据缺口才补充检查。
 
@@ -61,7 +87,7 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 
 `just repo update` 同步当前 ChatGPT 账号的远端模型目录；传入指定输入名时也会同步。也可单独运行 [scripts/sh/sync-models.sh](../scripts/sh/sync-models.sh)。需已有 ChatGPT 登录和模型缓存文件，以及 PATH 中的 Codex 或 ChatGPT 桌面包。同步过程不修改现有 Codex 配置、缓存或凭据；认证过期时需由用户在 Codex 中重新登录后重试。
 
-刷新失败、目标模型缺失或目录校验失败时保留原文件。成功后审阅 `git diff HEAD -- modules/agents/codex/models.json`，按系统配置变更流程检查、构建和应用；脚本不自动暂存或应用系统。
+刷新失败、目标模型缺失或目录校验失败时保留原文件。成功后审阅 `git diff "$BASE" -- modules/agents/codex/models.json`，按系统配置变更流程检查、构建和应用；脚本不自动暂存或应用系统。
 
 ## WeChat 滚动产物
 
