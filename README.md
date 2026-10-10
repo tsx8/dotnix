@@ -29,4 +29,4 @@ just os build
 
 `os build` 包含 lint/test，不激活系统。需要更新输入时运行 `just repo update`，该命令也会同步 Codex 模型目录。
 
-应用系统由用户执行：`just os test` 临时激活，`just os switch` 同时更改默认启动项。`os switch` 不自动运行 lint/test，切换前须有当前内容的适用检查结果，详见 [常用命令](docs/development.md#常用命令)。回滚、重启、安装、secrets 操作和 push 也由用户执行。
+应用系统须经用户明确批准，获批后可由 Agent 执行：`just os test` 临时激活，`just os switch` 同时更改默认启动项。`os switch` 不自动运行 lint/test，切换前须有当前内容的适用检查结果，详见 [常用命令](docs/development.md#常用命令)。回滚、重启、安装、secrets 操作和 push 同样遵循 [操作边界](AGENTS.md#操作边界)。

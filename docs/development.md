@@ -30,8 +30,8 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 | `just repo lint` | 依次运行 nixfmt 检查、nixf-diagnose、statix、ShellCheck 和 Git 空白检查 |
 | `just repo test` | 运行 `nix flake check`，构建已声明 checks，不使用 `--no-build`，不激活系统 |
 | `just os build` | 先运行 repo lint、repo test，再构建系统，不激活 |
-| `just os test` | 先运行 repo lint、repo test，再构建并经确认激活系统，不改变默认启动项；由用户执行 |
-| `just os switch [label]` | 经 `scripts/sh/os.sh` 构建并经确认激活系统、切换默认启动项，不自动运行 lint/test；由用户执行 |
+| `just os test` | 先运行 repo lint、repo test，再构建并经确认激活系统，不改变默认启动项；须经用户明确批准 |
+| `just os switch [label]` | 经 `scripts/sh/os.sh` 构建并经确认激活系统、切换默认启动项，不自动运行 lint/test；须经用户明确批准 |
 | `just repo update [输入名…]` | 依次更新 flake 输入、经 `packages/update.list` 用 nix-update 检查登记的包（随后重生成 pi-plugins/piliplus 依赖 lock）、同步 WeChat 滚动产物、同步模型目录、运行 lint、test；不传输入名则更新全部输入；逐节点显示状态，编排见 [scripts/sh/update.sh](../scripts/sh/update.sh) |
 
 `os switch` 切换前须有当前内容的适用检查结果；已通过 `os build` 且相关内容未变化时复用。`repo update` 指定单个输入时也会同步模型目录，详见 [Codex 模型目录](#codex-模型目录)；单个节点失败不中断后续节点，网络类节点自动重试一次，已经完成的更新不回滚，失败时保留各节点完整日志并在末尾打印目录；GitHub API 令牌由 sops 渲染的用户级 nix.conf 提供（`modules/machine/identity/secrets.yaml` 的 `gh-auth-token`），避免匿名限额。
@@ -55,7 +55,7 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 
 同时影响系统的开发工具、脚本或包走系统验证流程，并补足该对象的定向验证；已被系统构建覆盖的包无需重复构建。相同内容且条件仍适用的结果可复用，新修改、失败或证据缺口才补充检查。
 
-系统安装、激活、回滚、重启、秘密操作和 push 由用户执行。运行结论需要实际观察，Agent 可用只读诊断取证；仓库声明、当前激活系统、启动系统和会话工具可用性不能互相替代。系统链接不同本身不足以判断必须重启。按任务所需取证，已有适用证据无需重复全量诊断；报告须区分已完成检查、构建结果和未验证的运行行为。
+系统安装、激活、回滚、重启、秘密操作和 push 按 [操作边界](../AGENTS.md#操作边界) 取得用户明确批准后，可由 Agent 执行。运行结论需要实际观察，Agent 可用只读诊断取证；仓库声明、当前激活系统、启动系统和会话工具可用性不能互相替代。系统链接不同本身不足以判断必须重启。按任务所需取证，已有适用证据无需重复全量诊断；报告须区分已完成检查、构建结果和未验证的运行行为。
 
 ## Codex 模型目录
 
@@ -91,6 +91,6 @@ nix build --no-link --no-update-lock-file --no-write-lock-file .#mcp-dotnix .#mc
 - Codex 中两个 MCP 默认采用 `auto`；只读诊断（含日志）和 mcp-nixos 查询直接调用。`run_privileged` 单独配置为 `approve`，由 polkit 认证，不再经过客户端审批；`auto` 仍会依据危险性标注要求审批。执行仍须遵守当前权限和项目操作边界。
 - `run_privileged(program, args, cwd, reason, impact)` 在执行 root 命令前要求 KDE 标准 polkit 认证，每次调用独立认证，不保留授权。程序与目录须为绝对路径，参数按数组传递，不展开 shell 语法。`reason` 和 `impact` 说明提权原因、影响对象与预期变化，不另行定制认证窗口。密码由系统认证代理处理，MCP 不接收密码。同账户其他程序也可向固定入口发起认证请求。命令环境由 pkexec 过滤，入口设置系统 PATH，stdin 关闭；输出每路最多返回 32 KiB，并尽力脱敏。
 - 取消、拒绝或认证失败时不执行目标命令；没有可用的桌面认证代理时失败，不转入终端认证，也不回退到 sudo。失败按实际退出码和错误输出报告，不自动重试。
-- 应用前由用户备份两个客户端的可写 MCP 配置，再运行 `just os switch`，重启或重连客户端。入口内容或其 Bash 依赖变化后，需重新应用系统以更新授权规则中的路径。回退时须同时恢复用户配置，系统 generation 回滚不能撤销已合并的配置。
+- 应用前备份两个客户端的可写 MCP 配置，再运行 `just os switch`，重启或重连客户端。入口内容或其 Bash 依赖变化后，需重新应用系统以更新授权规则中的路径。回退时须同时恢复用户配置，系统 generation 回滚不能撤销已合并的配置。
 - `mcp-dotnix` 的调用超时为 600 秒；Pi 的 `mcp-nixos` 请求超时为 120 秒，包含连接初始化。客户端取消或超时不保证 root 命令已停止，重试前须确认实际状态。其他客户端可直接接入提权工具，系统认证不依赖客户端审批。
 - 启动失败时检查用户级配置中的可执行路径是否存在；提权失败时检查 pkexec wrapper、polkit 服务和桌面认证代理。`required = false`，服务器不可用时 Codex 会报告，Agent 不应编造查询结果。
