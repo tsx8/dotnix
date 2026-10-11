@@ -20,7 +20,7 @@
 
 ## 日常命令
 
-先按 [项目环境](docs/development.md#项目环境) 加载开发工具，按 [版本管理](docs/development.md#版本管理) 开始 jj 任务，再按 [验证要求](docs/development.md#验证要求) 选择检查。系统配置修改使用：
+先按 [项目环境](docs/development.md#项目环境) 加载开发工具，再按 [验证要求](docs/development.md#验证要求) 选择检查。系统配置修改使用：
 
 ```bash
 just repo fmt
