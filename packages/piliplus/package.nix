@@ -4,6 +4,8 @@
   flutter,
   fetchFromGitHub,
   autoPatchelfHook,
+  makeWrapper,
+  pkg-config,
   alsa-lib,
   glib-networking,
   libayatana-appindicator,
@@ -129,7 +131,21 @@ flutter.buildFlutterApplication {
       };
   };
 
-  nativeBuildInputs = [ autoPatchelfHook ];
+  # cnativeapi 的构建钩子直接调用 pkg-config 查询 gtk+-3.0/x11/xi，Flutter 构建的
+  # 子进程环境不携带 stdenv 累积的 PKG_CONFIG_PATH；preBuild 把完整搜索路径固化
+  # 进 PATH 前置的包装器。
+  preBuild = ''
+    mkdir -p "$NIX_BUILD_TOP/pkgconfig-bin"
+    makeWrapper "$(command -v pkg-config)" "$NIX_BUILD_TOP/pkgconfig-bin/pkg-config" \
+      --set-default PKG_CONFIG_PATH "$PKG_CONFIG_PATH"
+    export PATH="$NIX_BUILD_TOP/pkgconfig-bin:$PATH"
+  '';
+
+  nativeBuildInputs = [
+    autoPatchelfHook
+    makeWrapper
+    pkg-config
+  ];
 
   buildInputs = [
     alsa-lib
