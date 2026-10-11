@@ -51,6 +51,9 @@ trap 'exit 129' HUP
 printf '{}\n' > "$tmp_dir/cache.json"
 : > "$tmp_dir/config.toml"
 
+# tmpfs 挂载点必须预先存在；真实目录平时由 Codex 运行时创建，缺席时补建。
+mkdir -p -- "$codex_dir/tmp"
+
 # 普通配置可能固定模型目录；仅在子进程中屏蔽它，管理约束和认证仍由 Codex 读取。
 isolate=(
   bwrap --die-with-parent

@@ -8,7 +8,7 @@
 
 stdenvNoCC.mkDerivation {
   pname = "obelisk";
-  version = "0.2.6";
+  version = "0.3.0";
 
   src = fetchurl {
     url = "https://registry.npmjs.org/@obelisk-apps/cli/-/cli-0.2.6-rc.0.tgz";
