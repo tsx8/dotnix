@@ -32,7 +32,7 @@
 ## 标准流程
 
 1. 阅读本文件和 docs 中与改动相关的部分。
-2. 按 [版本管理与任务基线](docs/development.md#版本管理与任务基线) 使用 jj 共存工作区，保留无关工作区和 Git 暂存内容；任务独占工作目录和历史修改，不自动 stash、提交或清空无关工作。开始任务时记录起点的完整 Git commit ID 作为 `BASE`，续做时沿用并在交接中保留。新增文件精确 `jj file track`；安装引导中的纯 Git 工作区使用精确 `git add`，不能全量纳入无关文件。执行项目工具时使用上述环境入口。
+2. 按 [版本管理与任务基线](docs/development.md#版本管理与任务基线) 使用 jj 共存工作区在 master 单一主线上工作，保留无关工作区和 Git 暂存内容；任务独占工作目录和历史修改，不自动 stash、提交或清空无关工作。开始任务时记录 `master` 的完整 Git commit ID 作为 `BASE` 并执行 `jj bookmark set master`，续做时沿用原值并在交接中保留；完成时 `jj commit -m <说明>` 封存。新增文件精确 `jj file track`；安装引导中的纯 Git 工作区使用精确 `git add`，不能全量纳入无关文件。执行项目工具时使用上述环境入口。
 3. 按 [验证要求](docs/development.md#验证要求) 执行对应检查：文档核对内容和流程；可执行行为运行 fmt、lint、test；影响系统时运行 fmt、os build，复用 build 内置的 lint/test。lint、os build/test 和 repo update 显式传入同一个 `BASE`，不使用移动后的 HEAD、bookmark 或 change ID 替代。补足必要行为验证；变更包须验证其构建，不能用 flake check 代替。
 4. 交付前按文档边界检查归属：代码是否落实可执行约束，注释是否解释必要的局部理由，docs 是否服务于 Harness 的使用和整体理解；核对三者是否一致、有无重复转录实现。复用内容及条件仍适用的验证结果；新修改、失败或证据缺口才补充检查。清理本次不再需要的临时产物，在交接中报告修改、实际验证和未验证项。
 5. 输出交接报告后停止。

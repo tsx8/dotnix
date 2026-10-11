@@ -31,18 +31,20 @@ jj git init --colocate
 jj bookmark track master@origin
 ```
 
+仓库只有 master 一条主线。任务开始时把 bookmark 附到工作副本，修改随快照直接进入 master，等价于在 Git 中直接提交到 master；完成时一条 `jj commit` 封存，说明可先用 `jj describe` 草拟。git HEAD 由 jj 维护、常呈 detached，以 master 为准；已推送历史（`master@origin` 及其祖先）默认不可变。
+
 任务独占工作目录和历史修改。已有无关修改或部分 Git 暂存状态时保留原状，改用独立副本，不自动 stash、提交或清空。不要在 jj 工作区中交替使用 Git 的提交、重排和重置操作。
 
-开始新任务时，确认 `master` 是选定的起点，再创建工作 change 并记录其父提交的完整 Git commit ID：
+开始新任务时先记录基线，再附上 bookmark；附着后 master 随快照移动，基线必须在附着前取得：
 
 ```bash
-jj new master
-BASE="$(git rev-parse HEAD)"
+BASE="$(git rev-parse master)"
+jj bookmark set master
 ```
 
-`BASE` 是后续 lint、构建和更新的必填参数，记录在任务会话和交接中。创建或改写 change 后不重取，续做任务时沿用原值；不能用分支名、bookmark、change ID 或缩写代替。检查入口验证提交对象和完整 ID，不替调用方判断任务起点是否正确。
+`BASE` 是后续 lint、构建和更新的必填参数，记录在任务会话和交接中；续做任务时沿用原值，不能用分支名、change ID 或缩写代替。检查入口验证提交对象和完整 ID，不替调用方判断任务起点是否正确。
 
-新增或重命名后的新路径精确 `jj file track`，不得通过全量跟踪消除未跟踪文件提示。检查前用 `jj status` 确认任务内容，再执行下文命令。`jj commit` 或 `jj new` 不会自动推进 `master`；发布前明确选择已经检查、审阅的提交，再移动 bookmark，获批后才 push。不要把临时文件或未获准操作的秘密纳入快照。
+新增或重命名后的新路径精确 `jj file track`，不得通过全量跟踪消除未跟踪文件提示。检查前用 `jj status` 确认任务内容，再执行下文命令。完成时 `jj commit -m <说明>` 封存，master 落到新提交、工作副本刷新为空；历史整理（squash、split、edit、undo）改写提交时 master 自动跟随，无需手工移动 bookmark，遗漏附着时下次附着自动补上。push 须经用户明确批准，获批后执行 `jj git push`。不要把临时文件或未获准操作的秘密纳入快照。
 
 恢复前先查看 `jj op log`，确认目标操作和影响范围。`jj op restore` 恢复共享仓库状态，不是目录私有的撤销；不得在其他任务仍修改历史时执行恢复，也不得绕过已有操作审批。检查命令不隐式运行 jj 快照、提交或 bookmark 操作。
 
