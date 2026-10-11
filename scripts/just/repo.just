@@ -3,12 +3,12 @@ set working-directory := "../.."
 fmt: _source-ready
   nix fmt
 
-lint BASE: (_check-base BASE) _source-ready
+lint: _source-ready
   @just repo _tracked-files '*.nix' | xargs -0 -r nix fmt -- --no-cache --fail-on-change
   @just repo _tracked-files '*.nix' | xargs -0 -r nix run .#nixf-diagnose --
   @statix check --config modules/maintenance/development/statix.toml
   @just repo _tracked-files '*.sh' | xargs -0 -r shellcheck
-  @git diff --check {{quote(BASE)}}
+  @base="$(just repo _baseline)"; git diff --check "$base"
 
 test: _source-ready
   @nix flake check --no-update-lock-file --no-write-lock-file
@@ -18,8 +18,8 @@ test: _source-ready
 pkg-update:
   scripts/sh/update.sh pkg
 
-update BASE *inputs:
-  scripts/sh/update.sh all {{quote(BASE)}} {{inputs}}
+update *inputs:
+  scripts/sh/update.sh all {{inputs}}
 
 # jj 的 Git index 可保留工作树中已删除的路径；损坏的符号链接仍交给检查器报错。
 _tracked-files PATTERN:
@@ -33,9 +33,10 @@ _source-ready:
       exit 1; \
     fi
 
-_check-base BASE:
-  @base={{quote(BASE)}}; \
-    if ! resolved="$(git rev-parse --verify --end-of-options "${base}^{commit}" 2>/dev/null)" || [ "$resolved" != "$base" ]; then \
-      printf 'BASE must be the full Git commit ID recorded at task start, not a ref or abbreviation.\n' >&2; \
-      exit 2; \
-    fi
+# jj 把工作副本导出为 Git HEAD，未封存改动的基线取工作副本父提交；纯 Git 引导退回 HEAD。
+_baseline:
+  @if [ -d .jj ]; then \
+    jj --ignore-working-copy log -r @- --no-graph --no-pager -T commit_id; \
+  else \
+    git rev-parse HEAD; \
+  fi
