@@ -49,7 +49,7 @@
             # 规则；节点/订阅主机名必须继续走 buaadns（fallback）解析，否则
             # googledns 依赖的代理无法自举。
             buaadns: 'udp://${campusDns}:53'
-            googledns: 'tcp+udp://8.8.8.8:53'
+            googledns: 'tcp://8.8.8.8:53'
           }
 
           routing {
