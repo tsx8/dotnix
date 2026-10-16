@@ -223,7 +223,7 @@
         "module_alias": "usb:v2C7Cp7009d0100dcEFdsc02dp01icE0isc01ip01in00"
       },
       {
-        "index": 92,
+        "index": 93,
         "attached_to": 78,
         "class_list": [
           "usb",
@@ -2104,7 +2104,7 @@
         "sysfs_id": "/class/block/zram0",
         "unix_device_names": [
           "/dev/disk/by-label/zram0",
-          "/dev/disk/by-uuid/007ee1b4-d9a4-480a-aa93-fd2578e99e66",
+          "/dev/disk/by-uuid/f6f90f76-ba3e-4be8-b54a-5e7c98833687",
           "/dev/zram0"
         ],
         "resources": [
@@ -2863,7 +2863,7 @@
         "module_alias": "usb:v1D6Bp0002d0702dc09dsc00dp01ic09isc00ip00in00"
       },
       {
-        "index": 91,
+        "index": 92,
         "attached_to": 44,
         "class_list": [
           "usb",
@@ -2989,7 +2989,7 @@
           "/dev/input/by-id/usb-VGN_VGN_DragonFly_F1_SE-event-kbd",
           "/dev/input/by-path/pci-0000:c8:00.0-usb-0:4:1.0-event-kbd",
           "/dev/input/by-path/pci-0000:c8:00.0-usbv2-0:4:1.0-event-kbd",
-          "/dev/input/event8"
+          "/dev/input/event5"
         ],
         "resources": [
           {
@@ -3044,7 +3044,7 @@
         "module_alias": "usb:v3554pFB50d0110dc00dsc00dp00ic03isc01ip01in00"
       },
       {
-        "index": 90,
+        "index": 82,
         "attached_to": 87,
         "class_list": [
           "keyboard",
@@ -3070,28 +3070,28 @@
           "value": 0
         },
         "vendor": {
-          "hex": "258a",
-          "name": "SINOWEALTH",
-          "value": 9610
+          "hex": "046a",
+          "name": "Cherry Mikroschalter GmbH",
+          "value": 1130
         },
         "device": {
-          "hex": "01bb",
-          "name": "2.4G Wireless Receiver",
-          "value": 443
+          "hex": "013b",
+          "name": "K37 Dongle",
+          "value": 315
         },
         "revision": {
           "hex": "0000",
-          "name": "1.12",
+          "name": "1.09",
           "value": 0
         },
-        "model": "SINOWEALTH 2.4G Wireless Receiver",
-        "sysfs_id": "/devices/pci0000:00/0000:00:08.1/0000:c6:00.4/usb1/1-1/1-1:1.0",
-        "sysfs_bus_id": "1-1:1.0",
+        "model": "Cherry Mikroschalter K37 Dongle",
+        "sysfs_id": "/devices/pci0000:00/0000:00:08.1/0000:c6:00.4/usb1/1-1/1-1:1.1",
+        "sysfs_bus_id": "1-1:1.1",
         "unix_device_names": [
-          "/dev/input/by-id/usb-SINOWEALTH_2.4G_Wireless_Receiver-event-kbd",
-          "/dev/input/by-path/pci-0000:c6:00.4-usb-0:1:1.0-event-kbd",
-          "/dev/input/by-path/pci-0000:c6:00.4-usbv2-0:1:1.0-event-kbd",
-          "/dev/input/event1"
+          "/dev/input/by-id/usb-CHERRY_K37_Dongle-if01-event-kbd",
+          "/dev/input/by-path/pci-0000:c6:00.4-usb-0:1:1.1-event-kbd",
+          "/dev/input/by-path/pci-0000:c6:00.4-usbv2-0:1:1.1-event-kbd",
+          "/dev/input/event4"
         ],
         "resources": [
           {
@@ -3126,7 +3126,7 @@
             "value": 1
           },
           "interface_protocol": 1,
-          "interface_number": 0,
+          "interface_number": 1,
           "interface_alternate_setting": 0
         },
         "hotplug": "usb",
@@ -3143,7 +3143,7 @@
           "xkb_rules": "xfree86",
           "xkb_model": "pc104"
         },
-        "module_alias": "usb:v258Ap01BBd0112dc00dsc00dp00ic03isc01ip01in00"
+        "module_alias": "usb:v046Ap013Bd0109dc00dsc00dp00ic03isc01ip01in01"
       }
     ],
     "memory": [
@@ -3372,114 +3372,6 @@
     ],
     "mouse": [
       {
-        "index": 82,
-        "attached_to": 87,
-        "class_list": [
-          "mouse",
-          "usb"
-        ],
-        "bus_type": {
-          "hex": "0086",
-          "name": "USB",
-          "value": 134
-        },
-        "slot": {
-          "bus": 0,
-          "number": 0
-        },
-        "base_class": {
-          "hex": "0105",
-          "name": "Mouse",
-          "value": 261
-        },
-        "sub_class": {
-          "hex": "0003",
-          "name": "USB Mouse",
-          "value": 3
-        },
-        "vendor": {
-          "hex": "258a",
-          "name": "SINOWEALTH",
-          "value": 9610
-        },
-        "device": {
-          "hex": "01bb",
-          "name": "2.4G Wireless Receiver",
-          "value": 443
-        },
-        "revision": {
-          "hex": "0000",
-          "name": "1.12",
-          "value": 0
-        },
-        "compat_vendor": "Unknown",
-        "compat_device": "Generic USB Mouse",
-        "model": "SINOWEALTH 2.4G Wireless Receiver",
-        "sysfs_id": "/devices/pci0000:00/0000:00:08.1/0000:c6:00.4/usb1/1-1/1-1:1.1",
-        "sysfs_bus_id": "1-1:1.1",
-        "unix_device_names": [
-          "/dev/input/mice"
-        ],
-        "unix_device_name2": "/dev/input/mouse0",
-        "resources": [
-          {
-            "type": "baud",
-            "speed": 12000000,
-            "bits": 0,
-            "stop_bits": 0,
-            "parity": 0,
-            "handshake": 0
-          }
-        ],
-        "detail": {
-          "device_class": {
-            "hex": "0000",
-            "name": "per_interface",
-            "value": 0
-          },
-          "device_subclass": {
-            "hex": "0000",
-            "name": "per_interface",
-            "value": 0
-          },
-          "device_protocol": 0,
-          "interface_class": {
-            "hex": "0003",
-            "name": "hid",
-            "value": 3
-          },
-          "interface_subclass": {
-            "hex": "0000",
-            "name": "per_interface",
-            "value": 0
-          },
-          "interface_protocol": 1,
-          "interface_number": 1,
-          "interface_alternate_setting": 0
-        },
-        "hotplug": "usb",
-        "driver": "usbhid",
-        "driver_module": "usbhid",
-        "drivers": [
-          "usbhid"
-        ],
-        "driver_modules": [
-          "usbhid"
-        ],
-        "driver_info": {
-          "type": "mouse",
-          "db_entry_0": [
-            "explorerps/2",
-            "exps2"
-          ],
-          "xf86": "explorerps/2",
-          "gpm": "exps2",
-          "buttons": -1,
-          "wheels": -1
-        },
-        "module_alias": "usb:v258Ap01BBd0112dc00dsc00dp00ic03isc00ip01in01"
-      },
-      {
         "index": 88,
         "attached_to": 78,
         "class_list": [
@@ -3528,7 +3420,7 @@
         "unix_device_names": [
           "/dev/input/mice"
         ],
-        "unix_device_name2": "/dev/input/mouse1",
+        "unix_device_name2": "/dev/input/mouse0",
         "resources": [
           {
             "type": "baud",
@@ -3586,6 +3478,116 @@
           "wheels": -1
         },
         "module_alias": "usb:v3554pFB50d0110dc00dsc00dp00ic03isc01ip02in01"
+      },
+      {
+        "index": 91,
+        "attached_to": 87,
+        "class_list": [
+          "mouse",
+          "usb"
+        ],
+        "bus_type": {
+          "hex": "0086",
+          "name": "USB",
+          "value": 134
+        },
+        "slot": {
+          "bus": 0,
+          "number": 0
+        },
+        "base_class": {
+          "hex": "0105",
+          "name": "Mouse",
+          "value": 261
+        },
+        "sub_class": {
+          "hex": "0003",
+          "name": "USB Mouse",
+          "value": 3
+        },
+        "vendor": {
+          "hex": "046a",
+          "name": "Cherry Mikroschalter GmbH",
+          "value": 1130
+        },
+        "device": {
+          "hex": "013b",
+          "name": "K37 Dongle",
+          "value": 315
+        },
+        "revision": {
+          "hex": "0000",
+          "name": "1.09",
+          "value": 0
+        },
+        "compat_vendor": "Unknown",
+        "compat_device": "Generic USB Mouse",
+        "model": "Cherry Mikroschalter K37 Dongle",
+        "sysfs_id": "/devices/pci0000:00/0000:00:08.1/0000:c6:00.4/usb1/1-1/1-1:1.0",
+        "sysfs_bus_id": "1-1:1.0",
+        "unix_device_names": [
+          "/dev/input/by-id/usb-CHERRY_K37_Dongle-event-if00",
+          "/dev/input/by-path/pci-0000:c6:00.4-usb-0:1:1.0-event",
+          "/dev/input/by-path/pci-0000:c6:00.4-usbv2-0:1:1.0-event",
+          "/dev/input/event3"
+        ],
+        "resources": [
+          {
+            "type": "baud",
+            "speed": 12000000,
+            "bits": 0,
+            "stop_bits": 0,
+            "parity": 0,
+            "handshake": 0
+          }
+        ],
+        "detail": {
+          "device_class": {
+            "hex": "0000",
+            "name": "per_interface",
+            "value": 0
+          },
+          "device_subclass": {
+            "hex": "0000",
+            "name": "per_interface",
+            "value": 0
+          },
+          "device_protocol": 0,
+          "interface_class": {
+            "hex": "0003",
+            "name": "hid",
+            "value": 3
+          },
+          "interface_subclass": {
+            "hex": "0001",
+            "name": "audio",
+            "value": 1
+          },
+          "interface_protocol": 2,
+          "interface_number": 0,
+          "interface_alternate_setting": 0
+        },
+        "hotplug": "usb",
+        "driver": "usbhid",
+        "driver_module": "usbhid",
+        "drivers": [
+          "usbhid"
+        ],
+        "driver_modules": [
+          "usbhid"
+        ],
+        "driver_info": {
+          "type": "mouse",
+          "db_entry_0": [
+            "explorerps/2",
+            "exps2"
+          ],
+          "xf86": "explorerps/2",
+          "gpm": "exps2",
+          "buttons": -1,
+          "wheels": -1
+        },
+        "module_alias": "usb:v046Ap013Bd0109dc00dsc00dp00ic03isc01ip02in00"
       }
     ],
     "network_controller": [
@@ -3833,7 +3835,7 @@
     ],
     "network_interface": [
       {
-        "index": 93,
+        "index": 94,
         "attached_to": 0,
         "class_list": [
           "network_interface"
@@ -3855,7 +3857,7 @@
         ]
       },
       {
-        "index": 94,
+        "index": 95,
         "attached_to": 29,
         "class_list": [
           "network_interface"
@@ -3896,7 +3898,7 @@
         ]
       },
       {
-        "index": 95,
+        "index": 96,
         "attached_to": 37,
         "class_list": [
           "network_interface"
@@ -3937,7 +3939,7 @@
         ]
       },
       {
-        "index": 96,
+        "index": 97,
         "attached_to": 0,
         "class_list": [
           "network_interface"
@@ -3969,7 +3971,7 @@
         ]
       },
       {
-        "index": 98,
+        "index": 99,
         "attached_to": 64,
         "class_list": [
           "network_interface"
@@ -4745,6 +4747,97 @@
         },
         "hotplug": "usb",
         "module_alias": "usb:v3274p8012d0100dc00dsc00dp00icFFisc01ip01in00"
+      },
+      {
+        "index": 90,
+        "attached_to": 87,
+        "class_list": [
+          "usb",
+          "unknown"
+        ],
+        "bus_type": {
+          "hex": "0086",
+          "name": "USB",
+          "value": 134
+        },
+        "slot": {
+          "bus": 0,
+          "number": 0
+        },
+        "base_class": {
+          "hex": "0000",
+          "name": "Unclassified device",
+          "value": 0
+        },
+        "sub_class": {
+          "hex": "0000",
+          "name": "Unclassified device",
+          "value": 0
+        },
+        "vendor": {
+          "hex": "046a",
+          "name": "Cherry Mikroschalter GmbH",
+          "value": 1130
+        },
+        "device": {
+          "hex": "013b",
+          "name": "K37 Dongle",
+          "value": 315
+        },
+        "revision": {
+          "hex": "0000",
+          "name": "1.09",
+          "value": 0
+        },
+        "model": "Cherry Mikroschalter K37 Dongle",
+        "sysfs_id": "/devices/pci0000:00/0000:00:08.1/0000:c6:00.4/usb1/1-1/1-1:1.2",
+        "sysfs_bus_id": "1-1:1.2",
+        "resources": [
+          {
+            "type": "baud",
+            "speed": 12000000,
+            "bits": 0,
+            "stop_bits": 0,
+            "parity": 0,
+            "handshake": 0
+          }
+        ],
+        "detail": {
+          "device_class": {
+            "hex": "0000",
+            "name": "per_interface",
+            "value": 0
+          },
+          "device_subclass": {
+            "hex": "0000",
+            "name": "per_interface",
+            "value": 0
+          },
+          "device_protocol": 0,
+          "interface_class": {
+            "hex": "0003",
+            "name": "hid",
+            "value": 3
+          },
+          "interface_subclass": {
+            "hex": "0000",
+            "name": "per_interface",
+            "value": 0
+          },
+          "interface_protocol": 0,
+          "interface_number": 2,
+          "interface_alternate_setting": 0
+        },
+        "hotplug": "usb",
+        "driver": "usbhid",
+        "driver_module": "usbhid",
+        "drivers": [
+          "usbhid"
+        ],
+        "driver_modules": [
+          "usbhid"
+        ],
+        "module_alias": "usb:v046Ap013Bd0109dc00dsc00dp00ic03isc00ip00in02"
       }
     ],
     "usb_controller": [
@@ -6045,9 +6138,9 @@
       "product": "MACO",
       "version": "Default string",
       "wake_up": {
-        "hex": "0006",
-        "name": "Power Switch",
-        "value": 6
+        "hex": "0002",
+        "name": "Unknown",
+        "value": 2
       }
     }
   }
