@@ -80,6 +80,7 @@
         routing {
           # 此处不得对 :53 使用 must_*：会整包旁路 DNS 劫持，校园伪造答案
           # （gemini.gstatic.com 的 NXDOMAIN）直达客户端，绕过 dns 分流过滤
+          pname(zerotier-one) -> direct
           dip(224.0.0.0/3) -> direct
           l4proto(udp) && dport(443) -> block
           dip(geoip:private) -> direct
