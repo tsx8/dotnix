@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 按 packages/piliplus/package.nix 的当前版本，从上游 tag 重建 pubspec.lock.json
-# 与 git-hashes.json；被 just repo pkg-update 在 nix-update 更新版本后调用。
-# pubspec.lock 未变化时直接返回，避免无谓的 git 依赖预取。
+# From the current version in packages/piliplus/package.nix, rebuild pubspec.lock.json and git-hashes.json
+# from the upstream tag; called by just repo pkg-update after nix-update bumps the version.
+# Returns immediately when pubspec.lock is unchanged, skipping needless git dependency prefetching.
 
 if [[ $# -ne 0 ]]; then
   echo "usage: $0" >&2
@@ -35,10 +35,11 @@ if cmp -s -- "$lock_tmp" "$pkg_dir/pubspec.lock.json"; then
   exit 0
 fi
 
-# 从本仓库的 flake 输入取路径，沿用锁定的 rev 和 narHash。
+# Take the path from this repo's flake inputs, reusing the locked rev and narHash.
 nixpkgs_out="$(cd -- "$repo_root" && nix eval --impure --raw --no-update-lock-file --no-write-lock-file --expr '(builtins.getFlake (toString ./.)).inputs.nixpkgs.outPath')"
 hashes_tmp="$(mktemp)"
-# nix-prefetch-git 重置 HOME，导致依赖 BASH_ENV 定位 direnv 授权的代理会话在脚本启动时失败。
+# nix-prefetch-git resets HOME, breaking agent sessions that rely on BASH_ENV to locate the direnv
+# authorization right at script startup.
 nix shell nixpkgs#python3 nixpkgs#nix-prefetch-git --command \
   env -u BASH_ENV python3 "$nixpkgs_out/pkgs/development/compilers/dart/fetch-git-hashes.py" \
   --input "$lock_tmp" --output "$hashes_tmp"

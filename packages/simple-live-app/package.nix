@@ -11,11 +11,12 @@
 
 flutter347.buildFlutterApplication {
   pname = "simple-live-app";
-  # 上游 master 不再打版本 tag，版本取自提交对应的 pubspec 描述，rev 跟踪交给 flake input。
+  # Upstream master no longer gets version tags; the version comes from the pubspec description of the pinned
+  # commit, and rev tracking is left to the flake input.
   version = "1.11.7";
 
   src = appSrc;
-  # 目录型 src 解包后位于 source/ 前缀下。
+  # A directory-typed src unpacks under the source/ prefix.
   sourceRoot = "source/simple_live_app";
   pubspecLock = lib.importJSON ./pubspec.lock.json;
   gitHashes = {

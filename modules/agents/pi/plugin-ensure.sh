@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# 以声明清单维护 pi 插件市场与已装插件，替代 /plugins marketplace add 的手工步骤。
-# 写入格式复刻 pi-plugins dist/host.js 的 addMarketplace/installPlugin 本地源路径
-# （source.json、checkout、.pi-plugin.json 回执、目录跳过表）；升级 pi-plugins 时
-# 须对照该源码核对本脚本。store 路径随输入变化即整体重建并重装；重装保留
-# .disabled/.auto-update 等宿主权威标记，用户自装的其他插件与市场不受影响。
+# Maintains pi plugin marketplaces and installed plugins from a declarative manifest, replacing the manual
+# /plugins marketplace add steps. The written format replicates the addMarketplace/installPlugin local-source
+# paths of pi-plugins dist/host.js (source.json, checkout, .pi-plugin.json receipts, the directory skip table);
+# when upgrading pi-plugins, verify this script against that source. A changed store path across input updates
+# rebuilds and reinstalls wholesale; reinstalls preserve host-authoritative marks such as .disabled/.auto-update
+# and leave user-installed plugins and marketplaces untouched.
 set -euo pipefail
 
 usage() {
@@ -30,7 +31,7 @@ plugins_root=$agent_dir/plugin-host/plugins
 data_root=$agent_dir/plugin-host/data
 mkdir -p "$markets_root" "$plugins_root" "$data_root"
 
-# readMarketplaceCatalog 的读取顺序。
+# Read order of readMarketplaceCatalog.
 catalog_paths=(
   ".agents/plugins/marketplace.json"
   ".claude-plugin/marketplace.json"
@@ -59,7 +60,7 @@ find_plugin_entry() {
   return 1
 }
 
-# readPluginMetadata：按文件顺序合并，version/description 各取首个非空字符串。
+# readPluginMetadata: merge in file order; version/description each take the first non-empty string.
 bundle_metadata() {
   local bundle=$1
   local -a files=()
@@ -137,7 +138,7 @@ for name in "${!sources[@]}"; do
       echo "pi plugin '$plugin': no catalog entry in marketplace '$market'" >&2
       exit 1
     }
-    # parsePluginSource 规范化：只支持本地源条目，回执存 {kind:"local", path}。
+    # parsePluginSource normalization: only local source entries are supported; the receipt stores {kind:"local", path}.
     source_json=$(jq -c '
       if (.source | type) == "string" then {kind: "local", path: .source}
       elif .source.source? == "local" then {kind: "local", path: .source.path}

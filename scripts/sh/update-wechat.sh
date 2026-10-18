@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 腾讯的 WeChat Linux AppImage 是无版本滚动地址，内容静默覆盖。
-# 以 Last-Modified 头作为变更哨兵：无变化即空操作；有变化时经 nix 通道取
-# 权威哈希（代理路径字节不可信）、从官方页取三位版本号，改写
-# packages/wechat/package.nix 的 version/hash 与下方记录行。
+# Tencent's WeChat Linux AppImage lives at a versionless rolling URL whose content is silently overwritten.
+# Use the Last-Modified header as the change sentinel: no change is a no-op; on change, fetch the
+# authoritative hash via the nix channel (bytes from proxied paths are untrusted), read the three-part
+# version from the official page, and rewrite version/hash and the recorded line below in
+# packages/wechat/package.nix.
 
 if [[ $# -ne 0 ]]; then
   echo "usage: $0" >&2

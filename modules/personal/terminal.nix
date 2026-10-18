@@ -11,7 +11,7 @@ in
     };
 
     users.users.${userName}.shell = pkgs.fish;
-    # pi 等终端程序复制依赖 wl-copy 访问 Wayland 剪贴板，本机无其他来源提供
+    # Terminal programs such as pi rely on wl-copy for the Wayland clipboard; nothing else on this machine provides it
     environment.systemPackages = with pkgs; [
       curl
       wget
@@ -26,8 +26,8 @@ in
       enable = true;
     };
 
-    # fish 模块默认开启 man 缓存（供 apropos 补全），但 home.packages 不含
-    # man pages（仓库原则），mandb 对空目录不产出导致构建失败，显式关闭
+    # The fish module enables man caches by default (for apropos completions), but home.packages carries no
+    # man pages (repo principle); mandb produces nothing for an empty directory and the build fails, so disable it explicitly
     programs.man.generateCaches = false;
   };
 }

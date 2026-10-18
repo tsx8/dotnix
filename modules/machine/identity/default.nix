@@ -7,8 +7,8 @@ in
   dotnix.modules.nixos = { config, pkgs, ... }: {
     imports = [ inputs.sops-nix.nixosModules.sops ];
 
-    # nixpkgs 移除了 EOL 的 buildGo125Module，sops-nix 上游仍硬编码引用它构建
-    # sops-install-secrets；以当前 builder 过渡，上游迁移后删除此别名。
+    # nixpkgs dropped the EOL buildGo125Module, but sops-nix upstream still hardcodes it to build
+    # sops-install-secrets; alias the current builder as a stopgap and drop this once upstream migrates.
     nixpkgs.overlays = [
       (_: prev: { buildGo125Module = prev.buildGoModule; })
     ];
@@ -22,9 +22,9 @@ in
       secrets.user-passwd-hash.neededForUsers = true;
     };
 
-    # GitHub API 匿名限额 60/h，flake 输入解析极易耗尽后整批输入沿用缓存版本。
-    # 令牌渲染为用户级 nix.conf 供所有以本机用户身份运行的 nix 命令使用；
-    # 原始密钥仅 root 可读，用户可读的只有渲染产物。
+    # Anonymous GitHub API access allows 60 requests/h; flake input resolution exhausts it easily and then
+    # silently reuses cached versions for the whole batch. The token is rendered into the user-level nix.conf
+    # for every nix command running as this user; the raw secret is root-only, only the rendered artifact is user-readable.
     sops.secrets.gh-auth-token = { };
     sops.templates."nix.conf" = {
       content = ''
@@ -53,7 +53,7 @@ in
   dotnix.modules.home = { config, ... }: {
     home.file.".config/sops/age/keys.txt".source =
       config.lib.file.mkOutOfStoreSymlink "/var/lib/sops-nix/key.txt";
-    # 指向 sops-nix 渲染产物；符号链接不入 store，密钥不落盘于明文配置。
+    # Points to the sops-nix rendered artifact; the symlink stays out of the store so no secret lands in plaintext config.
     home.file.".config/nix/nix.conf".source =
       config.lib.file.mkOutOfStoreSymlink "/run/secrets/rendered/nix.conf";
   };

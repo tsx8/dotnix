@@ -24,10 +24,10 @@ let
     hash = "sha256-PrXUQdEZUMNkTzaS7gGgQTrRWcF+4a0tFSpWqLwaubI=";
   };
 
-  # 与上游 CI（lib/scripts/patch.ps1 的公共集合 + Linux 分支）保持一致：
-  # 构建前给 Flutter 框架与 material_ui 打补丁（暴露内部 API、修复选区行为等），
-  # 否则应用源码引用的 StandardBottomSheet、TabBarState 等类型不存在。
-  # 补丁文件随源码 tag 滚动，无需单独维护版本。
+  # Kept in sync with upstream CI (the common set in lib/scripts/patch.ps1 plus its Linux branch):
+  # patch the Flutter framework and material_ui before building (expose internal APIs, fix selection
+  # behavior, etc.), otherwise types the app source references, such as StandardBottomSheet and
+  # TabBarState, do not exist. The patch files roll with the source tag and need no separately maintained version.
   frameworkPatches = map (name: "${src}/lib/scripts/${name}") [
     "double_tap_gesture.patch"
     "draggable_scrollable_sheet.patch"
@@ -107,8 +107,8 @@ flutter.buildFlutterApplication {
         '';
       };
 
-    # media_kit_libs_video 传递依赖 pub.dev 的 media_kit_libs_linux，
-    # 其 CMake 默认在线下载 mimalloc；改为查找 nixpkgs 的共享库。
+    # media_kit_libs_video transitively depends on pub.dev's media_kit_libs_linux, whose CMake downloads
+    # mimalloc online by default; switch to the shared library from nixpkgs.
     media_kit_libs_linux =
       {
         version,
@@ -131,9 +131,9 @@ flutter.buildFlutterApplication {
       };
   };
 
-  # cnativeapi 的构建钩子直接调用 pkg-config 查询 gtk+-3.0/x11/xi，Flutter 构建的
-  # 子进程环境不携带 stdenv 累积的 PKG_CONFIG_PATH；preBuild 把完整搜索路径固化
-  # 进 PATH 前置的包装器。
+  # cnativeapi's build hook invokes pkg-config directly for gtk+-3.0/x11/xi, and the Flutter build's child
+  # process environment does not carry the PKG_CONFIG_PATH accumulated by stdenv; preBuild pins the full
+  # search path into a wrapper placed ahead on PATH.
   preBuild = ''
     mkdir -p "$NIX_BUILD_TOP/pkgconfig-bin"
     makeWrapper "$(command -v pkg-config)" "$NIX_BUILD_TOP/pkgconfig-bin/pkg-config" \

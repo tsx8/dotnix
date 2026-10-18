@@ -13,15 +13,15 @@ lint: _source-ready
 test: _source-ready
   @nix flake check --no-update-lock-file --no-write-lock-file
 
-# 逐行读取 packages/update.list，用 nix-update 检查并更新非 flake input 形态的远程源包；
-# 节点顺序、重试与失败汇总见 scripts/sh/update.sh。
+# Read packages/update.list line by line and use nix-update to check and update remote-source packages
+# not shaped as flake inputs; node order, retries, and failure summary live in scripts/sh/update.sh.
 pkg-update:
   scripts/sh/update.sh pkg
 
 update *inputs:
   scripts/sh/update.sh all {{inputs}}
 
-# Git index 在暂存前保留工作树中已删除的路径；损坏的符号链接仍交给检查器报错。
+# The Git index still lists worktree-deleted paths until their deletions are staged; broken symlinks are still handed to the checker to report.
 _tracked-files PATTERN:
   @git ls-files -z -- {{quote(PATTERN)}} | \
     xargs -0 -r sh -c 'for path; do if [ -e "$path" ] || [ -L "$path" ]; then printf "%s\0" "$path"; fi; done' sh

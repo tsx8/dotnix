@@ -45,21 +45,21 @@
           ipversion_prefer: 4
 
           upstream {
-            # 明文上游只在经代理隧道拨号时安全，routing 里不得加匹配它们的 direct
-            # 规则；节点/订阅主机名必须继续走 buaadns（fallback）解析，否则
-            # googledns 依赖的代理无法自举。
+            # Plaintext upstreams are only safe when dialed through the proxy tunnel, so the routing section
+            # must not add direct rules matching them; node/subscription hostnames must keep resolving via
+            # buaadns (fallback), or the proxy that googledns depends on cannot bootstrap.
             buaadns: 'udp://${campusDns}:53'
             googledns: 'tcp://8.8.8.8:53'
           }
 
           routing {
             request {
-              # 拒绝 HTTPS 记录：浏览器可借其发现 DoH 绕过此分流，
-              # ECH 会向 dial_mode 嗅探隐藏 SNI
+              # Reject HTTPS records: browsers can use them to discover DoH and bypass this split,
+              # and ECH would hide the SNI from dial_mode sniffing
               qtype(https) -> reject
-              # 校园 DNS 对被墙域名伪造答案（gstatic 假 A、
-              # gemini.gstatic.com NXDOMAIN），名单内外国域名
-              # 必须经代理走 googledns 解析
+              # Campus DNS forges answers for blocked domains (fake A records for gstatic,
+              # NXDOMAIN for gemini.gstatic.com); foreign domains on the list must be
+              # resolved via googledns through the proxy
               qname(geosite:geolocation-!cn) -> googledns
               fallback: buaadns
             }
@@ -78,8 +78,8 @@
         }
 
         routing {
-          # 此处不得对 :53 使用 must_*：会整包旁路 DNS 劫持，校园伪造答案
-          # （gemini.gstatic.com 的 NXDOMAIN）直达客户端，绕过 dns 分流过滤
+          # must_* must not be used for :53 here: it would bypass DNS hijacking packet-wide, so campus-forged
+          # answers (the NXDOMAIN for gemini.gstatic.com) would reach the client directly, bypassing dns split filtering
           pname(zerotier-one) -> direct
           dip(224.0.0.0/3) -> direct
           l4proto(udp) && dport(443) -> block

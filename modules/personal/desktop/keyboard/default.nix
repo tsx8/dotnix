@@ -124,7 +124,7 @@ in
                 browsers_all.append("helium")
                 browsers_allStr = toRgxStr(browsers_all)
 
-                # 游戏复用上游旁路；通用编辑映射另有预生成的排除规则。
+                # Games reuse the upstream bypass; the general editing maps have separately pre-generated exclusion rules.
                 remotes.append("cs2")
                 remoteStr = toRgxStr(remotes)
                 vscodes_and_remotes_Str = toRgxStr(vscodes + remotes)

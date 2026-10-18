@@ -1,6 +1,6 @@
 { config, inputs, ... }: {
   dotnix.modules.nixos = { pkgs, ... }: {
-    # 固定模型目录以覆盖长上下文上限。
+    # Pin the model catalog to override the long-context limit.
     environment.etc."codex/models.json".source = ./models.json;
 
     environment.etc."codex/config.toml".text = ''
@@ -11,7 +11,7 @@
       approval_policy = "on-request"
       approvals_reviewer = "user"
       sandbox_mode = "danger-full-access"
-      # 非登录 Bash 避免恢复旧快照，环境由 BASH_ENV 按命令目录加载。
+      # Non-login Bash avoids restoring a stale snapshot; the environment loads via BASH_ENV per command directory.
       allow_login_shell = false
       web_search = "live"
       model_verbosity = "low"
@@ -25,8 +25,8 @@
       [shell_environment_policy.set]
       BASH_ENV = "/etc/direnv/bash-env"
 
-      # git marketplace 改由 flake input 锁定的本地源提供，版本随 repo update 更新；
-      # 插件缓存按 plugin.json 版本分目录，上游需正常 bump 版本号才会触发重载。
+      # The git marketplaces come from flake-input-pinned local sources; versions update with repo update.
+      # Plugin caches are keyed by plugin.json version, so upstreams must bump versions normally to trigger a reload.
       [marketplaces.kami]
       source_type = "local"
       source = "${inputs.kami}"
@@ -53,7 +53,7 @@
       mcpPackages = config.flake.packages.${pkgs.stdenv.hostPlatform.system};
     in
     {
-      # 源文件保持 .txt 后缀，避免被按目录级 AGENTS.md 扫描的工具误拾取。
+      # The source file keeps its .txt suffix so tools scanning for directory-level AGENTS.md files do not pick it up.
       home.file.".codex/AGENTS.md".source = ../AGENTS-md.txt;
 
       programs.codex = {
@@ -118,7 +118,7 @@
                 output_token_limit = 1800;
               };
               run_privileged = {
-                # auto 仍会询问危险工具；认证由 polkit 逐次执行。
+                # auto would still prompt for dangerous tools; authentication runs through polkit per call.
                 approval_mode = "approve";
                 output_token_limit = 6000;
               };

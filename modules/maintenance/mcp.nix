@@ -12,7 +12,7 @@ in
           if (action.id === "org.freedesktop.policykit.exec" &&
               action.lookup("program") === ${builtins.toJSON "${self.packages.${pkgs.stdenv.hostPlatform.system}.mcp-dotnix.privilegedRunner}"}) {
             if (subject.user === ${builtins.toJSON userName} && action.lookup("user") === "root") {
-              // 授权缓存不区分命令参数，不能使用 AUTH_ADMIN_KEEP。
+              // The authorization cache does not distinguish command arguments, so AUTH_ADMIN_KEEP must not be used.
               return polkit.Result.AUTH_ADMIN;
             }
             return polkit.Result.NO;
@@ -28,7 +28,7 @@ in
       packages = {
         mcp-dotnix = pkgs.callPackage ../../packages/mcp-dotnix/package.nix { };
 
-        # 上游查询 flake 输入时调用 nix flake archive，但缺少 lock 保护参数。
+        # Upstream calls nix flake archive when querying flake inputs but omits the lock protection flags.
         mcp-nixos = inputs'.mcp-nixos.packages.mcp-nixos.overrideAttrs (old: {
           postPatch = (old.postPatch or "") + ''
             substituteInPlace mcp_nixos/sources/flake_inputs.py \

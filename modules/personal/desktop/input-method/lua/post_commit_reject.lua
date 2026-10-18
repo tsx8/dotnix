@@ -1,11 +1,13 @@
--- post-commit rejection：上屏候选被完整删除后，下次相同编码时将其与下一候选交换（一次性）。
--- 状态为模块级单槽：librime-lua 无 notifier 组件，processor 用 commit_history 的
--- 变化检测刚发生的上屏；processor 与 filter 无法按引擎共享状态，故用全局单槽。
+-- post-commit rejection: after a committed candidate is fully deleted with Backspace, swap it with the
+-- next candidate the next time the same code is typed (one-shot).
+-- State is a module-level single slot: librime-lua has no notifier component, so the processor detects
+-- a just-committed candidate via commit_history changes; processor and filter cannot share per-engine state,
+-- hence the global single slot.
 
 local kNoop = 2
 local kBackSpace = 0xFF08
 
--- 候选词上屏的记录类型；punct/raw/thru（标点、直接上屏、未处理键）忽略
+-- Record types of committed candidates; punct/raw/thru (punctuation, raw input, unprocessed keys) are ignored
 local WORD_TYPES = {
   phrase = true,
   user_phrase = true,
@@ -16,7 +18,7 @@ local WORD_TYPES = {
   simplified = true,
 }
 
--- 单独按下时忽略、不取消删除中的修饰键
+-- Modifier keys ignored when pressed alone; they do not cancel an in-progress deletion
 local MODIFIER_KEYS = {
   [0xFFE1] = true,
   [0xFFE2] = true,
@@ -61,8 +63,8 @@ local function processor(key_event, env)
   local composing = ctx:is_composing()
   local now_input = ctx.input
 
-  -- processor 看到的是按键前的 input：组合中按"input+字母"预测完整编码，
-  -- 覆盖点击候选/数字键提交（其后无按键）的场景
+  -- The processor sees the input from before the key press: within a composition, an "input + letter"
+  -- press predicts the full code, covering commits via candidate click/number key (no key follows)
   if composing and not (key_event:ctrl() or key_event:alt() or key_event:super()) then
     if is_plain_letter(kc) then
       state.composing_input = now_input .. string.char(kc)
@@ -71,7 +73,7 @@ local function processor(key_event, env)
     end
   end
 
-  -- 刚发生候选上屏：history 变化 + 末记录是候选词 + 当前非组合
+  -- A candidate was just committed: history changed + last record is a word type + currently not composing
   local history = ctx.commit_history
   local now_repr = history:repr()
   local back = history:back()
@@ -102,7 +104,7 @@ local function processor(key_event, env)
         state.phase = "rejected"
       end
     elseif not MODIFIER_KEYS[kc] then
-      -- 完整删除前出现其他按键：取消
+      -- Another key before the deletion completed: cancel
       state.phase = "idle"
       state.code, state.text = nil, nil
       state.deleted, state.chars = 0, 0
@@ -133,7 +135,7 @@ local function reorder(translation, env)
     end
   end
 
-  -- 交换成功才消费：英文等模式输入同编码时不浪费 rejection
+  -- Consume only when the swap succeeds: typing the same code in English and similar modes must not waste the rejection
   if found and found < #list then
     list[found], list[found + 1] = list[found + 1], list[found]
     state.phase = "idle"

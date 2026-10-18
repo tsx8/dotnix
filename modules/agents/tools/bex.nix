@@ -6,8 +6,8 @@
 
   dotnix.modules.nixos = { pkgs, ... }: {
     environment.systemPackages = [
-      # bex 端点固化：覆盖式导出，会话内改写环境无法把 bex 指向其他浏览器；
-      # helium-use skill 声明该端点为唯一授权浏览器。
+      # bex endpoint pinning: overriding exports so that rewriting the environment inside a session cannot
+      # point bex at another browser; the helium-use skill declares this endpoint as the only authorized browser.
       (pkgs.writeShellScriptBin "bex" ''
         export BU_CDP_URL=http://127.0.0.1:9222
         export BU_CDP_LAUNCH=helium

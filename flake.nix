@@ -60,7 +60,7 @@
       flake = false;
     };
 
-    # Agent 插件/技能与源码构建应用的上游，均无 flake；版本由 flake.lock 锁定。
+    # Upstreams of agent plugins/skills and source-built apps ship no flake; versions are pinned by flake.lock.
     kami = {
       url = "github:tw93/kami";
       flake = false;

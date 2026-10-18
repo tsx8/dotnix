@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# just repo update / pkg-update 的编排入口。单节点失败不中断后续节点，
-# 网络类节点失败自动重试一次；末尾汇总失败节点并保留完整日志目录，
-# 全部成功时清理日志。TTY 下运行中原地刷新状态行（当前活动尾行，
-# 无输出时 spinner+耗时）；非 TTY 退化为静态输出。
+# Orchestration entry for just repo update / pkg-update. One node's failure does not stop later nodes;
+# network-kind nodes retry once automatically. At the end, failed nodes are summarized and the full log
+# directory is kept, or removed when everything succeeded. On a TTY the status line refreshes in place
+# while running (tail of the current activity, or spinner+elapsed when silent); without a TTY it degrades
+# to static output.
 
 usage() { echo "usage: $0 pkg | all [flake-input...]" >&2; }
 
@@ -34,7 +35,8 @@ cleanup() { ((keep_logs)) || rm -rf -- "$logs_dir"; }
 trap cleanup EXIT
 on_int() {
   keep_logs=1
-  # 终端 Ctrl-C 作用于整个前台进程组；脚本被单独 INT 时后台子 shell 收不到，需兜底。
+  # Terminal Ctrl-C hits the whole foreground process group; a lone INT to this script never reaches the
+  # backgrounded subshell, so kill it here as a backstop.
   if [[ -n "$child_pid" ]]; then
     kill "$child_pid" 2>/dev/null || true
   fi
@@ -43,9 +45,9 @@ on_int() {
 }
 trap on_int INT
 
-# 降噪：去掉 nix-update 的命令回显与上游探测行、nix 沿用缓存版本的告警正文，
-# 把 Python traceback 压缩为最终异常行；剩余行即该节点的关键日志。
-# 同一组规则用于结束摘要与运行时活动行。
+# Noise reduction: drop nix-update's command echo and upstream probing lines, and the body of nix's
+# cached-version warnings; compress Python tracebacks to the final exception line. The remaining lines are
+# the node's key log. The same rule set serves both the final summary and the runtime activity line.
 filter_stream() {
   grep -vE \
     -e '^\$ ' \
@@ -76,7 +78,7 @@ filter_log() { filter_stream <"$1" | grep -v '^$' || true; }
 show_tail() { filter_log "$1" | tail -n 12 | sed 's/^/  /'; }
 show_details() { filter_log "$1" | head -n 8 | sed 's/^/  /'; }
 
-# 只比对根输入解析到的 rev/lastModified；follows 指向已在源输入中体现。
+# Compare only the rev/lastModified resolved for root inputs; follows entries are already reflected in their source inputs.
 flake_snapshot() {
   jq -r '
     .nodes as $nodes
@@ -98,8 +100,9 @@ update_flake() {
   return "$rc"
 }
 
-# flake 节点的结构化摘要：按输入名 join 前后快照，逐输入输出旧→新；
-# 新增输入单独列出；rev 截短为 7 位、lastModified 秒值转日期。
+# Structured summary for the flake node: join the before/after snapshots by input name and print old→new
+# per input; newly added inputs are listed separately; revs truncate to 7 chars and lastModified seconds
+# become dates.
 flake_change_summary() {
   local before=$1 after=$2 log=$3
   local moved added n desc stale
@@ -130,8 +133,8 @@ flake_change_summary() {
   if [[ -n "$added" ]]; then printf '%s\n' "$added"; fi
 }
 
-# 子进程输出落盘并在结束时写 rc 文件；渲染循环以 rc 文件为完成信号，
-# 不能用 kill -0 判活（未收割的僵尸进程也能通过探测）。
+# Child output goes to disk and an rc file is written at the end; the render loop uses the rc file as the
+# completion signal — kill -0 must not decide liveness (unreaped zombies also pass that probe).
 run_logged() {
   local log=$1 rc_file=$2
   shift 2
@@ -140,7 +143,7 @@ run_logged() {
   printf '%d\n' "$node_rc" >"$rc_file"
 }
 
-# TTY 状态行：有可读日志尾行时显示尾行，否则 spinner+耗时；原地刷新。
+# TTY status line: show a readable log tail when present, else spinner+elapsed; refresh in place.
 render_status() {
   local name=$1 log=$2 t0=$3 tag=$4 rc_file=$5
   local frame=0 cols avail line status
@@ -167,7 +170,7 @@ render_status() {
   done
 }
 
-# run_node <flake|pkg|plain> <显示名> <重试次数> <命令…>
+# run_node <flake|pkg|plain> <display name> <retries> <command…>
 run_node() {
   local kind=$1 name=$2 retries=$3
   shift 3
@@ -204,7 +207,7 @@ run_node() {
   fi
   case $kind in
     flake)
-      # nix 对不存在的输入名只告警不报错，静默跳过会导致拼写错误无更新。
+      # nix only warns on nonexistent input names; silently skipping would let a typo produce no update.
       if grep -q "does not match any input of this flake" "$log"; then
         printf 'FAILED (unknown flake input)\n'
         grep -oP "warning: '\K[^']+(?=' does not match)" "$log" | sed 's/^/  /' || true

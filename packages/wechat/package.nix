@@ -6,8 +6,9 @@
   pname,
 }:
 
-# 腾讯滚动覆盖下载地址；last-modified 哨兵与 version/hash 由
-# scripts/sh/update-wechat.sh 维护：版本取官方页三位号，内容身份由 hash 决定。
+# Tencent silently overwrites the rolling download URL; the last-modified sentinel and version/hash are
+# maintained by scripts/sh/update-wechat.sh: the version is the three-part number from the official page,
+# and the hash decides content identity.
 # last-modified: Mon, 12 Oct 2026 08:45:13 GMT
 callPackage linuxNix {
   inherit pname meta;

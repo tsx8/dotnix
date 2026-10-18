@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 按 packages/pi-plugins/package.nix 的当前版本，从 npm 重建合成 package.json
-# 与依赖 lock；被 just repo pkg-update 在 nix-update 更新版本后调用。
+# From the current version in packages/pi-plugins/package.nix, rebuild the synthetic package.json and the
+# dependency lock from npm; called by just repo pkg-update after nix-update bumps the version.
 
 if [[ $# -ne 0 ]]; then
   echo "usage: $0" >&2
@@ -27,8 +27,8 @@ if ! jq -e 'type == "object" and length > 0' >/dev/null <<<"$deps"; then
   exit 1
 fi
 
-# 只锁定主入口 dist/pi/extension.js 的运行时闭包；pi-subagents/jiti 仅供
-# 未注入的可选入口，不入清单。
+# Lock only the runtime closure of the main entry dist/pi/extension.js; pi-subagents/jiti serve only the
+# non-injected optional entries and stay out of the manifest.
 adapter="$(jq -r '.["@nklisch/pi-mcp-adapter"] // empty' <<<"$deps")"
 if [[ -z "$adapter" ]]; then
   echo "error: @nklisch/pi-plugins@$version no longer depends on @nklisch/pi-mcp-adapter" >&2

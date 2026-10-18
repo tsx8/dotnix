@@ -5,8 +5,8 @@
     let
       system = pkgs.stdenv.hostPlatform.system;
       pi = inputs.llm-agents.packages.${system}.pi;
-      # 只注入主入口：kami/waza 插件无 agents/MCP/hooks 组件，
-      # pi-subagents/jiti 仅供未注入的可选入口，不入 node_modules 闭包。
+      # Only the main entry is injected: the kami/waza plugins have no agents/MCP/hooks components,
+      # and pi-subagents/jiti serve only the non-injected optional entries, so they stay out of the node_modules closure.
       piPlugins = config.flake.packages.${system}.pi-plugins;
     in
     {
@@ -14,7 +14,7 @@
         (pkgs.writeShellScriptBin "pi" ''
           export PATH="${pkgs.bash}/bin:$PATH"
           export BASH_ENV=/etc/direnv/bash-env
-          # 上游仅按首参数分派子命令，不能在其前注入扩展参数。
+          # Upstream dispatches subcommands by the first argument only; extension arguments cannot go before it.
           case "''${1-}" in
             install|remove|uninstall|update|list|config|auth|mcp)
               exec ${pi}/bin/pi "$@"
@@ -38,8 +38,8 @@
     { lib, pkgs, ... }:
     let
       mcpPackages = config.flake.packages.${pkgs.stdenv.hostPlatform.system};
-      # 仅声明与上游默认不同的键；与默认相同的不入模板。
-      # lastChangelogVersion 等运行时键由深合并保留，声明键在每次激活时重申。
+      # Only keys that differ from upstream defaults are declared; keys equal to the defaults stay out of the template.
+      # Runtime keys such as lastChangelogVersion survive via the deep merge; declared keys are reasserted on every activation.
       declaredSettings = (pkgs.formats.json { }).generate "pi-declared-settings.json" {
         defaultProvider = "zai-coding-cn";
         defaultModel = "glm-5.3";
@@ -49,9 +49,9 @@
         quietStartup = "header";
         defaultProjectTrust = "always";
         defaultTools = [ "+codemode" ];
-        # 阈值 contextWindow/e 主动压缩（ChatGPT/Codex auto_compact 语义）：
-        # reserveTokens = contextWindow − floor(contextWindow/e)，
-        # codex 系窗口取 models.json 覆盖的 1,050,000。
+        # Proactive compaction threshold at contextWindow/e (ChatGPT/Codex auto_compact semantics):
+        # reserveTokens = contextWindow − floor(contextWindow/e);
+        # codex-family windows take 1,050,000 as overridden by models.json.
         compaction.modelOverrides = {
           "zai-coding-cn/glm-5.3".reserveTokens = 632121;
           "zai-coding-cn/glm-5.3-flash".reserveTokens = 632121;
@@ -107,8 +107,8 @@
           };
         };
       };
-      # 市场与插件全量声明，激活时由 plugin-ensure.sh 登记/安装；store 路径随
-      # 输入变化时重建重装。
+      # Marketplaces and plugins are fully declared and registered/installed by plugin-ensure.sh on activation;
+      # a changed store path across input updates triggers a rebuild and reinstall.
       marketplaceSources = {
         kami = "${inputs.kami}";
         waza = "${inputs.waza}";
@@ -121,14 +121,14 @@
     {
       home.file.".pi/agent/AGENTS.md".source = ../AGENTS-md.txt;
 
-      # pi 不回写这两个文件，故用只读 symlink。
-      # models.json：使用 GPT 长上下文窗口，不限于目录的 272k 定价档；未知 id 被忽略。
-      # keybindings.json：Cmd 经 Toshy 译为 Ctrl 提交、Enter 换行；新命名空间 id
-      # 避免触发旧格式迁移写回。
+      # pi never writes these two files back, so read-only symlinks suffice.
+      # models.json: uses GPT long-context windows, not limited to the catalog's 272k pricing tier; unknown ids are ignored.
+      # keybindings.json: Toshy maps Cmd to Ctrl; Ctrl+Enter submits and Enter inserts a newline; new namespace ids
+      # avoid triggering the legacy-format migration write-back.
       home.file.".pi/agent/models.json".source = ./models.json;
       home.file.".pi/agent/keybindings.json".source = ./keybindings.json;
 
-      # /settings 和 /mcp 会回写，保持真实可写文件；激活重申声明键，保留其余用户设置。
+      # /settings and /mcp write back, so real writable files are kept; activation reasserts declared keys and preserves other user settings.
       home.activation.piSettings = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
         merge_pi_config() (
           set -euo pipefail
@@ -182,8 +182,9 @@
         merge_pi_config "$HOME/.pi/agent/mcp.json" '${declaredMcp}' || exit 1
       '';
 
-      # 市场未登记或源路径变化时由脚本重建；已装插件仅在对应市场重建时重装，
-      # 重装保留 .disabled/.auto-update 标记，其余用户状态不动。
+      # The script rebuilds a marketplace when it is unregistered or its source path changed; installed plugins are
+      # reinstalled only when their marketplace is rebuilt. Reinstallation preserves .disabled/.auto-update marks
+      # and leaves other user state untouched.
       home.activation.piPluginMarketplaces = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
         if [[ -v DRY_RUN ]]; then
           echo "Would ensure pi plugin marketplaces"

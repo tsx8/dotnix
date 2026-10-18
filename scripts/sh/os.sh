@@ -19,5 +19,5 @@ fi
 
 echo "label: $label"
 export NIXOS_LABEL="$label"
-# NixOS 从环境读取自定义 label，纯求值会屏蔽该变量。
+# NixOS reads the custom label from the environment; pure evaluation would drop that variable.
 exec nh os switch --hostname maco --ask --impure --no-update-lock-file --no-write-lock-file .#maco

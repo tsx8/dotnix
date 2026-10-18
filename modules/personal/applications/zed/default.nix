@@ -31,7 +31,7 @@
         autosave.after_delay.milliseconds = 0;
 
         auto_update = false;
-        # Linux 的 VSCode 预设使用 Linux 修饰键；macOS 键表在上方生成并适配 Toshy。
+        # The Linux VSCode preset uses Linux modifiers; the macOS keymap is generated above and adapted for Toshy.
         base_keymap = "None";
 
         edit_predictions.provider = "none";

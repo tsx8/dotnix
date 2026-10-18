@@ -2,7 +2,7 @@
 {
   perSystem = { pkgs, ... }: {
     packages.wechat = pkgs.callPackage ../../../packages/wechat/package.nix {
-      # 复用 nixpkgs 的 AppImage 打包与元数据，只锁定会漂移的 version/src。
+      # Reuse nixpkgs' AppImage packaging and metadata; only pin the drifting version/src.
       linuxNix = "${inputs.nixpkgs}/pkgs/by-name/we/wechat/linux.nix";
       inherit (pkgs.wechat) pname meta;
     };

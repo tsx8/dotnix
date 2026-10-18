@@ -18,7 +18,7 @@ assert lib.assertMsg (
   !hasData || disks.system.device != disks.data.device
 ) "System and data roles must refer to different disks.";
 {
-  # 完整布局用于运行配置；擦盘入口只能使用按角色隔离的配置。
+  # The full layout serves the runtime config; the disk-wiping entry may only use the role-isolated configs.
   flake.diskoConfigurations = builtins.mapAttrs (role: disk: {
     disko.devices.disk.${role} = disk;
   }) disks;
@@ -32,7 +32,7 @@ assert lib.assertMsg (
       fileSystems = [ "/" ] ++ lib.optional hasData "/data";
     };
 
-    # 未挂载时拒绝普通用户写入；不在占位目录中创建资料子目录。
+    # Reject writes from regular users while unmounted; no data subdirectories are created inside the placeholder directories.
     systemd.tmpfiles.rules = [
       "d /mnt/btrfs 0700 root root -"
       "d /mnt/btrfs/firebat 0700 root root -"

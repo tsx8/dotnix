@@ -14,8 +14,8 @@ _bash_load_direnv() {
   if [[ -n $rc ]]; then
     BASH_ENV='' "$BASH" -n -- "$rc" || return
   fi
-  # 空 DIRENV_LOG_FORMAT 抑制状态日志，加载错误不受影响（logError 不走该格式）；
-  # 仅在 ConfDir 存在配置文件时被读取，由同模块部署的 /etc/direnv/config.toml 满足。
+  # Empty DIRENV_LOG_FORMAT suppresses status logging without affecting load errors (logError bypasses this format);
+  # it is only read when a config file exists in ConfDir; /etc/direnv/config.toml deployed by the same module provides it.
   exports="$(BASH_ENV='' DIRENV_LOG_FORMAT='' @direnv@ export bash)" || return
   eval "$exports"
 }

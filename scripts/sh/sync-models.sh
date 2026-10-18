@@ -13,7 +13,7 @@ repo_root="$(
 if codex_bin="$(command -v codex)"; then
   codex_bin="$(realpath -e -- "$codex_bin")"
 elif chatgpt_bin="$(command -v chatgpt)"; then
-  # Nix 的桌面包只导出 chatgpt；share 链接指向包含内置 CLI 的未包装包。
+  # The Nix desktop package exports only chatgpt; the share symlink points at the unwrapped package that bundles the CLI.
   chatgpt_root="$(dirname -- "$(dirname -- "$(realpath -e -- "$chatgpt_bin")")")"
   chatgpt_share="$(realpath -e -- "$chatgpt_root/share")"
   codex_bin="$(dirname -- "$chatgpt_share")/lib/chatgpt/resources/codex"
@@ -51,15 +51,15 @@ trap 'exit 129' HUP
 printf '{}\n' > "$tmp_dir/cache.json"
 : > "$tmp_dir/config.toml"
 
-# tmpfs 挂载点必须预先存在；真实目录平时由 Codex 运行时创建，缺席时补建。
+# The tmpfs mount point must exist beforehand; Codex normally creates the real directory at runtime, so recreate it when absent.
 mkdir -p -- "$codex_dir/tmp"
 
-# 普通配置可能固定模型目录；仅在子进程中屏蔽它，管理约束和认证仍由 Codex 读取。
+# Regular config may pin the model catalog; shield it only inside the subprocess — management constraints and authentication are still read by Codex.
 isolate=(
   bwrap --die-with-parent
   --ro-bind / /
   --bind "$tmp_dir" "$tmp_dir"
-  # Codex 启动会在 tmp/arg0 创建辅助命令链接，使用临时文件系统避免写入真实目录。
+  # Codex startup creates auxiliary command links in tmp/arg0; a tmpfs avoids writing the real directory.
   --tmpfs "$codex_dir/tmp"
   --bind "$tmp_dir/cache.json" "$(realpath -e -- "$cache_path")"
   --chdir "$tmp_dir"
@@ -75,7 +75,7 @@ codex_version="${codex_version#codex-cli }"
 started_at="$(date +%s)"
 timeout 120 "${isolate[@]}" -- "$codex_bin" debug models > /dev/null
 
-# CLI 刷新失败也可能返回内置目录；只有本次请求写入的独立缓存可证明刷新成功。
+# A failed CLI refresh can still return the built-in catalog; only a standalone cache written during this request proves the refresh succeeded.
 if ! jq -e '
   (.fetched_at | type == "string") and
   (.models | type == "array" and length > 0)
@@ -89,7 +89,7 @@ if ((fetched_at < started_at || fetched_at > $(date +%s))); then
   exit 1
 fi
 
-# 避免刷新远端目录时丢失指定模型的长上下文设置。
+# Keep the pinned models' long-context settings from being lost when refreshing the remote catalog.
 jq -e '
   ["gpt-6-astra", "gpt-6-sol", "gpt-6-luna", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"] as $targets |
   if (all(.models[]; (.slug | type == "string" and length > 0)) | not) then

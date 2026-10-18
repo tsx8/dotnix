@@ -1,7 +1,7 @@
 {
   dotnix.modules.nixos = { pkgs, lib, ... }: {
-    # 默认使用的是 VF 可变字体，修改为静态字体版，
-    # 兼容无法使用可变字体的场景（如 QQ 音乐、腾讯会议等使用 Electron 8 打包的应用）
+    # The defaults are VF variable fonts; switch to the static builds for compatibility with apps that
+    # cannot use variable fonts (e.g. QQ Music and Tencent Meeting, packaged with Electron 8)
     nixpkgs.overlays = [
       (_final: prev: {
         noto-fonts-cjk-sans = prev.noto-fonts-cjk-sans.override { static = true; };
@@ -20,7 +20,7 @@
             };
           }
           ''
-            # 保留对原始字体的 store 引用，使系统闭包保护构建输入不被 GC 清理。
+            # Keep a store reference to the original font so the system closure protects the build input from GC.
             install -d "$out/share/fonts/truetype"
             ln -s "$src" "$out/share/fonts/truetype/PingFang.ttc"
           ''
@@ -57,7 +57,7 @@
       smallFont = "PingFang SC,8,-1,5,400,0,0,0,0,0";
     in
     {
-      # 逐项写入，保留 KDE 管理的主题、颜色及其他设置。
+      # Write keys individually to preserve KDE-managed theme, color, and other settings.
       qt.kde.settings.kdeglobals = {
         General = {
           font = normalFont;

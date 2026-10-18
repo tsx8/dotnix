@@ -5,8 +5,8 @@
   stdenvNoCC,
 }:
 
-# src/cdp 复用 pi-chrome-use 的 CDP 传输层与协议定义（MIT，见 src/cdp/LICENSE）；
-# vendored 源码与 CLI 一起打包，运行及构建均不依赖上游 flake。
+# src/cdp reuses pi-chrome-use's CDP transport layer and protocol definitions (MIT, see src/cdp/LICENSE);
+# the vendored sources ship with the CLI; neither running nor building depends on the upstream flake.
 stdenvNoCC.mkDerivation {
   pname = "bex";
   version = "0.4.0";
@@ -15,8 +15,8 @@ stdenvNoCC.mkDerivation {
 
   nativeBuildInputs = [ esbuild ];
 
-  # alias 把上游 store 源码桥接进 bundle；.js 后缀的相对导入由 esbuild 按
-  # TS 惯例重写到 .ts。
+  # The alias bridges the upstream store sources into the bundle; relative imports with a .js suffix are
+  # rewritten to .ts by esbuild following TS conventions.
   buildPhase = ''
     runHook preBuild
 

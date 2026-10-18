@@ -66,7 +66,7 @@ if [[ "$device_type" != disk ]]; then
   exit 1
 fi
 
-# disko 会递归卸载操作根，不能让其中混入另一块盘。
+# disko unmounts the operation root recursively; another disk must not get mixed into it.
 mounts="$(findmnt --noheadings --raw --output TARGET,SOURCE)"
 while read -r mountpoint source; do
   if [[ "$mountpoint" != "$root_mount" && "$mountpoint" != "$root_mount/"* ]]; then

@@ -1,10 +1,10 @@
-# macOS 简体拼音行为对齐
+# Align with macOS Simplified Pinyin behavior
 #
-# 与上游差异：
-# - 清空 email/url/underscore 识别模式
-# - / 直接上屏半角 /，不再显示候选
-# - 补齐 Apple 简体拼音的半角标点映射
-# - 清空方案选单热键
+# Differences from upstream:
+# - Clear the email/url/underscore recognizer patterns
+# - "/" commits a half-width / directly without showing candidates
+# - Complete the half-width punctuation mapping of Apple Simplified Pinyin
+# - Clear the schema switcher hotkeys
 patch:
   recognizer/patterns: {}
 

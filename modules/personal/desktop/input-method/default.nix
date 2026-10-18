@@ -7,7 +7,7 @@
           ./rime-editing-order.patch
         ];
         postPatch = (old.postPatch or "") + ''
-          # 保留声明式配置入口，但不在托盘菜单暴露 Rime 运行时操作。
+          # Keep the declarative config entry points, but stop exposing Rime runtime actions in the tray menu.
           sed -i \
             -e '/imAction_->setMenu/d' \
             -e '/registerAction("fcitx-rime-separator"/,/);/d' \
@@ -19,7 +19,7 @@
           substituteInPlace src/rime.conf.in \
             --replace-fail 'Configurable=True' 'Configurable=False'
 
-          # 编辑宏在英文输入阶段也需要记录首步状态。
+          # The editing macro must also record the first-step state during raw ASCII input.
           substituteInPlace src/rime-addon.conf.in.in \
             --replace-fail 'OnDemand=True' 'OnDemand=False'
         '';
@@ -61,28 +61,28 @@
 
           settings.globalOptions = {
             "Hotkey" = {
-              # 点按 CapsLock 由 Toshy 转为该组合键，切换 keyboard-us ↔ rime
+              # Tapping CapsLock is translated by Toshy into this chord, switching keyboard-us ↔ rime
               "EnumerateWithTriggerKeys" = "False";
             };
 
-            # 键列表用编号子节，写成标量会被静默忽略
+            # Key lists use numbered subsections; scalars are silently ignored
             "Hotkey/TriggerKeys" = {
               "0" = "Control+space";
             };
 
-            # Shift 已用于大写直上屏，禁用 AltTrigger 的临时切换
+            # Shift already commits uppercase directly; disable the AltTrigger temporary switch
             "Hotkey/AltTriggerKeys" = {
               "0" = "";
             };
           };
 
           settings.addons = {
-            # Toshy 用 Super 表示 Mac Control，Quick Phrase 默认热键会抢占应用操作。
+            # Toshy uses Super for Mac Control; the Quick Phrase default hotkey would steal application shortcuts.
             quickphrase = {
               globalSection = { };
               sections.TriggerKey."0" = "";
             };
-            # 对齐 macOS：切走时上屏原始拼音（默认上屏中文）
+            # Match macOS: commit the raw pinyin when switching away (default commits Chinese)
             rime.globalSection.SwitchInputMethodBehavior = "Commit raw input";
           };
         };
@@ -159,11 +159,11 @@
         run mkdir -p ${lib.escapeShellArg rimeBuildDir}
 
         if [[ -v rimeDataChanged ]]; then
-          # Nix Store 的 mtime 被规范化，不能依赖 librime 的增量时间戳判断。
+          # Nix Store mtimes are normalized, so librime's incremental timestamp check cannot be relied on.
           run rm -rf ${lib.escapeShellArg rimeBuildDir}
           run mkdir -p ${lib.escapeShellArg rimeBuildDir}
 
-          # Fcitx 未运行时，让下次 Rime 启动也能检测到 user-data root 变化。
+          # When Fcitx is not running, let the next Rime startup also detect the user-data root change.
           run touch ${lib.escapeShellArg "${config.xdg.dataHome}/fcitx5/rime"}
 
           if ${fcitx5Remote} --check >/dev/null 2>&1; then

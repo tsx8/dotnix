@@ -1,6 +1,6 @@
-# 逐行：<flake 包属性> [附加 nix-update 参数]；# 开头为注释。
-# 由 just repo pkg-update 消费；非 flake input 形态的远程源包在此登记。
-# obelisk 的 npm latest 是 rc 渠道版本，须允许不稳定版本号。
+# One per line: <flake package attribute> [extra nix-update args]; lines starting with # are comments.
+# Consumed by just repo pkg-update; remote-source packages not shaped as flake inputs are registered here.
+# obelisk's npm latest is an rc channel version, so unstable version numbers must be allowed.
 obelisk --version=unstable
 pi-plugins
 piliplus

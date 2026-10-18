@@ -6,9 +6,9 @@ in
   dotnix.modules.nixos =
     { lib, pkgs, ... }:
     let
-      # ZeroTier 联机开关：经 systemd D-Bus + polkit 免密启停单个服务。
-      # 不用 sudo/pkexec/zerotier-cli stop——上游单元 Restart=always，CLI 自行退出会被拉回；
-      # 通知失败不得误判为 systemd 操作失败
+      # ZeroTier online toggle: start/stop the single service passwordlessly via systemd D-Bus + polkit.
+      # Not sudo/pkexec/zerotier-cli stop — the upstream unit has Restart=always, so a CLI self-exit gets restarted;
+      # a failed notification must not be misread as a failed systemd operation
       zerotier-control = pkgs.writeShellApplication {
         name = "zerotier-control";
         runtimeInputs = [
@@ -66,8 +66,9 @@ in
       };
     in
     {
-      # 为 BG3 联机服务的按需虚拟网：systemd 服务不开机自启，KDE 启动器免密启停；
-      # 入网与 moon 运行态在 /var/lib/zerotier-one，moons/ 为 moon 文件备份
+      # On-demand virtual network for BG3 online play: the systemd service does not start at boot; the KDE
+      # launchers start/stop it passwordlessly. Network membership and moon runtime state live in
+      # /var/lib/zerotier-one; moons/ is a backup of the moon file
       environment.systemPackages = [
         zerotier-start
         zerotier-stop
@@ -80,8 +81,8 @@ in
 
       systemd.services.zerotierone.wantedBy = lib.mkForce [ ];
 
-      # 仅免密允许本机活动桌面用户 start/stop 该单元；不匹配时不返回结果，
-      # 交回原有策略，不影响既有 MCP 提权规则
+      # Allow only the local active desktop user to start/stop this unit without a password; on no match,
+      # return nothing and fall back to the existing policies, leaving the MCP privilege rules untouched
       security.polkit.extraConfig = ''
         polkit.addRule(function(action, subject) {
           if (action.id !== "org.freedesktop.systemd1.manage-units") return;

@@ -8,7 +8,7 @@ tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT INT TERM HUP
 
 (
-  # 临时 index 纳入未暂存修改和新文件，不改变用户的真实暂存区。
+  # The temporary index takes in unstaged modifications and new files without touching the user's real staging area.
   export GIT_INDEX_FILE="$tmp_dir/index"
   git read-tree HEAD
   git add -A -- .

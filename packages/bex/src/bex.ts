@@ -1,15 +1,19 @@
 // bex — CDP-generic browser runner: transactions and owned, volatile jobs.
-// 零浏览器特有逻辑：端点与拉起命令来自环境变量（BU_CDP_URL / BU_CDP_LAUNCH），
-// 由 NixOS 包装脚本覆盖式固化，CLI 不提供任何指向其他浏览器的入口。
+// No browser-specific logic: the endpoint and launch command come from environment variables
+// (BU_CDP_URL / BU_CDP_LAUNCH), pinned override-style by the NixOS wrapper; the CLI exposes no entry
+// point to any other browser.
 //
-// Gate A（纯自动化）契约：
-// - 页面工作走隐形事务：--tab 创建 hidden target，run 结束随连接销毁（无跨 run 持久）。
-// - 常规 CDP API 受 provenance/域策略约束；vm 不是恶意 JS 的安全沙箱，
-//   只接收受信任的片段，绝不在可交接凭据页面运行任意片段。
-// - Runtime.evaluate 钉 uniqueContextId：导航后显式失败（CONTEXT_DESTROYED），
-//   不静默落入新 document；session.resetContextPin() 供刻意导航后重新钉扎。
-// - 超时/崩溃若发生在副作用派发之后，envelope 标记 outcomeUnknown（防重放）。
-// - -t / shot 是人工通道：默认 RESTRICTED，BEX_UNRESTRICTED=1 解锁且不装策略。
+// Gate A (pure automation) contract:
+// - Page work runs as hidden transactions: --tab creates a hidden target destroyed with the connection
+//   when the run ends (nothing persists across runs).
+// - Regular CDP API calls are subject to provenance/domain policy; the vm is not a security sandbox for
+//   malicious JS: it accepts only trusted snippets, and never runs snippets on credential-handoff pages.
+// - Runtime.evaluate pins uniqueContextId: after navigation it fails explicitly (CONTEXT_DESTROYED)
+//   instead of silently landing in a new document; session.resetContextPin() re-pins after deliberate
+//   navigation.
+// - If a timeout/crash happens after side effects were dispatched, the envelope is marked outcomeUnknown
+//   (replay protection).
+// - -t / shot are the human channels: RESTRICTED by default; BEX_UNRESTRICTED=1 unlocks them without policies.
 
 import { spawn } from "node:child_process";
 import { cmdJob, jobOwner, jobWorker } from "./job.js";
@@ -83,8 +87,8 @@ navigation, then re-derive page state.
 
 // ---------- endpoint resolution (http -> live wsUrl, auto-launch once) ----------
 
-// 冷启动竞态：多个 bex 并发时只允许一个进程 spawn 拉起命令。O_EXCL 锁 +
-// 陈旧检测（持锁进程死亡时由 mtime 兜底），无运行时依赖。
+// Cold-start race: with concurrent bex processes only one may spawn the launch command. O_EXCL lock plus
+// staleness detection (mtime as backstop when the lock holder dies), no runtime dependencies.
 function acquireLaunchLock(dir: string): boolean {
   const lock = `${dir}/launch.lock`;
   const attempt = (): boolean => {
@@ -105,7 +109,7 @@ function acquireLaunchLock(dir: string): boolean {
       return attempt();
     }
   } catch {
-    // 锁文件消失即重试一次
+    // Lock file vanished; retry once
     return attempt();
   }
   return false;
@@ -138,7 +142,7 @@ export async function resolveWsUrl(): Promise<string> {
       const info = (await res.json()) as { webSocketDebuggerUrl?: string };
       if (!info.webSocketDebuggerUrl) throw new Error("endpoint returned no webSocketDebuggerUrl");
       if (holdLock) {
-        try { unlinkSync(`${lockDir}/launch.lock`); } catch { /* 已被清理 */ }
+        try { unlinkSync(`${lockDir}/launch.lock`); } catch { /* already cleaned up */ }
       }
       return info.webSocketDebuggerUrl;
     } catch (error) {
@@ -153,11 +157,11 @@ export async function resolveWsUrl(): Promise<string> {
             child.unref();
           } catch (launchError) {
             lastErr = launchError;
-            try { unlinkSync(`${lockDir}/launch.lock`); } catch { /* 同上 */ }
+            try { unlinkSync(`${lockDir}/launch.lock`); } catch { /* same as above */ }
             break;
           }
         } else {
-          // 其他进程持锁拉起中，本进程只等待端点就绪
+          // Another process holds the lock and is launching; this one just waits for the endpoint to become ready
           launched = true;
         }
       }
@@ -181,7 +185,7 @@ export function shotDir(): string {
   return dir;
 }
 
-// 并发进程同毫秒生成同名截图的碰撞由 pid + 随机后缀消除
+// pid + random suffix eliminates collisions when concurrent processes create same-millisecond screenshot names
 function shotName(prefix: string): string {
   return `${prefix}-${Date.now()}-${process.pid.toString(36)}-${Math.random().toString(36).slice(2, 8)}.png`;
 }
@@ -273,31 +277,32 @@ export function printEnvelope(envelope: Record<string, unknown>): void {
   process.stdout.write(`${JSON.stringify(envelope)}\n`);
 }
 
-// ---------- 常规 CDP 调用保护（不构成不可信 JS 的安全沙箱） ----------
+// ---------- regular CDP call guarding (not a security sandbox for untrusted JS) ----------
 
 export type PolicyState = {
   owned: Set<string>;
   pinnedUniqueId?: string;
-  candidates: Array<{ id: string; frameId: string }>; // 最近在前；仅主帧候选能钉扎
+  candidates: Array<{ id: string; frameId: string }>; // newest first; only main-frame candidates can be pinned
   mutated: boolean;
   crashed: boolean;
   bootstrap: boolean;
 };
 
-// 只在 run 的 worker 内安装；拦截一切 CDP 调用（bindDomains 统一走 _call）。
+// Installed only inside the run worker; intercepts every CDP call (bindDomains goes through _call uniformly).
 export function installPolicy(session: Session, st: PolicyState): void {
   const orig = session._call.bind(session);
   const deny = (code: string, what: string, hint?: string) =>
     Promise.reject(new BexError(code, `${what} is denied by bex policy.`, hint));
   session._call = async (method: string, params: Record<string, unknown> = {}) => {
-    // 任意页面命令（包括 JS 求值）都可能触发副作用；无法证明未执行就保守标未知。
-    // 引导导航与钉扎探测走 orig，不计入用户命令。
+    // Any page command (including JS evaluation) may trigger side effects; absent proof of no execution,
+    // mark it unknown conservatively. Bootstrap navigation and pin probing go through orig and do not
+    // count as user commands.
     if (!st.bootstrap && !st.mutated && !["Target.getTargets", "Target.getTargetInfo", "Browser.getVersion"].includes(method)) {
       st.mutated = true;
       parentPort?.postMessage({ type: "mutated" });
     }
     if (method === "Target.createTarget") {
-      // 不能用 newWindow/focus 等参数把页面变为可见；只接收 URL。
+      // Parameters like newWindow/focus that would make the page visible are not accepted; only a URL is.
       if (Object.keys(params).some((key) => !["url", "background"].includes(key))) {
         throw new BexError("NOT_ALLOWED", "Target.createTarget only accepts url/background in hidden runs.");
       }
@@ -342,13 +347,13 @@ export function installPolicy(session: Session, st: PolicyState): void {
       st.crashed = true;
     }
   });
-  // 片段可调用的钉扎重置：刻意导航后重新验证候选并重新锚定
+  // Snippet-callable pin reset: revalidate candidates and re-anchor after deliberate navigation
   (session as unknown as Record<string, unknown>).resetContextPin = async (): Promise<string | null> =>
     awaitPin(orig, st);
 }
 
-// 导航会产生多个 default 候选；先按当前主帧 frameId 过滤，再验证 context 活性。
-// 不把晚到的子帧或已销毁的主帧误认为当前文档。
+// Navigation produces multiple default candidates; filter by the current main frame's frameId first, then
+// verify context liveness. Late child frames or a destroyed main frame are not mistaken for the current document.
 export async function pinByValidation(orig: (m: string, p?: unknown) => Promise<unknown>, st: PolicyState): Promise<string | null> {
   const { frameTree } = (await orig("Page.getFrameTree", {})) as { frameTree: { frame: { id: string } } };
   const main = frameTree.frame.id;
@@ -358,7 +363,7 @@ export async function pinByValidation(orig: (m: string, p?: unknown) => Promise<
       st.pinnedUniqueId = candidate.id;
       return candidate.id;
     } catch {
-      // 候选已随导航/帧销毁失效，试下一个
+      // Candidate invalidated by navigation/frame destruction; try the next one
     }
   }
   return null;
@@ -410,8 +415,8 @@ async function workerRun(data: RunData): Promise<void> {
   try {
     post({ type: "phase", phase: "connect" });
     const session = new Session();
-    // 拦截截图写入运行时目录：片段收到 savedTo 而非 base64（onCallResult 先于
-    // resolve 触发，修改 result 对象对片段可见）。
+    // Intercept screenshots into the runtime directory: the snippet receives savedTo instead of base64
+    // (onCallResult fires before resolve, so mutating the result object is visible to the snippet).
     session.onCallResult((method, _params, result) => {
       const r = result as { data?: string } | null;
       if (method === "Page.captureScreenshot" && r && typeof r.data === "string") {
@@ -442,12 +447,12 @@ async function workerRun(data: RunData): Promise<void> {
     } else if (data.targetId) {
       post({ type: "phase", phase: "attach" });
       await session.use(data.targetId);
-      st.owned.add(data.targetId); // -t 仅在 BEX_UNRESTRICTED 人工模式下可达，策略未安装
+      st.owned.add(data.targetId); // -t is reachable only in BEX_UNRESTRICTED human mode, where no policy is installed
       attachedTo = data.targetId;
     }
     post({ type: "phase", phase: "script" });
 
-    // vm 隔离误用的全局 API，不是恶意 JS 的安全边界；只运行受信任片段。
+    // The vm isolates misused globals; it is not a security boundary against malicious JS. Only trusted snippets run.
     const sandboxConsole = makeConsole(logs);
     const ctx = vm.createContext({
       session,
@@ -476,7 +481,7 @@ async function workerRun(data: RunData): Promise<void> {
     });
   } catch (e) {
     const err = classifyError(e);
-    // -32001 细分：会话丢失不等于页面消失，浏览器级复查后定性
+    // -32001 refinement: a lost session is not a gone page; reclassify after a browser-level recheck
     if (/Session with given id not found/i.test(err.message)) {
       try {
         const session2 = new Session();
@@ -491,7 +496,7 @@ async function workerRun(data: RunData): Promise<void> {
           ? "The tab lives but this CDP session was detached; re-attach with session.use(targetId) and retry."
           : "The tab is gone (closed or its run ended). Re-derive state; long-lived state belongs to the application, not the tab.";
       } catch {
-        /* 复查失败保留原分类 */
+        /* recheck failed; keep the original classification */
       }
     }
     if (err.code === "SCRIPT_ERROR" && st.crashed) {
@@ -647,7 +652,7 @@ async function cmdShot(targetId: string | undefined, out: string | undefined): P
   const session = new Session();
   await session.connect({ wsUrl, timeoutMs: CONNECT_TIMEOUT_MS });
   let done = false;
-  // 隐形 target 上 captureScreenshot 会无限挂起，必须有时限兜底
+  // captureScreenshot hangs forever on hidden targets; a time limit is the necessary backstop
   const timer = setTimeout(() => {
     if (done) return;
     done = true;
@@ -752,7 +757,7 @@ function cmdApi(domain?: string, method?: string): void {
 // ---------- main ----------
 
 function main(): void {
-  // 管道下游提前退出（如 `bex api | head`）不应变成 EPIPE 崩溃。
+  // Early exit of a pipeline downstream (e.g. `bex api | head`) must not become an EPIPE crash.
   process.stdout?.on?.("error", (e: NodeJS.ErrnoException) => {
     if (e.code === "EPIPE") process.exit(0);
     throw e;
