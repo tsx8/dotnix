@@ -14,7 +14,6 @@ let
     patches = [
       ./mapped-tap.patch
       ./command-events.patch
-      ./idle-grab.patch
       # Locking-key unlock only lands on release; hold toggles must become pulse output so the timeout
       # moment behaves symmetrically. After the pulse, mirror the lock state into rime ascii so the input
       # indicator follows "白"/en/A.
