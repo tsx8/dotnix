@@ -35,7 +35,12 @@
   };
 
   dotnix.modules.home =
-    { lib, pkgs, ... }:
+    {
+      lib,
+      osConfig,
+      pkgs,
+      ...
+    }:
     let
       mcpPackages = config.flake.packages.${pkgs.stdenv.hostPlatform.system};
       # Only keys that differ from upstream defaults are declared; keys equal to the defaults stay out of the template.
@@ -75,6 +80,8 @@
               (lib.getExe mcpPackages.mcp-deepseek-search)
             ];
             description = "Web search and webpage fetching through the DeepSeek Search & Fetch APIs.";
+            # Resolve at MCP startup so plaintext stays out of the store and mcp.json.
+            env.DEEPSEEK_SEARCH_API_KEY = "!${pkgs.coreutils}/bin/cat ${lib.escapeShellArg osConfig.sops.secrets.deepseek-search.path}";
             exposure = "hidden";
             toolExposure = {
               search = "deferred";
