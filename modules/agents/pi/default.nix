@@ -41,8 +41,6 @@
       # Only keys that differ from upstream defaults are declared; keys equal to the defaults stay out of the template.
       # Runtime keys such as lastChangelogVersion survive via the deep merge; declared keys are reasserted on every activation.
       declaredSettings = (pkgs.formats.json { }).generate "pi-declared-settings.json" {
-        defaultProvider = "zai-coding-cn";
-        defaultModel = "glm-5.3";
         showCacheMissNotices = true;
         collapseChangelog = true;
         enableInstallTelemetry = false;
@@ -53,6 +51,7 @@
         # reserveTokens = contextWindow − floor(contextWindow/e);
         # codex-family windows take 1,050,000 as overridden by models.json.
         compaction.modelOverrides = {
+          "deepseek/deepseek-flash".reserveTokens = 632121;
           "zai-coding-cn/glm-5.3".reserveTokens = 632121;
           "zai-coding-cn/glm-5.3-flash".reserveTokens = 632121;
           "zai-coding-cn/glm-5.3-highspeed".reserveTokens = 632121;
@@ -68,6 +67,20 @@
       };
       declaredMcp = (pkgs.formats.json { }).generate "pi-declared-mcp.json" {
         mcpServers = {
+          mcp-deepseek-search = {
+            command = "${pkgs.coreutils}/bin/env";
+            args = [
+              "-u"
+              "PYTHONPATH"
+              (lib.getExe mcpPackages.mcp-deepseek-search)
+            ];
+            description = "Web search and webpage fetching through the DeepSeek Search & Fetch APIs.";
+            exposure = "hidden";
+            toolExposure = {
+              search = "deferred";
+              fetch = "deferred";
+            };
+          };
           mcp-dotnix = {
             command = "${pkgs.coreutils}/bin/env";
             args = [

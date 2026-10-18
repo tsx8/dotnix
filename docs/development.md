@@ -88,7 +88,9 @@ nix build --no-link --no-update-lock-file --no-write-lock-file .#mcp-dotnix .#mc
 ```
 
 - Codex 读取用户级 `~/.codex/config.toml` 中的 MCP 配置，两个服务使用系统构建的固定可执行路径，在仓库外也可用。Home Manager 激活时合并声明字段，保留未声明的用户设置及额外服务器；配置保持可写，但 TOML 注释、排版和键顺序可能变化。其他项目仍可通过项目配置覆盖用户配置。
-- Pi 内建 MCP 读取全局 `~/.pi/agent/mcp.json`，同样使用系统构建的固定可执行路径。指定的只读诊断、Nix 查询和 `run_privileged` 设为 deferred，可由工具搜索加载或从 codemode 调用，其余工具不可达。交互会话中用 `/mcp` 检查或重连，也可用 `pi mcp list` 检查连接与工具暴露状态。列表仍会显示服务器提供的隐藏工具，是否可调用以暴露状态为准。连接失败不影响基础编码工具。
+- Pi 内建 MCP 读取全局 `~/.pi/agent/mcp.json`，同样使用系统构建的固定可执行路径。对本仓库声明的服务器，指定工具设为 deferred，可由工具搜索加载或从 codemode 调用，其余工具不可达。交互会话中用 `/mcp` 检查、启停或重连，也可用 `pi mcp list` 检查连接与工具暴露状态。列表仍会显示服务器提供的隐藏工具，是否可调用以暴露状态为准。连接失败不影响基础编码工具。
+- Pi 额外接入系统安装的 `mcp-deepseek-search`，提供公开网页搜索与抓取，不限定当前模型。独立联网 Key 由用户写入 `~/.pi/agent/mcp.json` 的 `mcpServers.mcp-deepseek-search.env.DEEPSEEK_SEARCH_API_KEY`，该文件权限应为 `0600`；它不读取模型 provider 的 Key。修改文件中的 Key 后使用 `/reload`。
+- `mcp-deepseek-search` 未配置 Key 时仍能连接和列出工具，实际调用会返回配置错误；连接成功不证明远端认证有效。查询、原始问题、可选定位 IP 和目标 URL 会发送给 DeepSeek，结果及计费规则见 [Search & Fetch 官方指南](https://api-docs.deepseek.com/guides/search)。调用失败不自动重试；不使用本地浏览器登录态。
 - Pi 全局 MCP 文件可由 `/mcp` 回写；系统激活重申声明的启动与暴露配置，保留未声明字段（包括启用状态）及额外服务器。项目 `.pi/mcp.json` 的同名条目可以覆盖全局配置。
 - Codex 中两个 MCP 默认采用 `auto`；只读诊断（含日志）和 mcp-nixos 查询直接调用。`run_privileged` 单独配置为 `approve`，由 polkit 认证，不再经过客户端审批；`auto` 仍会依据危险性标注要求审批。执行仍须遵守当前权限和项目操作边界。
 - `run_privileged(program, args, cwd, reason, impact)` 在执行 root 命令前要求 KDE 标准 polkit 认证，每次调用独立认证，不保留授权。程序与目录须为绝对路径，参数按数组传递，不展开 shell 语法。`reason` 和 `impact` 说明提权原因、影响对象与预期变化，不另行定制认证窗口。密码由系统认证代理处理，MCP 不接收密码。同账户其他程序也可向固定入口发起认证请求。命令环境由 pkexec 过滤，入口设置系统 PATH，stdin 关闭；输出每路最多返回 32 KiB，并尽力脱敏。
