@@ -60,14 +60,15 @@
       flake = false;
     };
 
-    # Upstreams of agent plugins/skills and source-built apps ship no flake; versions are pinned by flake.lock.
-    kami = {
-      url = "github:tw93/kami";
+    # Upstreams of agent plugins/skills and source-built apps ship no flake; the locked revision
+    # stays in flake.lock and repo update advances it.
+    pi-packages = {
+      url = "github:gotgenes/pi-packages";
       flake = false;
     };
 
-    waza = {
-      url = "github:tw93/waza";
+    cursor-plugins = {
+      url = "github:cursor/plugins";
       flake = false;
     };
 

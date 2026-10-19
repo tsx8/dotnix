@@ -1,0 +1,24 @@
+--- a/packages/pi-subagents/src/session/model-resolver.ts
++++ b/packages/pi-subagents/src/session/model-resolver.ts
+@@ -65,7 +65,8 @@
+   const all = registry.getAvailable?.() ?? registry.getAll();
+   const availableSet = new Set(all.map(m => `${m.provider}/${m.id}`.toLowerCase()));
+ 
+-  // 1. Exact match: "provider/modelId" — only if available (has auth)
++  // 1. Exact match: "provider/modelId" — only if available (has auth). A qualified
++  // input names one model; never fuzzy-match a different available model for it.
+   const slashIdx = input.indexOf("/");
+   if (slashIdx !== -1) {
+     const provider = input.slice(0, slashIdx);
+@@ -74,6 +75,11 @@
+       const found = registry.find(provider, modelId);
+       if (found) return found;
+     }
++    const modelList = all
++      .map(m => `  ${m.provider}/${m.id}`)
++      .sort()
++      .join("\n");
++    return `Model not found: "${input}".\n\nAvailable models:\n${modelList}`;
+   }
+ 
+   // 2. Fuzzy match against available models

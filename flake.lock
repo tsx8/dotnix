@@ -54,6 +54,22 @@
         "type": "github"
       }
     },
+    "cursor-plugins": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1792308667,
+        "narHash": "sha256-9y7/JHWLK4T75Q25RnmPzEyLmkXfJV1KMB6+pAQGZl8=",
+        "owner": "cursor",
+        "repo": "plugins",
+        "rev": "0b8e952052d482ee6de06deebf14d590d77b1b34",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cursor",
+        "repo": "plugins",
+        "type": "github"
+      }
+    },
     "daeuniverse": {
       "inputs": {
         "flake-parts": "flake-parts",
@@ -248,22 +264,6 @@
         "type": "github"
       }
     },
-    "kami": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1792069340,
-        "narHash": "sha256-mzuu192FtNXcWQu6LWpX6nsTnF7bP0xtiiZEQtXj7nE=",
-        "owner": "tw93",
-        "repo": "kami",
-        "rev": "d9352d1321b24f37b53a6216ecae2543f8dc3a02",
-        "type": "github"
-      },
-      "original": {
-        "owner": "tw93",
-        "repo": "kami",
-        "type": "github"
-      }
-    },
     "llm-agents": {
       "inputs": {
         "bun2nix": "bun2nix",
@@ -372,6 +372,22 @@
         "type": "github"
       }
     },
+    "pi-packages": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1792285669,
+        "narHash": "sha256-DU99qmr7Giibh3n19hL1BD61U40Q+AXmFm9MDF9oww8=",
+        "owner": "gotgenes",
+        "repo": "pi-packages",
+        "rev": "88f044ff75e4c96d46cc63a5d9a30ec3c477ca8b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "gotgenes",
+        "repo": "pi-packages",
+        "type": "github"
+      }
+    },
     "rime-frost": {
       "flake": false,
       "locked": {
@@ -391,22 +407,22 @@
     "root": {
       "inputs": {
         "buaa-login": "buaa-login",
+        "cursor-plugins": "cursor-plugins",
         "daeuniverse": "daeuniverse",
         "disko": "disko",
         "flake-parts": "flake-parts_2",
         "helium-browser": "helium-browser",
         "home-manager": "home-manager",
         "import-tree": "import-tree",
-        "kami": "kami",
         "llm-agents": "llm-agents",
         "mcp-nixos": "mcp-nixos",
         "nixpkgs": "nixpkgs",
         "obelisk-skill": "obelisk-skill",
+        "pi-packages": "pi-packages",
         "rime-frost": "rime-frost",
         "simple-live-app": "simple-live-app",
         "sops-nix": "sops-nix",
-        "toshy": "toshy",
-        "waza": "waza"
+        "toshy": "toshy"
       }
     },
     "simple-live-app": {
@@ -498,22 +514,6 @@
       "original": {
         "owner": "numtide",
         "repo": "treefmt-nix",
-        "type": "github"
-      }
-    },
-    "waza": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1792068765,
-        "narHash": "sha256-AvxydcCUha0T0rTCKHTLuhuVMmYlhm9iXmXE1LeIxzU=",
-        "owner": "tw93",
-        "repo": "waza",
-        "rev": "2585ee0f46bcefd9adb1b8f5d4ce19184a4d2929",
-        "type": "github"
-      },
-      "original": {
-        "owner": "tw93",
-        "repo": "waza",
         "type": "github"
       }
     }

@@ -25,21 +25,6 @@
       [shell_environment_policy.set]
       BASH_ENV = "/etc/direnv/bash-env"
 
-      # The git marketplaces come from flake-input-pinned local sources; versions update with repo update.
-      # Plugin caches are keyed by plugin.json version, so upstreams must bump versions normally to trigger a reload.
-      [marketplaces.kami]
-      source_type = "local"
-      source = "${inputs.kami}"
-
-      [marketplaces.waza]
-      source_type = "local"
-      source = "${inputs.waza}"
-
-      [plugins."kami@kami"]
-      enabled = true
-
-      [plugins."waza@waza"]
-      enabled = true
     '';
 
     environment.systemPackages = [

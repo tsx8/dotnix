@@ -1,0 +1,86 @@
+diff --git a/packages/pi-subagents/src/config/custom-agents.ts b/packages/pi-subagents/src/config/custom-agents.ts
+index f1aa5eb..e3062cf 100644
+--- a/packages/pi-subagents/src/config/custom-agents.ts
++++ b/packages/pi-subagents/src/config/custom-agents.ts
+@@ -67,6 +67,7 @@ function loadFromDir(dir: string, agents: Map<string, AgentConfig>, source: "pro
+       promptMode: fm.prompt_mode === "replace" ? "replace" : "append",
+       inheritContext: fm.inherit_context != null ? fm.inherit_context === true : undefined,
+       runInBackground: fm.run_in_background != null ? fm.run_in_background === true : undefined,
++      workspace: fm.workspace === "required" ? "required" : undefined,
+       locked: lockDeclaration(fm.locked, name),
+       enabled: fm.enabled !== false,  // default true; explicitly false disables
+       source,
+diff --git a/packages/pi-subagents/src/lifecycle/subagent-manager.ts b/packages/pi-subagents/src/lifecycle/subagent-manager.ts
+index 3ce6a95..6def10c 100644
+--- a/packages/pi-subagents/src/lifecycle/subagent-manager.ts
++++ b/packages/pi-subagents/src/lifecycle/subagent-manager.ts
+@@ -363,6 +363,7 @@ export class SubagentManager {
+         snapshot,
+         prompt,
+         baseCwd: this.baseCwd,
++        requireWorkspace: this.registry.resolveAgentConfig(type).workspace === "required",
+         observer: this.buildObserver(options),
+         getRunConfig: this.getRunConfig,
+         getWorkspaceProvider: () => this._workspaceProvider,
+diff --git a/packages/pi-subagents/src/lifecycle/subagent.ts b/packages/pi-subagents/src/lifecycle/subagent.ts
+index 61f9a49..62f44a7 100644
+--- a/packages/pi-subagents/src/lifecycle/subagent.ts
++++ b/packages/pi-subagents/src/lifecycle/subagent.ts
+@@ -7,6 +7,7 @@
+  * Behavior (abort, steer buffering) lives here rather than on SubagentManager.
+  */
+ 
++import { resolve } from "node:path";
+ import type { Model } from "@earendil-works/pi-ai";
+ import type { AgentSessionEvent, ToolDefinition } from "@earendil-works/pi-coding-agent";
+ import { debugLog } from "#src/debug";
+@@ -95,6 +96,8 @@ export interface SubagentExecution {
+ 	prompt: string;
+ 	/** Parent working directory handed to a workspace provider's prepare(). */
+ 	baseCwd: string;
++	/** This agent may not run without a workspace distinct from baseCwd. */
++	requireWorkspace?: boolean;
+ 	observer?: SubagentLifecycleObserver;
+ 	getRunConfig?: () => RunConfig;
+ 	/** Resolves the registered workspace provider (if any) at run-start. */
+@@ -412,6 +415,23 @@ export class Subagent {
+ 			}
+ 		}
+ 
++		// A workspace-required agent is never run in the parent's checkout: a missing
++		// provider, an unlisted agent type, or a provider that hands back no separate
++		// directory is a failed run, not an unisolated one.
++		if (
++			this.execution.requireWorkspace &&
++			!(typeof cwd === "string" && cwd.length > 0 && resolve(cwd) !== resolve(this.execution.baseCwd))
++		) {
++			this.fail(
++				run,
++				new Error(
++					`Agent type "${this.type}" requires an isolated workspace, but no workspace provider supplied a separate working directory. ` +
++						"Load the workspace provider extension and include this agent type in its configuration.",
++				),
++			);
++			return;
++		}
++
+ 		const runConfig = this.execution.getRunConfig?.();
+ 		try {
+ 			this.subagentSession = await this.execution.createSubagentSession({
+diff --git a/packages/pi-subagents/src/types.ts b/packages/pi-subagents/src/types.ts
+index 5bc5950..cd5abae 100644
+--- a/packages/pi-subagents/src/types.ts
++++ b/packages/pi-subagents/src/types.ts
+@@ -78,6 +78,12 @@ export interface AgentConfig extends AgentIdentity, AgentPromptConfig {
+   inheritContext?: boolean;
+   /** Default for spawn: run in background. undefined = caller decides. */
+   runInBackground?: boolean;
++  /**
++   * `required` = this agent may not run without a workspace provider supplying a
++   * directory of its own. An unisolated run fails instead of falling back to the
++   * parent's checkout.
++   */
++  workspace?: "required";
+   /** Fields a `subagent` tool caller may not override. Omitted — every field is overridable. */
+   locked?: LockDeclaration;
+   /** One-line usage guideline for the subagent tool's Guidelines: block. Omitted — no guideline line. */

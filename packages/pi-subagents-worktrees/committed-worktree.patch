@@ -1,0 +1,69 @@
+--- a/packages/pi-subagents-worktrees/src/worktree.ts
++++ b/packages/pi-subagents-worktrees/src/worktree.ts
+@@ -27,6 +27,8 @@
+   path: string;
+   /** Branch name created for this worktree (if changes exist). */
+   branch: string;
++  /** Commit the worktree started from, used to detect commits made by the worker. */
++  base: string;
+ }
+ 
+ /** How a worktree's cleanup ended. Each outcome carries only its own data. */
+@@ -66,6 +68,7 @@
+     return undefined;
+   }
+ 
++  const base = runGit(cwd, ["rev-parse", "HEAD"]).trim();
+   const branch = `${AGENT_WORKTREE_PREFIX}${agentId}`;
+   const suffix = randomUUID().slice(0, 8);
+   const worktreePath = join(tmpdir(), `${branch}-${suffix}`);
+@@ -73,11 +76,10 @@
+   try {
+-    // Create detached worktree at HEAD
+-    execFileSync("git", ["worktree", "add", "--detach", worktreePath, "HEAD"], {
++    execFileSync("git", ["worktree", "add", "--detach", worktreePath, base], {
+       cwd,
+       stdio: "pipe",
+       timeout: 30000,
+     });
+-    return { path: worktreePath, branch };
++    return { path: worktreePath, branch, base };
+   } catch (err) {
+     debugLog("git worktree add", err);
+     return undefined;
+@@ -101,17 +103,28 @@
+   }
+ 
+   try {
+-    if (!statusPorcelain(worktree.path)) {
+-      // No changes — remove worktree
++    const dirty = statusPorcelain(worktree.path);
++    const head = runGit(worktree.path, ["rev-parse", "HEAD"]).trim();
++
++    // A clean worktree can still contain commits made by the worker. Remove it
++    // only when its HEAD is still the commit it started from; otherwise save
++    // those commits to a branch before removing the worktree.
++    if (!dirty && head === worktree.base) {
+       removeWorktree(cwd, worktree.path);
+       return { outcome: "clean" };
+     }
+ 
+-    // Changes exist — stage, commit, and create a branch
+-    stageAll(worktree.path);
+-    // Truncate description for commit message (no shell sanitization needed — execFileSync uses argv)
+-    const safeDesc = agentDescription.slice(0, 200);
+-    const hooksBypassed = commitStaged(worktree.path, `pi-agent: ${safeDesc}`);
++    let hooksBypassed = false;
++    if (dirty) {
++      // Stage all changes and commit them to the worktree's current HEAD.
++      stageAll(worktree.path);
++      // Truncate description for commit message (no shell sanitization needed — execFileSync uses argv)
++      const safeDesc = agentDescription.slice(0, 200);
++      hooksBypassed = commitStaged(worktree.path, `pi-agent: ${safeDesc}`);
++    }
++
++    // The branch points at the worker's final HEAD, covering committed-only,
++    // uncommitted-only, and mixed outcomes.
+     const branch = createBranch(worktree.path, worktree.branch);
+ 
+     // Remove the worktree (branch persists in main repo)

@@ -32,7 +32,7 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 | `just os build` | 先运行 repo lint、repo test，再构建系统，不激活 |
 | `just os test` | 先运行 repo lint、repo test，再构建并经确认激活系统，不改变默认启动项；须经用户明确批准 |
 | `just os switch [label]` | 经 `scripts/sh/os.sh` 构建并经确认激活系统、切换默认启动项，不自动运行 lint/test；须经用户明确批准 |
-| `just repo update [输入名…]` | 依次更新 flake 输入、经 `packages/update.list` 用 nix-update 检查登记的包（随后重生成 pi-plugins/piliplus 依赖 lock）、同步 WeChat 滚动产物、同步模型目录、运行 lint、test；不传输入名则更新全部输入；逐节点显示状态，编排见 [scripts/sh/update.sh](../scripts/sh/update.sh) |
+| `just repo update [输入名…]` | 依次更新 flake 输入、经 `packages/update.list` 用 nix-update 检查登记的包（随后重生成 piliplus 依赖 lock）、同步 WeChat 滚动产物、同步模型目录、运行 lint、test；不传输入名则更新全部输入；逐节点显示状态，编排见 [scripts/sh/update.sh](../scripts/sh/update.sh) |
 
 fmt、lint、test 在检查前拒绝未忽略、未跟踪文件，只列路径，不自动跟踪或删除；将应交付的文件精确 `git add`，临时文件放到仓库外，必要的忽略规则维护在 `.gitignore`。
 

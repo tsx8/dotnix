@@ -2,5 +2,6 @@
 # Consumed by just repo pkg-update; remote-source packages not shaped as flake inputs are registered here.
 # obelisk's npm latest is an rc channel version, so unstable version numbers must be allowed.
 obelisk --version=unstable
-pi-plugins
+pi-ask-user
+pi-todo
 piliplus

@@ -243,7 +243,6 @@ while read -r name extra || [[ -n "${name:-}" ]]; do
   run_node pkg "$name" 1 nix-update "$name" --flake --format $extra
 done < packages/update.list
 
-run_node plain "pi-plugins lock" 1 scripts/sh/sync-pi-plugins-lock.sh
 run_node plain "piliplus lock" 1 scripts/sh/sync-piliplus-locks.sh
 
 if [[ $mode == "all" ]]; then
