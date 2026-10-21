@@ -126,6 +126,7 @@ in
 
                 # Games reuse the upstream bypass; the general editing maps have separately pre-generated exclusion rules.
                 remotes.append("cs2")
+                remotes.extend(["bg3", "steam_app_1551360", "steam_app_261550", "Slay the Spire 2"])
                 remoteStr = toRgxStr(remotes)
                 vscodes_and_remotes_Str = toRgxStr(vscodes + remotes)
               '';
@@ -165,9 +166,9 @@ in
         Options = "";
         ResetOldOptions = true;
       };
+      # Upstream maps Cmd+C to Ctrl+Insert; binding Konsole Copy to it consumes the
+      # combo instead of letting it reach the pty.
       qt.kde.settings.konsolerc.Shortcuts.Copy = "Ctrl+Ins";
-      # Desktop actions are dispatched before application mappings. Only the held
-      # switcher channels and existing media keys need compositor key bindings.
       # KGlobalAccel keeps live registrations; these overrides require a new login.
       qt.kde.settings.kglobalshortcutsrc = desktop.shortcuts // {
         inherit (desktop) services;

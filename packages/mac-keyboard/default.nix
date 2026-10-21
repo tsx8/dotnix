@@ -1,6 +1,6 @@
 { xkeyboard-config }:
 xkeyboard-config.overrideAttrs (old: {
-  # F13/F14 carry held window switching; F22 distinguishes Rime edits from Cmd actions.
+  # F22 distinguishes Rime edits from Cmd actions.
   postInstall = (old.postInstall or "") + ''
     # evdev loads inet after the selected layout, including Fcitx's keyboard-us.
     substituteInPlace "$out/etc/X11/xkb/symbols/inet" \

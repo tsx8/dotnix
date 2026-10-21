@@ -208,34 +208,6 @@
       ]
     },
     {
-      "held": true,
-      "keys": [
-        "RC-Tab"
-      ],
-      "output": "Alt-F13"
-    },
-    {
-      "held": true,
-      "keys": [
-        "Shift-RC-Tab"
-      ],
-      "output": "Alt-Shift-F13"
-    },
-    {
-      "held": true,
-      "keys": [
-        "RC-Grave"
-      ],
-      "output": "Alt-F14"
-    },
-    {
-      "held": true,
-      "keys": [
-        "Shift-RC-Grave"
-      ],
-      "output": "Alt-Shift-F14"
-    },
-    {
       "action": "view_zoom_in",
       "component": "kwin",
       "keys": [
@@ -291,7 +263,7 @@
     },
     "ksmserver": {
       "Lock Session": "Screensaver,Screensaver\tMeta+L,Lock Session",
-      "Log Out": "none,Ctrl+Alt+Del,Show Logout Screen"
+      "Log Out": null
     },
     "kwin": {
       "Activate Window Demanding Attention": "none,Meta+Ctrl+A,Activate Window Demanding Attention",
@@ -302,11 +274,11 @@
       "Grid View": "none,Meta+G,Toggle Grid View",
       "Invert": "none,Ctrl+Meta+I,Invert",
       "InvertWindow": "none,Ctrl+Meta+U,Invert Window",
-      "Kill Window": "none,Meta+Ctrl+Esc,Kill Window",
+      "Kill Window": null,
       "MoveMouseToCenter": "none,Meta+F6,Move Mouse to Center",
       "MoveMouseToFocus": "none,Meta+F5,Move Mouse to Focus",
-      "Overview": "none,Meta+W,Toggle Overview",
-      "Show Desktop": "none,Meta+D,Peek at Desktop",
+      "Overview": null,
+      "Show Desktop": null,
       "Switch One Desktop Down": "none,Meta+Ctrl+Down,Switch One Desktop Down",
       "Switch One Desktop Up": "none,Meta+Ctrl+Up,Switch One Desktop Up",
       "Switch One Desktop to the Left": "none,Meta+Ctrl+Left,Switch One Desktop to the Left",
@@ -321,10 +293,10 @@
       "Switch to Desktop 4": "none,Ctrl+F4\tMeta+F4,Switch to Desktop 4",
       "ToshyHideApplication": "none,none,Toshy: Hide application",
       "ToshyHideOtherApplications": "none,none,Toshy: Hide other applications",
-      "Walk Through Windows": "Alt+F13,Alt+Tab,Walk Through Windows",
-      "Walk Through Windows (Reverse)": "Alt+Shift+F13,Alt+Shift+Tab,Walk Through Windows (Reverse)",
-      "Walk Through Windows of Current Application": "Alt+F14,Alt+`,Walk Through Windows of Current Application",
-      "Walk Through Windows of Current Application (Reverse)": "Alt+Shift+F14,Alt+~,Walk Through Windows of Current Application (Reverse)",
+      "Walk Through Windows": null,
+      "Walk Through Windows (Reverse)": null,
+      "Walk Through Windows of Current Application": null,
+      "Walk Through Windows of Current Application (Reverse)": null,
       "Window Close": "Alt+F4,Alt+F4,Close Window",
       "Window Maximize": "none,Meta+PgUp,Maximize Window",
       "Window Minimize": "none,Meta+PgDown,Minimize Window",

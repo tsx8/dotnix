@@ -39,16 +39,13 @@ def desktop_command(program, *args):
 
 _desktop_keys = {}
 for item in _desktop_spec["actions"]:
-    output = (
-        [bind, C(item["output"])] if item.get("held")
-        else desktop_action(item["component"], item["action"])
-    )
+    output = desktop_action(item["component"], item["action"])
     for key in item["keys"]:
         _desktop_keys[C(key)] = output
 
-# These are output-only channels; physical Option combinations must not enter them.
-for key in ("Alt-F4", "Alt-F13", "Shift-Alt-F13", "Alt-F14", "Shift-Alt-F14"):
-    _desktop_keys[C(key)] = ignore_combo
+# Physical Option outputs left Alt, so Option+F4 arrives as Alt-F4; keep it ignored
+# instead of letting KDE treat it as the Alt+F4 window-close binding.
+_desktop_keys[C("Alt-F4")] = ignore_combo
 
 for key in ("F2",):
     for control in ("Super", "LC"):
