@@ -48,8 +48,7 @@ for item in _desktop_spec["actions"]:
     for key in item["keys"]:
         _desktop_keys[C(key)] = output
 
-# Physical Option outputs left Alt, so Option+F4 arrives as Alt-F4; keep it ignored
-# instead of letting KDE treat it as the Alt+F4 window-close binding.
+# Both Win keys are Option (Alt). Block Option+F4, not physical Alt (Cmd/RC)+F4.
 _desktop_keys[C("Alt-F4")] = ignore_combo
 
 # No native application-hide operation exists; do not fall through to upstream minimize.

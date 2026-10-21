@@ -132,17 +132,55 @@ in
             }
             {
               old = "\nmodmap(\"Cond modmap - Media Arrows Fix\",{";
-              new = "\n${builtins.readFile ./modmaps.py}\nmodmap(\"Cond modmap - Media Arrows Fix\",{";
+              new = "\n${builtins.readFile ./pc-modmaps.py}\nmodmap(\"Cond modmap - Media Arrows Fix\",{";
             }
           ];
       configText = ''
         import xwaykeyz.config_api as _config_api
+        from xwaykeyz.models.combo import Combo
         from xwaykeyz.models.modifier import Modifier
         from xwaykeyz.transform import get_pressed_mods
 
 
+        # Upstream GUI Control is Meta; terminal Control is already explicit LC.
+        # Generic Ctrl sources in the upstream GUI app maps mean Cmd, not Control.
+        _mac_input_roles = {
+            Modifier.META: Modifier.L_CONTROL,
+            Modifier.L_META: Modifier.L_CONTROL,
+            Modifier.R_META: Modifier.L_CONTROL,
+            Modifier.CONTROL: Modifier.R_CONTROL,
+        }
+
+
+        def _mac_role_inputs(mappings):
+            adapted = {}
+            for source, commands in mappings.items():
+                if isinstance(source, Combo):
+                    source = Combo([_mac_input_roles.get(mod, mod) for mod in source.modifiers], source.key)
+                if isinstance(commands, dict):
+                    commands = _mac_role_inputs(commands)
+                # Consume text macros, but preserve file-manager deletion sequences.
+                for combo, selection in (
+                    (C("LC-k"), "Shift-End"),
+                    (C("RC-Backspace"), "Shift-Home"),
+                    (C("RC-Delete"), "Shift-End"),
+                ):
+                    if (source == combo and isinstance(commands, list) and len(commands) == 2
+                            and commands[0] == C(selection)
+                            and commands[1] in (C("Backspace"), C("Delete"))):
+                        commands = ignore_combo
+                # Upstream helpers declare both Super and LC for the same Control role.
+                adapted[source] = commands
+            return adapted
+
+
         def _guard_registration(register, *, is_keymap=False):
             def guarded(name, mappings, when=None):
+                if is_keymap:
+                    mappings = _mac_role_inputs(mappings)
+                    if name == "General GUI":
+                        mappings[C("RC-Backspace")] = ignore_combo
+                        mappings[C("RC-Delete")] = ignore_combo
                 if when is None:
                     if mappings:
                         raise ValueError(f"Unconditional mapping is not allowed: {name}")
@@ -183,6 +221,10 @@ in
             remoteStr = toRgxStr(remotes)
             vscodes_and_remotes_Str = toRgxStr(vscodes + remotes)
           '';
+        }
+        {
+          name = "user_custom_modmaps";
+          text = builtins.readFile ./modmaps.py;
         }
         {
           name = "user_apps";
