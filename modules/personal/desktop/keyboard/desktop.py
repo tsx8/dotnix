@@ -39,7 +39,12 @@ def desktop_command(program, *args):
 
 _desktop_keys = {}
 for item in _desktop_spec["actions"]:
-    output = desktop_action(item["component"], item["action"])
+    if set(item) == {"keys", "output"}:
+        output = C(item["output"])
+    elif set(item) == {"keys", "component", "action"}:
+        output = desktop_action(item["component"], item["action"])
+    else:
+        raise ValueError(f"Invalid desktop binding: {item!r}")
     for key in item["keys"]:
         _desktop_keys[C(key)] = output
 
@@ -47,24 +52,24 @@ for item in _desktop_spec["actions"]:
 # instead of letting KDE treat it as the Alt+F4 window-close binding.
 _desktop_keys[C("Alt-F4")] = ignore_combo
 
-for key in ("F2",):
-    for control in ("Super", "LC"):
-        _desktop_keys[C(f"{control}-{key}")] = C("F10")
+# No native application-hide operation exists; do not fall through to upstream minimize.
+for key in ("RC-h", "Alt-RC-h", "Alt-RC-m"):
+    _desktop_keys[C(key)] = ignore_combo
+
+_desktop_keys[C("LC-F2")] = C("F10")
 
 for key in ("RC-Shift-Key_3", "RC-Shift-Key_4", "RC-Shift-Key_5"):
     mode = {"3": "--fullscreen", "4": "--region", "5": "--launchonly"}[key[-1]]
     args = (mode,) if key.endswith("5") else ("--background", mode)
     _desktop_keys[C(key)] = desktop_command("spectacle", *args)
     if not key.endswith("5"):
-        for control in ("Super", "LC"):
-            _desktop_keys[C(f"{control}-{key}")] = desktop_command(
-                "spectacle", *args, "--copy-image"
-            )
+        _desktop_keys[C(f"LC-{key}")] = desktop_command(
+            "spectacle", *args, "--copy-image"
+        )
 
 # Fcitx manages both configured input sources; KDE layout switching is a separate layer.
-for control in ("Super", "LC"):
-    for extra in ("", "Alt-", "Shift-"):
-        _desktop_keys[C(f"{extra}{control}-Space")] = C("LC-Space")
+for extra in ("", "Alt-", "Shift-"):
+    _desktop_keys[C(f"{extra}LC-Space")] = C("LC-Space")
 _desktop_keys[C("F20")] = C("LC-Space")
 
 keymap("macOS desktop", _desktop_keys, when=lambda ctx:

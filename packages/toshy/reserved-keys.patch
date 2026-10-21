@@ -1,0 +1,18 @@
+--- a/vendors/xwaykeyz-main/src/xwaykeyz/config_api.py
++++ b/vendors/xwaykeyz-main/src/xwaykeyz/config_api.py
+@@ -567,13 +567,13 @@
+ 
+ def dump_diagnostics_key(key):
+     global DUMP_DIAGNOSTICS_KEY
+-    if isinstance(key, Key):
++    if key is None or isinstance(key, Key):
+         DUMP_DIAGNOSTICS_KEY = key
+ 
+ 
+ def emergency_eject_key(key):
+     global EMERGENCY_EJECT_KEY
+-    if isinstance(key, Key):
++    if key is None or isinstance(key, Key):
+         EMERGENCY_EJECT_KEY = key
+ 
+ 

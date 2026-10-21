@@ -14,6 +14,7 @@ let
     patches = [
       ./mapped-tap.patch
       ./command-events.patch
+      ./reserved-keys.patch
       # Locking-key unlock only lands on release; hold toggles must become pulse output so the timeout
       # moment behaves symmetrically. After the pulse, mirror the lock state into rime ascii so the input
       # indicator follows "白"/en/A.
@@ -35,8 +36,6 @@ stdenvNoCC.mkDerivation {
     cp ${./session.py} $out/share/toshy/session.py
     cp -r kwin-script/kde6/toshy-dbus-notifyactivewindow $out/share/kwin/scripts/
     echo 'notifyActiveWindow(workspace.activeWindow);' >> \
-      $out/share/kwin/scripts/toshy-dbus-notifyactivewindow/contents/code/main.js
-    cat ${./window-actions.js} >> \
       $out/share/kwin/scripts/toshy-dbus-notifyactivewindow/contents/code/main.js
     makeWrapper ${runtime}/bin/python3 $out/bin/toshy-session \
       --add-flags "$out/share/toshy/session.py" \

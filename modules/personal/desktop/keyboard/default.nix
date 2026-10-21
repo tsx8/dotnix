@@ -112,40 +112,89 @@ in
           [ "###  SLICE_MARK_START: ${name}  ###  EDITS OUTSIDE THESE MARKS WILL BE LOST ON UPGRADE" ]
           [ "###  SLICE_MARK_START: ${name}\n${text}" ]
           content;
-      configText =
-        builtins.foldl' (content: slice: insertSlice slice.name slice.text content)
+      replaceOnce =
+        old: new: content:
+        assert lib.assertMsg (
+          builtins.length (lib.splitString old content) == 2
+        ) "Toshy configuration anchor changed upstream: ${old}";
+        lib.replaceStrings [ old ] [ new ] content;
+      upstreamConfig =
+        builtins.foldl' (content: replacement: replaceOnce replacement.old replacement.new content)
           (builtins.readFile "${inputs.toshy}/default-toshy-config/toshy_config.py")
           [
             {
-              name = "user_custom_lists";
-              text = ''
-                browsers_chrome.append("helium")
-                browsers_chromeStr = toRgxStr(browsers_chrome)
-                browsers_all.append("helium")
-                browsers_allStr = toRgxStr(browsers_all)
-
-                # Games reuse the upstream bypass; the general editing maps have separately pre-generated exclusion rules.
-                remotes.append("cs2")
-                remotes.extend(["bg3", "steam_app_1551360", "steam_app_261550", "Slay the Spire 2"])
-                remoteStr = toRgxStr(remotes)
-                vscodes_and_remotes_Str = toRgxStr(vscodes + remotes)
-              '';
+              old = "dump_diagnostics_key(Key.F15)";
+              new = "dump_diagnostics_key(None)";
             }
             {
-              name = "user_custom_modmaps";
-              text = builtins.readFile ./modmaps.py;
+              old = "emergency_eject_key(Key.F16)";
+              new = "emergency_eject_key(None)";
             }
             {
-              name = "user_apps";
-              text = ''
-                import dbus
-                _desktop_programs = {"spectacle": "${pkgs.kdePackages.spectacle}/bin/spectacle"}
-              ''
-              + builtins.readFile ./desktop.py
-              + "\n"
-              + builtins.readFile ./keymaps.py;
+              old = "\nmodmap(\"Cond modmap - Media Arrows Fix\",{";
+              new = "\n${builtins.readFile ./modmaps.py}\nmodmap(\"Cond modmap - Media Arrows Fix\",{";
             }
           ];
+      configText = ''
+        import xwaykeyz.config_api as _config_api
+        from xwaykeyz.models.modifier import Modifier
+        from xwaykeyz.transform import get_pressed_mods
+
+
+        def _guard_registration(register, *, is_keymap=False):
+            def guarded(name, mappings, when=None):
+                if when is None:
+                    if mappings:
+                        raise ValueError(f"Unconditional mapping is not allowed: {name}")
+                    return register(name, mappings)
+
+                def enabled(ctx):
+                    if not getattr(ctx, "_dotnix_context_sampled", False):
+                        _context_pre_check(ctx)
+                        ctx._dotnix_context_sampled = True
+                    if ctx_app_is_remote or when is _context_pre_check:
+                        return False
+                    if is_keymap and any(mod in (Modifier.L_META, Modifier.R_META)
+                                         for mod in get_pressed_mods()):
+                        return False
+                    return when(ctx)
+
+                return register(name, mappings, when=enabled)
+            return guarded
+
+
+        # Patch the API before the star import, including deferred Hyper expansions.
+        _config_api.modmap = _guard_registration(_config_api.modmap)
+        _config_api.multipurpose_modmap = _guard_registration(_config_api.multipurpose_modmap)
+        _config_api.keymap = _guard_registration(_config_api.keymap, is_keymap=True)
+
+      ''
+      + builtins.foldl' (content: slice: insertSlice slice.name slice.text content) upstreamConfig [
+        {
+          name = "user_custom_lists";
+          text = ''
+            browsers_chrome.append("helium")
+            browsers_chromeStr = toRgxStr(browsers_chrome)
+            browsers_all.append("helium")
+            browsers_allStr = toRgxStr(browsers_all)
+
+            remotes.append("cs2")
+            remotes.extend(["bg3", "steam_app_1551360", "steam_app_261550", "Slay the Spire 2"])
+            remoteStr = toRgxStr(remotes)
+            vscodes_and_remotes_Str = toRgxStr(vscodes + remotes)
+          '';
+        }
+        {
+          name = "user_apps";
+          text = ''
+            import dbus
+            _desktop_programs = {"spectacle": "${pkgs.kdePackages.spectacle}/bin/spectacle"}
+          ''
+          + builtins.readFile ./desktop.py
+          + "\n"
+          + builtins.readFile ./keymaps.py;
+        }
+      ];
     in
     {
       xdg.configFile = {
