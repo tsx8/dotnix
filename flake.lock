@@ -54,22 +54,6 @@
         "type": "github"
       }
     },
-    "cursor-plugins": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1792308667,
-        "narHash": "sha256-9y7/JHWLK4T75Q25RnmPzEyLmkXfJV1KMB6+pAQGZl8=",
-        "owner": "cursor",
-        "repo": "plugins",
-        "rev": "0b8e952052d482ee6de06deebf14d590d77b1b34",
-        "type": "github"
-      },
-      "original": {
-        "owner": "cursor",
-        "repo": "plugins",
-        "type": "github"
-      }
-    },
     "daeuniverse": {
       "inputs": {
         "flake-parts": "flake-parts",
@@ -407,7 +391,6 @@
     "root": {
       "inputs": {
         "buaa-login": "buaa-login",
-        "cursor-plugins": "cursor-plugins",
         "daeuniverse": "daeuniverse",
         "disko": "disko",
         "flake-parts": "flake-parts_2",

@@ -133,7 +133,6 @@ in
         pi-ask-user = pkgs.callPackage ../../../packages/pi-ask-user/package.nix { };
         pi-todo = pkgs.callPackage ../../../packages/pi-todo/package.nix { };
         pi-pstack = pkgs.callPackage ../../../packages/pi-pstack/package.nix {
-          cursorPlugins = inputs.cursor-plugins;
           inherit agentProfileNames agentProfileMap;
         };
       };

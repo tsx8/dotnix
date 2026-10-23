@@ -67,10 +67,9 @@
       flake = false;
     };
 
-    cursor-plugins = {
-      url = "github:cursor/plugins";
-      flake = false;
-    };
+    # pstack is not an input. Its text is transformed at build time, so an unreviewed bump breaks
+    # the build; the snapshot is pinned in packages/pi-pstack/package.nix and moves only when a user
+    # asks for the update. See docs/pstack-port.md.
 
     obelisk-skill = {
       url = "github:tommy0103/obelisk-skill";

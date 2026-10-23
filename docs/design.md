@@ -15,6 +15,7 @@
 ## 工具边界
 
 - 系统提供跨项目通用工具和加载项目环境所需的 Nix、direnv；仓库专属命令、检查工具及开发使用的 MCP 由 [项目环境模块](../modules/maintenance/development/default.nix) 供应。项目工具随仓库锁定版本，避免依赖宿主机上的另一套版本。
+- pstack 以固定快照移植到 Pi：上游正文在构建期经文本变换适配宿主，变换持有该版本的字面量，因此快照固定在 [包定义](../packages/pi-pstack/package.nix) 中而不随 `repo update` 移动。不变量、移植流程与内化台账见 [pstack 移植与内化](pstack-port.md)。
 - `modules/maintenance/` 是项目开发环境的模块边界，影响 devShell 的模块定义集中于此。direnv 监视此目录和环境依赖的本地工具源码，普通系统配置与应用数据不触发环境刷新。
 - Home Manager 只管理用户级配置，不管理应用。
 - [终端模块](../modules/personal/terminal.nix) 管理 direnv 与 fish；[agents 模块](../modules/agents/default.nix) 提供非交互 Bash 的环境加载入口 [bash-env.sh](../modules/agents/bash-env.sh)，并抑制代理命令的 direnv 状态日志（加载错误不受影响）。Codex 与 Pi 分别设置 `BASH_ENV` 使用此入口，复用 direnv 授权和 nix-direnv 缓存，使每次命令按工作目录取得环境；不设置全局 `BASH_ENV`。Codex 通过命令环境配置接入，不参与其父进程和快照生成；Pi 通过启动包装传递给子进程。环境加载不改变代理权限，两个入口分别在 [Codex 模块](../modules/agents/codex/default.nix) 与 [Pi 模块](../modules/agents/pi/default.nix)。

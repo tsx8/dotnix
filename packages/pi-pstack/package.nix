@@ -2,13 +2,22 @@
   lib,
   stdenvNoCC,
   fetchurl,
+  fetchFromGitHub,
   nodejs,
-  cursorPlugins,
   agentProfileNames,
   agentProfileMap,
 }:
 
 let
+  # Pinned snapshot of cursor/plugins. A bump moves upstream prose, and the transform below holds
+  # exact literals from it, so it moves only when a user asks for the update, per docs/pstack-port.md.
+  src = fetchFromGitHub {
+    owner = "cursor";
+    repo = "plugins";
+    rev = "8b3326d99fd4b993cb33a24dad8af03175c642c5";
+    hash = "sha256-p2cKFbYKwv3QwcIU0Gg8iLiyI+nZCsdYQuT8bkXL2nU=";
+  };
+
   # pstack's helper scripts import commander as a production dependency. Pi never installs
   # dependencies for local packages, so vendor it and record the bootstrap install key instead.
   commander = stdenvNoCC.mkDerivation {
@@ -32,9 +41,9 @@ let
 in
 stdenvNoCC.mkDerivation {
   pname = "pi-pstack";
-  inherit (lib.importJSON "${cursorPlugins}/harness/pstack/claude-code/plugin.json") version;
+  inherit (lib.importJSON "${src}/harness/pstack/claude-code/plugin.json") version;
 
-  src = cursorPlugins;
+  inherit src;
 
   nativeBuildInputs = [ nodejs ];
   dontBuild = true;

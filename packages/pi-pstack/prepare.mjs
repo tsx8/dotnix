@@ -20,6 +20,18 @@ const HARNESS = join(srcRoot, "harness", "pstack", "claude-code");
 const SKILL_PATH = `${pstackRoot}/skills/poteto-mode/SKILL.md`;
 const SKILL_READ_PREFIX = `cat ${pstackRoot}/skills/`;
 
+// The one upstream version this transform was written against. A new upstream release is a review
+// task, not a build fix: it changes the literals the rules hold. See docs/pstack-port.md.
+const SUPPORTED_UPSTREAM = "0.15.30";
+const upstreamVersion = JSON.parse(readFileSync(join(HARNESS, "plugin.json"), "utf8")).version;
+if (upstreamVersion !== SUPPORTED_UPSTREAM) {
+  console.error(
+    `pstack upstream is ${upstreamVersion}; this port targets ${SUPPORTED_UPSTREAM}. ` +
+      "Updating pstack is a user-requested port: follow docs/pstack-port.md instead of bumping blindly.",
+  );
+  process.exit(1);
+}
+
 // The Nix agent-profile table is the only source for these names and the Cursor-to-profile mapping.
 // Refuse to build from an independent fallback table; the package passes both values from Nix.
 const profileMapJson = process.env.PSTACK_PROFILE_MAP;
@@ -41,13 +53,13 @@ for (const key of ["generalPurpose", "readonly", "cloud", "local"]) {
   }
 }
 
-// Exact literals from pstack 0.15.26. Counts are part of the contract; see the check below.
+// Exact literals from pstack 0.15.30. Counts are part of the contract; see the check below.
 const RULES = [
   {
     name: "adapter-line",
     re: /In Claude Code, read \[the Claude Code adapter\]\(\.\.\/\.\.\/docs\/harness\/claude-code\.md\) once per session before you follow this skill\. It maps the Cursor names in pstack skills to Claude Code\./g,
     to: "In Pi, read [the Pi binding](../../pi.md) once per session before you follow this skill. It records the harness differences that this skill does not state itself.",
-    expect: 21,
+    expect: 23,
   },
   {
     name: "model-file-path",
@@ -106,13 +118,13 @@ const RULES = [
   {
     name: "slug-words",
     re: /\bslugs\b/g,
-    to: "model IDs",
+    to: (match, offset, string) => (string.slice(0, offset).endsWith("model ") ? "IDs" : "model IDs"),
     expect: 1,
   },
   {
     name: "slug-word",
     re: /(?<![<\w-])\bslug\b(?![>\w-])/g,
-    to: "model ID",
+    to: (match, offset, string) => (string.slice(0, offset).endsWith("model ") ? "ID" : "model ID"),
     expect: 20,
   },
   {
@@ -379,7 +391,7 @@ const COMMAND_RULE = {
   name: "skill-command",
   re: new RegExp(`(^|[^/.\\w])/(${COMMANDS.join("|")})\\b`, "g"),
   to: "$1/skill:$2",
-  expect: 482,
+  expect: 518,
 };
 
 
@@ -860,7 +872,7 @@ const POST_REWRITES = [
   },
   {
     name: "help-cursor-intro",
-    re: /pstack is built for Cursor\. Its skills use the Agent Skills format, so other tools can read them\. But most workflow skills, including `\/skill:poteto-mode`, `\/skill:how`, `\/skill:why`, and `\/skill:teach`, spawn Cursor subagents with per-role models, and Custom Modes and `\/loop` are Cursor features, so those parts may not work there\./g,
+    re: /pstack is built for Cursor, and it also installs in Claude Code[\s\S]*?so those parts may not work there\./g,
     to: "pstack is built for Cursor. This Pi package supplies native Pi subagents; Custom Modes and `/loop` are Cursor features with no Pi equivalent. Read the Pi binding for the exact boundaries.",
     expect: 1,
   },
@@ -880,6 +892,18 @@ const POST_REWRITES = [
     name: "help-custom-mode-troubleshoot",
     re: /\| The mode stopped applying after a few turns \| It was started with Enter\. Start it as a Custom Mode, or start each task with `\/skill:poteto-mode`\. \|/g,
     to: "| The mode stopped applying after a few turns | It applied to one message. Start each task with `/skill:poteto-mode`. |",
+    expect: 1,
+  },
+  {
+    name: "guide-claude-install",
+    re: /In Claude Code, run `\/plugin marketplace add cursor\/plugins`, then `\/plugin install pstack@cursor-plugins`\.[\s\S]*?The \[Claude Code adapter\]\(\.\.\/harness\/claude-code\.md\) covers the other differences\.\n\n/g,
+    to: "",
+    expect: 1,
+  },
+  {
+    name: "guide-model-file",
+    re: /It writes `~\/\.pi\/agent\/pstack-models\.md`, a small rule every pstack skill reads\./g,
+    to: "It writes the editable model preferences source described in the Pi binding; the runtime `~/.pi/agent/pstack-models.md` changes only after the system applies it.",
     expect: 1,
   },
   {
@@ -1758,7 +1782,6 @@ const installKey = createHash("sha256")
 mkdirSync(join(scriptsDir, "node_modules"), { recursive: true });
 writeFileSync(join(scriptsDir, "node_modules", ".poteto-mode-tools-install-key"), `${installKey}\n`);
 
-const upstreamVersion = JSON.parse(readFileSync(join(HARNESS, "plugin.json"), "utf8")).version;
 writeFileSync(
   join(outDir, "package.json"),
   `${JSON.stringify({ name: "pi-pstack", version: upstreamVersion, private: true, type: "module" }, null, 2)}\n`,

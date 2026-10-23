@@ -1,6 +1,6 @@
 # AGENTS.md
 
-本文件是给 AI 编码代理与贡献者的常驻指令。安装步骤见 [docs/install.md](docs/install.md)，开发与验证见 [docs/development.md](docs/development.md)，开发 Harness 的架构设计决策见 [docs/design.md](docs/design.md)。
+本文件是给 AI 编码代理与贡献者的常驻指令。安装步骤见 [docs/install.md](docs/install.md)，开发与验证见 [docs/development.md](docs/development.md)，开发 Harness 的架构设计决策见 [docs/design.md](docs/design.md)，pstack 的移植约束与内化台账见 [docs/pstack-port.md](docs/pstack-port.md)。
 
 ## 仓库定位
 
