@@ -1,37 +1,47 @@
 { config, inputs, ... }: {
-  dotnix.modules.nixos = { pkgs, ... }: {
-    # Pin the model catalog to override the long-context limit.
-    environment.etc."codex/models.json".source = ./models.json;
+  dotnix.modules.nixos =
+    { pkgs, ... }:
+    let
+      chatgpt = inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.chatgpt;
+      # The current build links remote-control-device-key.node against tpm2-tss; the upstream
+      # fixup does not carry those libraries, so add them to the unwrapped package.
+      chatgpt-unwrapped = chatgpt.unwrapped.overrideAttrs (old: {
+        buildInputs = (old.buildInputs or [ ]) ++ [ pkgs.tpm2-tss ];
+      });
+    in
+    {
+      # Pin the model catalog to override the long-context limit.
+      environment.etc."codex/models.json".source = ./models.json;
 
-    environment.etc."codex/config.toml".text = ''
-      model_provider = "openai"
-      model = "gpt-6-astra"
-      model_catalog_json = "/etc/codex/models.json"
-      model_reasoning_effort = "low"
-      approval_policy = "on-request"
-      approvals_reviewer = "user"
-      sandbox_mode = "danger-full-access"
-      # Non-login Bash avoids restoring a stale snapshot; the environment loads via BASH_ENV per command directory.
-      allow_login_shell = false
-      web_search = "live"
-      model_verbosity = "low"
-      model_reasoning_summary = "detailed"
-      [desktop]
-      localeOverride = "zh-CN"
-      preventSleepWhileRunning = true
-      composerEnterBehavior = "cmdAlways"
-      followUpQueueMode = "queue"
+      environment.etc."codex/config.toml".text = ''
+        model_provider = "openai"
+        model = "gpt-6-astra"
+        model_catalog_json = "/etc/codex/models.json"
+        model_reasoning_effort = "low"
+        approval_policy = "on-request"
+        approvals_reviewer = "user"
+        sandbox_mode = "danger-full-access"
+        # Non-login Bash avoids restoring a stale snapshot; the environment loads via BASH_ENV per command directory.
+        allow_login_shell = false
+        web_search = "live"
+        model_verbosity = "low"
+        model_reasoning_summary = "detailed"
+        [desktop]
+        localeOverride = "zh-CN"
+        preventSleepWhileRunning = true
+        composerEnterBehavior = "cmdAlways"
+        followUpQueueMode = "queue"
 
-      [shell_environment_policy.set]
-      BASH_ENV = "/etc/direnv/bash-env"
+        [shell_environment_policy.set]
+        BASH_ENV = "/etc/direnv/bash-env"
 
-    '';
+      '';
 
-    environment.systemPackages = [
-      inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.chatgpt
-      pkgs.bubblewrap
-    ];
-  };
+      environment.systemPackages = [
+        (chatgpt.override { inherit chatgpt-unwrapped; })
+        pkgs.bubblewrap
+      ];
+    };
   dotnix.modules.home =
     { lib, pkgs, ... }:
     let
