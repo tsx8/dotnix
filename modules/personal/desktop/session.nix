@@ -25,6 +25,8 @@
             ln -s "$src" "$out/share/fonts/truetype/PingFang.ttc"
           ''
         )
+        # Neovim's UI icons are Nerd Font glyphs; the symbols-only face supplies them without replacing the terminal text font.
+        nerd-fonts.symbols-only
         noto-fonts-cjk-sans
         noto-fonts-cjk-serif
       ];
