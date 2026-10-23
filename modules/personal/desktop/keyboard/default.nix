@@ -139,7 +139,15 @@ in
         import xwaykeyz.config_api as _config_api
         from xwaykeyz.models.combo import Combo
         from xwaykeyz.models.modifier import Modifier
-        from xwaykeyz.transform import get_pressed_mods
+
+
+        # xwaykeyz.transform builds its window-context provider at import time,
+        # which would pin it to the X11 default before this config calls
+        # environ_api(). Keep the import lazy so Wayland sessions get the KWin
+        # provider instead of an empty X11 window class.
+        def get_pressed_mods(*args, **kwargs):
+            from xwaykeyz.transform import get_pressed_mods as _get_pressed_mods
+            return _get_pressed_mods(*args, **kwargs)
 
 
         # Upstream GUI Control is Meta; terminal Control is already explicit LC.
