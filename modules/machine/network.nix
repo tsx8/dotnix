@@ -237,8 +237,15 @@
         openFirewall.enable = false;
       };
 
-      systemd.services.dae.wantedBy = lib.mkForce [ ];
-      systemd.services.dae.serviceConfig.Restart = "on-failure";
+      # dae depends on campus auth, so it is ordered after buaa-login inside the boot transaction.
+      # Starting dae from buaa-login's OnSuccess instead would resurrect a manually stopped dae on
+      # every periodic login run.
+      systemd.services.dae = {
+        wantedBy = lib.mkForce [ "multi-user.target" ];
+        wants = [ "buaa-login.service" ];
+        after = [ "buaa-login.service" ];
+        serviceConfig.Restart = "on-failure";
+      };
 
       services.buaa-login = {
         enable = true;
@@ -247,7 +254,13 @@
         interface = wanInterface;
       };
 
-      systemd.services.buaa-login.unitConfig.OnSuccess = [ "dae.service" ];
+      # The upstream module leaves buaa-login out of the boot transaction and wakes it through the timer's
+      # OnBootSec. Pulling it at boot instead keeps the login ahead of dae without a second run 30 s later.
+      systemd.services.buaa-login.wantedBy = lib.mkForce [ "multi-user.target" ];
+      systemd.timers.buaa-login.timerConfig = lib.mkForce {
+        Unit = "buaa-login.service";
+        OnUnitInactiveSec = config.services.buaa-login.interval;
+      };
 
     };
 }
