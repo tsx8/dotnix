@@ -8,6 +8,10 @@
     ];
     nix.channel.enable = false;
 
+    # One derivation built with NIX_BUILD_CORES=24 fans out to 24 g++ at ~0.9 GiB each,
+    # which let a single build reach 26 GiB of RAM on this 29.7 GiB machine.
+    nix.settings.cores = 8;
+
     boot.loader = {
       systemd-boot = {
         enable = true;
@@ -34,6 +38,18 @@
       AllowHybridSleep = false;
       AllowSuspendThenHibernate = false;
     };
+
+    # Builds yield to the interactive session only under contention, and their reclaim
+    # stays in this cgroup instead of pushing the whole machine into zram.
+    systemd.slices.build = {
+      description = "Bulk Nix builds that must not starve the interactive session";
+      wantedBy = [ "slices.target" ];
+      sliceConfig = {
+        CPUWeight = 50;
+        MemoryHigh = "16G";
+      };
+    };
+    systemd.services.nix-daemon.serviceConfig.Slice = "build.slice";
 
     time.timeZone = "Asia/Shanghai";
     i18n.defaultLocale = "en_US.UTF-8";
