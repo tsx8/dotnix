@@ -18,12 +18,30 @@ in
       jq
       fd
       ripgrep
+      tmux
       wl-clipboard
     ];
   };
   dotnix.modules.home = {
     programs.fish = {
       enable = true;
+    };
+
+    # Emacs and pi press C-b constantly, so a C-b prefix fires in the middle of editing;
+    # C-] only costs nvim's tag jump and Emacs's abort-recursive-edit, and pressing it twice
+    # passes the key through.
+    programs.tmux = {
+      enable = true;
+      # tmux is a system package; the module would add a second, user-level copy.
+      package = null;
+      prefix = "C-]";
+      # Preserve tmux's own defaults: the module would write "screen" and a 12-hour clock.
+      terminal = "tmux-256color";
+      clock24 = true;
+      # The module would move the socket under /run/user, which drops it on logout.
+      secureSocket = false;
+      # Konsole handles OSC 52, so copies reach the clipboard without a helper command.
+      extraConfig = "set -s set-clipboard on";
     };
 
     # The fish module enables man caches by default (for apropos completions), but home.packages carries no
