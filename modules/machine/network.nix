@@ -81,6 +81,9 @@
           # must_* must not be used for :53 here: it would bypass DNS hijacking packet-wide, so campus-forged
           # answers (the NXDOMAIN for gemini.gstatic.com) would reach the client directly, bypassing dns split filtering
           pname(zerotier-one) -> direct
+          # CS2 SDR is UDP. Proxied through the US exit its pings are measured from there and
+          # matchmaking picks US servers; direct keeps the local path.
+          l4proto(udp) && pname(cs2) -> direct
           dip(224.0.0.0/3) -> direct
           l4proto(udp) && dport(443) -> block
           dip(geoip:private) -> direct
