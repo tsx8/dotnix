@@ -26,6 +26,7 @@
 
       sops.secrets = {
         dae-nodes = { };
+        dae-node-ip = { };
         buaa-login = { };
         wifi-hotspot-password = { };
       };
@@ -86,9 +87,13 @@
           l4proto(udp) && pname(cs2) -> direct
           dip(224.0.0.0/3) -> direct
           l4proto(udp) && dport(443) -> block
+          # The node's own address must not be proxied through the node (SSH would loop through it)
+          dip(${config.sops.placeholder.dae-node-ip}/32) -> direct
           dip(geoip:private) -> direct
           dip(geoip:cn) -> direct
           domain(geosite:cn) -> direct
+          # Reach the panel without the tunnel.
+          domain(suffix:dmit.io) -> direct
           fallback: proxy
         }
       ''

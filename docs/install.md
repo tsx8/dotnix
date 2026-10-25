@@ -102,7 +102,7 @@ direnv allow
 just secrets edit
 ```
 
-机器私钥只保存在 `/var/lib/sops-nix/key.txt`，不要提交到仓库。完成必要编辑后，先让安装生成的新文件进入 Git 文件清单，再按 [验证要求](development.md#验证要求) 检查最终内容：
+机器私钥只保存在 `/var/lib/sops-nix/key.txt`，不要提交到仓库。机密的约束是仓库源码无法直接读出，本机解密后的明文可读。完成必要编辑后，先让安装生成的新文件进入 Git 文件清单，再按 [验证要求](development.md#验证要求) 检查最终内容：
 
 ```bash
 git add -N modules/machine/host/facter.json modules/machine/storage/layout.data.nix modules/machine/identity/.sops.yaml modules/machine/identity/secrets.yaml
