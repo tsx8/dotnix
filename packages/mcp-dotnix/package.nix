@@ -1,4 +1,8 @@
-{ python3Packages, writeShellScript }:
+{
+  python3Packages,
+  writeShellScript,
+  fastmcp,
+}:
 
 let
   privilegedRunner = writeShellScript "mcp-dotnix-run-privileged" ''
@@ -33,7 +37,9 @@ python3Packages.buildPythonApplication {
   ];
 
   dependencies = [
-    python3Packages.fastmcp
+    # Injected from mcp-nixos's vendored fastmcp 4 stack: nixpkgs fastmcp 3.x
+    # is marked broken against python mcp 2.
+    fastmcp
   ];
 
   pythonImportsCheck = [
