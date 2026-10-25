@@ -298,7 +298,11 @@ in
         enableInstallTelemetry = false;
         quietStartup = "header";
         defaultProjectTrust = "always";
-        defaultTools = [ "+codemode" ];
+        defaultTools = [
+          "+codemode"
+          "+grep"
+          "+find"
+        ];
         packages = packagePaths;
         # Proactive compaction threshold at contextWindow/e (ChatGPT/Codex auto_compact semantics):
         # reserveTokens = contextWindow − floor(contextWindow/e);
