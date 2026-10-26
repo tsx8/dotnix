@@ -7,7 +7,7 @@
 - 桌面：KDE Plasma 6、SDDM、Fcitx5 + Rime、Toshy 键位映射、PipeWire 音频。
 - 网络：dae（通过 daeuniverse flake 模块接入）。
 - 维护：sops-nix secrets、disko 分区、nix-direnv 开发环境。
-- Agent 工具：Codex、Obelisk CLI、项目级 MCP（`mcp-dotnix`、`mcp-nixos`）。
+- Agent 工具：Obelisk CLI、项目级 MCP（`mcp-dotnix`、`mcp-nixos`）。
 
 仓库描述声明配置，运行状态取决于实际安装、激活和启动的配置，不能仅凭仓库内容判断。
 
@@ -27,6 +27,6 @@ just repo fmt
 just os build
 ```
 
-`os build` 包含 lint/test，不激活系统。需要更新输入时运行 `just repo update`，该命令也会同步 Codex 模型目录。
+`os build` 包含 lint/test，不激活系统。需要更新输入时运行 `just repo update`。
 
 应用系统须经用户明确批准，获批后可由 Agent 执行：`just os test` 临时激活，`just os switch` 同时更改默认启动项。`os switch` 不自动运行 lint/test，切换前须有当前内容的适用检查结果，详见 [常用命令](docs/development.md#常用命令)。回滚、重启、安装、secrets 操作和 push 同样遵循 [操作边界](AGENTS.md#操作边界)。

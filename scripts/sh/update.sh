@@ -247,7 +247,6 @@ run_node plain "piliplus lock" 1 scripts/sh/sync-piliplus-locks.sh
 
 if [[ $mode == "all" ]]; then
   run_node plain "wechat" 1 scripts/sh/update-wechat.sh
-  run_node plain "models" 1 scripts/sh/sync-models.sh
   run_node plain "lint" 0 just repo lint
   run_node plain "test" 0 just repo test
 fi

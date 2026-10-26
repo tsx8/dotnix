@@ -5,7 +5,7 @@
 ## 配置组织
 
 - flake-parts 提供顶层模块系统，import-tree 递归导入 `modules/` 中的功能模块，排除 `*.data.nix` 数据文件。功能目录中的 `default.nix` 本身就是顶层模块，不重复导入已经扫描到的文件。
-- 功能按机器运行、个人使用、配置维护、代理能力组织；系统配置与 Home Manager 配置共同归属功能，专属数据与配置放在同一目录。简单功能保留单文件。`modules/agents/` 内分三类：代理本体（pi、codex）、代理工具（`tools/`，如 bex、obelisk：包发布与接入接线）、代理技能（装配在域根模块，本地与外部技能统一装到 `~/.agents/skills/`；随 Pi 包发布的技能留在包内）；跨代理的共享设施（全局指令、环境入口）同在域根。
+- 功能按机器运行、个人使用、配置维护、代理能力组织；系统配置与 Home Manager 配置共同归属功能，专属数据与配置放在同一目录。简单功能保留单文件。`modules/agents/` 内分三类：代理本体（pi）、代理工具（`tools/`，如 bex、obelisk：包发布与接入接线）、代理技能（装配在域根模块，本地与外部技能统一装到 `~/.agents/skills/`；随 Pi 包发布的技能留在包内）；跨代理的共享设施（全局指令、环境入口）同在域根。
 - `dotnix.modules.nixos` 和 `dotnix.modules.home` 以 `deferredModule` 合并各功能的贡献；`assembly.nix` 将它们装配为唯一的 `nixosConfigurations.maco`。
 - `dotnix.host` 保存当前单机的名称、平台和账户绑定，供功能共享；路径等派生信息仍从系统与用户配置读取，避免形成第二份配置来源。
 - 本地包的构建定义与源码归 `packages/<name>/`，本地技能内容归 `skills/<name>/`，均由所属功能发布 flake 输出或接线，不参加模块自动导入。
@@ -18,7 +18,7 @@
 - pstack 以固定快照移植到 Pi：上游正文在构建期经文本变换适配宿主，变换持有该版本的字面量，因此快照固定在 [包定义](../packages/pi-pstack/package.nix) 中而不随 `repo update` 移动。不变量、移植流程与内化台账见 [pstack 移植与内化](pstack-port.md)。
 - `modules/maintenance/` 是项目开发环境的模块边界，影响 devShell 的模块定义集中于此。direnv 监视此目录和环境依赖的本地工具源码，普通系统配置与应用数据不触发环境刷新。
 - Home Manager 只管理用户级配置，不管理应用。
-- [终端模块](../modules/personal/terminal.nix) 管理 direnv 与 fish；[agents 模块](../modules/agents/default.nix) 提供非交互 Bash 的环境加载入口 [bash-env.sh](../modules/agents/bash-env.sh)，并抑制代理命令的 direnv 状态日志（加载错误不受影响）。Codex 与 Pi 分别设置 `BASH_ENV` 使用此入口，复用 direnv 授权和 nix-direnv 缓存，使每次命令按工作目录取得环境；不设置全局 `BASH_ENV`。Codex 通过命令环境配置接入，不参与其父进程和快照生成；Pi 通过启动包装传递给子进程。环境加载不改变代理权限，两个入口分别在 [Codex 模块](../modules/agents/codex/default.nix) 与 [Pi 模块](../modules/agents/pi/default.nix)。
+- [终端模块](../modules/personal/terminal.nix) 管理 direnv 与 fish；[agents 模块](../modules/agents/default.nix) 提供非交互 Bash 的环境加载入口 [bash-env.sh](../modules/agents/bash-env.sh)，并抑制代理命令的 direnv 状态日志（加载错误不受影响）。[Pi 模块](../modules/agents/pi/default.nix) 通过启动包装把 `BASH_ENV` 传给子进程，使用此入口，复用 direnv 授权和 nix-direnv 缓存，使每次命令按工作目录取得环境；不设置全局 `BASH_ENV`。环境加载不改变代理权限。
 
 ## 文档与约束
 
@@ -38,8 +38,8 @@
 
 - `mcp-dotnix` 将只读诊断与 `run_privileged` 分开，后者通过原生 pkexec 取得 polkit 的逐次认证，不依赖客户端审批。执行入口与授权规则引用 [同一个包输出](../modules/maintenance/mcp.nix)，避免路径不一致；固定入口在认证后切换工作目录，支持普通用户无法进入的目录。同账户其他程序也可发起认证请求，不以客户端身份作为隔离边界。不引入常驻 root 服务或自建认证窗口；调用契约与故障处理见 [开发文档](development.md#mcp)。
 - `mcp-dotnix` 由本仓库维护；`mcp-nixos` 复用官方 flake，查询也须遵守仓库的 lock 保护约束。两个服务独立构建和运行，避免应用依赖相互污染，底层依赖由 Nix 复用。
-- Codex 与 Pi 分别使用原生用户级 MCP 配置，引用系统构建的固定可执行路径，不依赖仓库工作目录；服务继承会话目录，以便查询当前项目。客户端分别维护工具筛选与超时，不引入统一配置模型或同步脚本。
-- 两个客户端的配置保持可写；系统激活合并声明字段，未声明的用户配置保留。Codex 复用 Home Manager 的原生可写配置合并，仅管理配置，不安装应用。本仓库对声明的 Pi MCP 服务器默认隐藏工具，只将指定工具设为 deferred，新增工具不会自动暴露。系统认证在 polkit 中落实，工具筛选不是对 Bash 工具的权限隔离。
+- Pi 使用原生用户级 MCP 配置，引用系统构建的固定可执行路径，不依赖仓库工作目录；服务继承会话目录，以便查询当前项目。客户端维护工具筛选与超时，不引入统一配置模型或同步脚本。
+- Pi 的 MCP 配置保持可写；系统激活合并声明字段，未声明的用户配置保留。本仓库对声明的 Pi MCP 服务器默认隐藏工具，只将指定工具设为 deferred，新增工具不会自动暴露。系统认证在 polkit 中落实，工具筛选不是对 Bash 工具的权限隔离。
 
 ## 配置 label
 
