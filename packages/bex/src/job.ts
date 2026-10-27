@@ -387,7 +387,18 @@ export async function jobWorker(data: JobData): Promise<void> {
         const make = vm.compileFunction(`return async (session, console) => {\n${m.code}\n;}`, [], { parsingContext: ctx }) as () => (s: unknown, c: unknown) => Promise<unknown>;
         const value = await make()(facade, con);
         await Promise.allSettled([...pending]);
-        parentPort?.postMessage({ type: "result", seq: m.seq, result: { ok: true, ...capValue(value), ...truncateLogs(logs) } });
+        const capped = capValue(value);
+        const cappedLogs = truncateLogs(logs);
+        parentPort?.postMessage({
+          type: "result",
+          seq: m.seq,
+          result: {
+            ok: true,
+            ...capped,
+            logs: cappedLogs.logs,
+            logsTruncated: cappedLogs.truncated,
+          },
+        });
       } catch (e) {
         await Promise.allSettled([...pending]);
         parentPort?.postMessage({ type: "result", seq: m.seq, result: {

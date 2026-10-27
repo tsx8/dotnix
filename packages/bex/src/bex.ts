@@ -190,6 +190,13 @@ function shotName(prefix: string): string {
   return `${prefix}-${Date.now()}-${process.pid.toString(36)}-${Math.random().toString(36).slice(2, 8)}.png`;
 }
 
+// Keep a truncated value in full so the caller can read it with offset/limit instead of replaying side effects.
+function valuePath(): string {
+  const dir = `${shotDir()}/values`;
+  mkdirSync(dir, { recursive: true, mode: 0o700 });
+  return `${dir}/value-${Date.now()}-${process.pid.toString(36)}-${Math.random().toString(36).slice(2, 8)}.json`;
+}
+
 export function safeStringify(value: unknown): string | undefined {
   try {
     return JSON.stringify(value, (_k, v) => (typeof v === "bigint" ? String(v) : v));
@@ -219,8 +226,20 @@ export function capValue(value: unknown): { value: unknown; truncated: boolean }
     };
   }
   if (Buffer.byteLength(s) <= VALUE_MAX_BYTES) return { value, truncated: false };
+  let savedTo: string | undefined;
+  try {
+    savedTo = valuePath();
+    writeFileSync(savedTo, s, { mode: 0o600 });
+  } catch {
+    savedTo = undefined;
+  }
   return {
-    value: { bexTruncated: true, originalBytes: Buffer.byteLength(s), head: s.slice(0, VALUE_MAX_BYTES) },
+    value: {
+      bexTruncated: true,
+      originalBytes: Buffer.byteLength(s),
+      head: s.slice(0, VALUE_MAX_BYTES),
+      ...(savedTo ? { savedTo } : {}),
+    },
     truncated: true,
   };
 }
@@ -266,6 +285,13 @@ export function classifyError(e: unknown): { code: string; message: string; hint
   }
   if (/Not connected/i.test(message)) {
     return { code: "NOT_CONNECTED", message, hint: "bex connects for you; this happens only if the browser died mid-run. Retry the command." };
+  }
+  if (/control\.sock/.test(message) && /(ENOENT|ECONNREFUSED)/.test(message)) {
+    return {
+      code: "JOB_ENDED",
+      message: "The job owner is not running; its page is gone.",
+      hint: "Use job_status for the last-known snapshot; do not replay side effects.",
+    };
   }
   if (e instanceof SyntaxError) {
     return { code: "SYNTAX", message, hint: stack };
@@ -474,7 +500,8 @@ async function workerRun(data: RunData): Promise<void> {
         ok: true,
         targetId: attachedTo ?? null,
         ...capped,
-        ...cappedLogs,
+        logs: cappedLogs.logs,
+        logsTruncated: cappedLogs.truncated,
         screenshots,
         elapsedMs: Date.now() - started,
       },
