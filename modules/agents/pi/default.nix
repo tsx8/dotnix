@@ -207,6 +207,29 @@ in
             nix_versions = "deferred";
           };
         };
+        mcp-bex = {
+          command = "${pkgs.coreutils}/bin/env";
+          args = [
+            "-u"
+            "PYTHONPATH"
+            (lib.getExe mcpPackages.mcp-bex)
+          ];
+          env.BEX_BIN = "/run/current-system/sw/bin/bex";
+          description = "Real logged-in Helium browser through hidden CDP tabs and persistent jobs.";
+          exposure = "hidden";
+          # Above the 600 s bex tool maximum plus the adapter backstop.
+          timeout = 650;
+          toolExposure = {
+            run = "deferred";
+            job_start = "deferred";
+            job_run = "deferred";
+            job_status = "deferred";
+            job_stop = "deferred";
+            job_action = "deferred";
+            job_handoff = "deferred";
+            job_release = "deferred";
+          };
+        };
       };
       # A subagent loads an MCP server only when its tool allowlist names a tool from it. Derive those
       # names from the declarations above instead of keeping a second server or permission list.
