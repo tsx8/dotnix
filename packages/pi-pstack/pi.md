@@ -9,7 +9,9 @@ the executable Cursor tool names to Pi. Do not translate names again, and do not
   different agent type because the Cursor spelling looks familiar. The profile names, bodies, tools,
   and worktree membership come from the Nix profile table; inspect `/subagents:settings` when needed.
 - The generated `pstack-readonly` profile is a tool allowlist. It has `read`, `grep`, `find`, `ls`,
-  and `codemode`; it has no shell, edit, write, or MCP. It is not an OS sandbox.
+  and `codemode`; it has no shell, edit, write, or MCP. It is not an OS sandbox. Return review
+  findings in the reply; use a writable profile such as `pstack-general-purpose` when a task needs a
+  file artifact.
 - Background work uses `run_in_background: true`. Resume a run through the `subagent` tool's native
   resume action and the agent ID it returned; do not paste a prior result in place of a resume when
   the run can still be resumed.
@@ -52,6 +54,9 @@ the executable Cursor tool names to Pi. Do not translate names again, and do not
 - `cloud_base_branch` is not a tool field. Put the requested base branch or commit in the brief and
   make the worker check it out in the isolated worktree before working. If the ref is missing or
   worktree creation fails, stop; never fall back to the shared checkout.
+- A worktree run's workspace is removed when the run completes. Resume only while the workspace is
+  live, such as when the child is waiting on `ask_parent`; after completion, use its result or rescue
+  branch with a fresh agent.
 - Worktree changes are saved to a rescue branch by the worktrees component, including a clean tree
   whose worker committed its own changes. Merge or discard them under the workflow's existing
   authorization.
