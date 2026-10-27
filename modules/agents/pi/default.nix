@@ -197,6 +197,8 @@ in
             "PYTHONPATH"
             (lib.getExe mcpPackages.mcp-nixos)
           ];
+          # Upstream never disables FastMCP's banner, which triggers a PyPI version check at startup.
+          env.FASTMCP_SHOW_SERVER_BANNER = "false";
           description = "Query Nix packages, options, documentation, and flake inputs.";
           exposure = "hidden";
           timeout = 120;
