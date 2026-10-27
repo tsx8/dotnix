@@ -28,8 +28,7 @@ in
     };
 
     # Emacs and pi press C-b constantly, so a C-b prefix fires in the middle of editing;
-    # C-] only costs nvim's tag jump and Emacs's abort-recursive-edit, and pressing it twice
-    # passes the key through.
+    # C-] only costs Emacs's abort-recursive-edit, and pressing it twice passes the key through.
     programs.tmux = {
       enable = true;
       # tmux is a system package; the module would add a second, user-level copy.
