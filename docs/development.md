@@ -32,6 +32,7 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 | `just os build` | 先运行 repo lint、repo test，再构建系统，不激活 |
 | `just os test` | 先运行 repo lint、repo test，再构建并经确认激活系统，不改变默认启动项；须经用户明确批准 |
 | `just os switch [label]` | 经 `scripts/sh/os.sh` 构建并经确认激活系统、切换默认启动项，不自动运行 lint/test；须经用户明确批准 |
+| `nh os build-vm --hostname maco --no-update-lock-file --no-write-lock-file .#maco` | 构建可启动的系统 VM，不激活当前系统；用于验证 systemd、文件布局和激活脚本 |
 | `just repo update [输入名…]` | 依次更新 flake 输入、经 `packages/update.list` 用 nix-update 检查登记的包（随后重生成 piliplus 依赖 lock）、同步 WeChat 滚动产物、运行 lint、test；不传输入名则更新全部输入；逐节点显示状态，编排见 [scripts/sh/update.sh](../scripts/sh/update.sh) |
 
 fmt、lint、test 在检查前拒绝未忽略、未跟踪文件，只列路径，不自动跟踪或删除；将应交付的文件精确 `git add`，临时文件放到仓库外，必要的忽略规则维护在 `.gitignore`。
@@ -40,7 +41,7 @@ fmt、lint、test 在检查前拒绝未忽略、未跟踪文件，只列路径�
 
 纳入仓库的上游应尽量保持可随 `repo update` 滚动更新（flake 输入或 `packages/update.list`）。pstack 是例外：其构建期文本变换固定了上游字面量，随 `repo update` 滚动会让无关更新导致构建失败，因此固定在包定义中，只在用户明确要求更新时按 [pstack 移植与内化](pstack-port.md) 的流程推进。
 
-三个 os 命令均调用项目 nh，目标显式为 `.#maco`，并禁止更新/写入 lock。构建至少预留 10 分钟。`just repo test` 不构建每个 package；`test` 不等于 `build`，`build` 不证明系统运行正常。
+`just os build`、`just os test` 和 `just os switch` 均调用项目 nh，目标显式为 `.#maco`，并禁止更新/写入 lock。构建至少预留 10 分钟。`just repo test` 不构建每个 package；`test` 不等于 `build`，`build` 不证明系统运行正常。
 
 ## 验证要求
 
@@ -58,6 +59,31 @@ fmt、lint、test 在检查前拒绝未忽略、未跟踪文件，只列路径�
 同时影响系统的开发工具、脚本或包走系统验证流程，并补足该对象的定向验证；已被系统构建覆盖的包无需重复构建。相同内容且条件仍适用的结果可复用，新修改、失败或证据缺口才补充检查。
 
 系统安装、激活、回滚、重启、秘密操作和 push 按 [操作边界](../AGENTS.md#操作边界) 取得用户明确批准后，可由 Agent 执行。运行结论需要实际观察，Agent 可用只读诊断取证；仓库声明、当前激活系统、启动系统和会话工具可用性不能互相替代。系统链接不同本身不足以判断必须重启。按任务所需取证，已有适用证据无需重复全量诊断；报告须区分已完成检查、构建结果和未验证的运行行为。
+
+## 验证分层
+
+先按改动选择能证伪它的最小层，再决定是否需要激活宿主。`just os switch` 只做发布，不作为内循环。
+
+| 层 | 适用范围 | 验证入口 | 激活宿主 |
+| --- | --- | --- | --- |
+| 叶子产物 | MCP server、bex、脚本、本地包 | `nix build`、直接运行、FastMCP Client | 否 |
+| 生成配置 | `mcp.json`、systemd unit、desktop entry、Home Manager 文件 | `just os build`、`nix eval`、`systemd-analyze verify` | 否 |
+| 用户会话 | Pi 与 MCP、用户级 systemd 服务 | 项目 `.pi/mcp.json`、`systemd-run --user` | 否 |
+| 系统行为 | systemd system unit、文件布局、网络、PAM、polkit | `nh os build-vm`、一次性 `nixosTest`，必要时 `just os test` | VM 否；`just os test` 是 |
+| 宿主发布 | boot、内核、GPU、显示管理器 | `just os switch` | 是，更新默认启动项 |
+
+`just os test` 会激活宿主，但不改变默认启动项；它是宿主上的金丝雀，不是沙箱。VM 不覆盖 GPU、显示管理器登录和真实浏览器状态，瞬态单元不验证 NixOS unit 的依赖和启动关系；这些缺口在上一层补证。
+
+用户级服务可用瞬态单元验证可执行文件与运行行为，启动命令使用绝对路径：
+
+```bash
+systemd-run --user --unit=<name> --collect \
+  <absolute-executable> <args>
+```
+
+瞬态单元不写 NixOS unit，也不替代对 unit 装配关系的检查；系统级 unit 和激活脚本先用 VM 或 `just os test`。
+
+验证按[临时验证与清理](#临时验证与清理)回收，不建立固定测试套件或常驻验证服务。
 
 ## WeChat 滚动产物
 
