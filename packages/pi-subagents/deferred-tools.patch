@@ -1,0 +1,23 @@
+diff --git a/packages/pi-subagents/src/index.ts b/packages/pi-subagents/src/index.ts
+--- a/packages/pi-subagents/src/index.ts
++++ b/packages/pi-subagents/src/index.ts
+@@ -246,6 +246,6 @@
+ 
+   // ---- Agent tool ----
+ 
+-  pi.registerTool(new AgentTool(manager, runtime, settings, registry, getAgentDir()).toToolDefinition());
++  pi.registerTool({ ...new AgentTool(manager, runtime, settings, registry, getAgentDir()).toToolDefinition(), exposure: "deferred" });
+ 
+   // ---- get_subagent_result tool ----
+@@ -252,4 +252,4 @@
+ 
+-  pi.registerTool(new GetResultTool(manager, registry).toToolDefinition());
++  pi.registerTool({ ...new GetResultTool(manager, registry).toToolDefinition(), exposure: "deferred" });
+ 
+   // ---- steer_subagent tool ----
+@@ -256,4 +256,4 @@
+ 
+-  pi.registerTool(new SteerTool(manager, pi.events).toToolDefinition());
++  pi.registerTool({ ...new SteerTool(manager, pi.events).toToolDefinition(), exposure: "deferred" });
+ 
+   // ---- /subagents:settings command ----

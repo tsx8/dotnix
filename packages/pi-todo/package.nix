@@ -13,6 +13,9 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     hash = "sha256-1p/L8CZhwSLj3XTsau3C47O2c11JyExigNTh4bGeak8=";
   };
 
+  # Task tools are used intermittently; tool_search loads them when needed.
+  patches = [ ./deferred-tools.patch ];
+
   dontBuild = true;
 
   installPhase = ''

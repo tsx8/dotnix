@@ -1,0 +1,27 @@
+diff --git a/index.ts b/index.ts
+--- a/index.ts
++++ b/index.ts
+@@ -134,4 +134,5 @@
+     name: "TaskCreate",
+     label: "TaskCreate",
+     description: TASK_CREATE_DESCRIPTION,
++    exposure: "deferred",
+     promptSnippet: "Create a task in the structured task list",
+@@ -156,4 +157,5 @@
+     name: "TaskGet",
+     label: "TaskGet",
+     description: TASK_GET_DESCRIPTION,
++    exposure: "deferred",
+     promptSnippet: "Retrieve a task by ID",
+@@ -177,4 +179,5 @@
+     name: "TaskList",
+     label: "TaskList",
+     description: TASK_LIST_DESCRIPTION,
++    exposure: "deferred",
+     promptSnippet: "List all structured tasks",
+@@ -207,4 +210,5 @@
+     name: "TaskUpdate",
+     label: "TaskUpdate",
+     description: TASK_UPDATE_DESCRIPTION,
++    exposure: "deferred",
+     promptSnippet: "Update a task or its dependencies",

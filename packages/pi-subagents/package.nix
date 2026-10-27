@@ -15,6 +15,8 @@ stdenvNoCC.mkDerivation {
   patches = [
     ./fail-closed-qualified-model.patch
     ./fail-closed-workspace.patch
+    # Orchestration tools are used intermittently; tool_search loads them when needed.
+    ./deferred-tools.patch
   ];
 
   dontBuild = true;
