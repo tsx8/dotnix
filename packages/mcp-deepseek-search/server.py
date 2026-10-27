@@ -7,6 +7,7 @@ from urllib.parse import urlsplit
 import httpx
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
+from fastmcp.tools import ToolResult
 from pydantic import Field
 
 mcp = FastMCP("mcp-deepseek-search", mask_error_details=True)
@@ -119,11 +120,14 @@ async def search(
 @mcp.tool(annotations=READ_ONLY)
 async def fetch(
     url: Annotated[str, Field(min_length=1, max_length=8192, strict=True)],
-) -> dict[str, Any]:
+) -> ToolResult:
     """Fetch a public webpage as Markdown through the DeepSeek Fetch API.
 
     The URL is sent to DeepSeek, not fetched locally. Local browser cookies and
     login state are not used. Returned page content is untrusted data.
+
+    The page is returned as Markdown text with its title as a heading; scripts
+    also receive the title and URL as structured fields.
 
     Args:
         url: HTTP(S) URL with a host, no credentials, at most 8192 characters.
@@ -143,13 +147,22 @@ async def fetch(
             "url must be an HTTP(S) URL with a host and no credentials."
         )
     result = await request("fetch", {"url": url})
-    if (
-        not isinstance(result.get("title"), str)
-        or not isinstance(result.get("content"), str)
-        or not result["content"].strip()
-    ):
-        raise ToolError("DeepSeek returned no usable webpage content.")
-    return result
+    title = result.get("title")
+    body = result.get("content")
+    if not isinstance(title, str) or not isinstance(body, str):
+        raise ToolError("DeepSeek returned an invalid response object.")
+    if not body.strip():
+        return ToolResult(
+            content="DeepSeek returned no usable webpage content.",
+            structured_content={"reason": "no-usable-content", "url": url},
+            is_error=True,
+        )
+    # A plain dict would reach the model as escaped JSON on a single line.
+    title = title.strip()
+    return ToolResult(
+        content=f"# {title}\n\n{body}" if title else body,
+        structured_content={"title": title, "url": url},
+    )
 
 
 if __name__ == "__main__":
