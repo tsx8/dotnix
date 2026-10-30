@@ -32,6 +32,10 @@
     boot.kernelPackages = pkgs.linuxPackages_latest;
     hardware.facter.reportPath = ./facter.json;
 
+    # A power event loses the last minutes of journal entries at the default 5 min sync
+    # window, which is the evidence separating a system hang from a power cut.
+    services.journald.settings.Journal.SyncIntervalSec = "1s";
+
     systemd.sleep.settings.Sleep = {
       AllowSuspend = false;
       AllowHibernation = false;
