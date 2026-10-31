@@ -109,9 +109,7 @@ in
               exec ${pi}/bin/pi "$@"
               ;;
           esac
-          exec ${pi}/bin/pi \
-            --extension ${./slash-enter.ts} \
-            "$@"
+          exec ${pi}/bin/pi "$@"
         '')
         config.flake.packages.${system}.mcp-dotnix
         config.flake.packages.${system}.mcp-nixos
@@ -371,14 +369,11 @@ in
       };
     in
     {
-      # Pi does not write back model catalogs or keybindings; pstack setup edits its repository source.
+      # Pi does not write back model catalogs; pstack setup edits its repository source.
       # models.json: uses GPT long-context windows, not limited to the catalog's 272k pricing tier; unknown ids are ignored.
-      # keybindings.json: Toshy maps Cmd to Ctrl; Ctrl+Enter submits and Enter inserts a newline; new namespace ids
-      # avoid triggering the legacy-format migration write-back.
       home.file = {
         ".pi/agent/AGENTS.md".source = ../AGENTS-md.txt;
         ".pi/agent/models.json".source = ./models.json;
-        ".pi/agent/keybindings.json".source = ./keybindings.json;
         ".pi/agent/pstack-models.md".source = ./pstack-models.md;
       }
       // lib.mapAttrs' (
