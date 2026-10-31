@@ -50,11 +50,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    toshy = {
-      url = "github:RedBearAK/Toshy";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     rime-frost = {
       url = "github:gaboolic/rime-frost";
       flake = false;

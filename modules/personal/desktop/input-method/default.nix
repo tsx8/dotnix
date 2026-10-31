@@ -61,7 +61,7 @@
 
           settings.globalOptions = {
             "Hotkey" = {
-              # Tapping CapsLock is translated by Toshy into this chord, switching keyboard-us ↔ rime
+              # Only the Control+space chord switches keyboard-us ↔ rime.
               "EnumerateWithTriggerKeys" = "False";
             };
 
@@ -77,7 +77,7 @@
           };
 
           settings.addons = {
-            # Toshy uses Super for Mac Control; the Quick Phrase default hotkey would steal application shortcuts.
+            # The default trigger chord would steal a desktop shortcut.
             quickphrase = {
               globalSection = { };
               sections.TriggerKey."0" = "";

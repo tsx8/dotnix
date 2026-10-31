@@ -404,8 +404,7 @@
         "pi-packages": "pi-packages",
         "rime-frost": "rime-frost",
         "simple-live-app": "simple-live-app",
-        "sops-nix": "sops-nix",
-        "toshy": "toshy"
+        "sops-nix": "sops-nix"
       }
     },
     "simple-live-app": {
@@ -456,26 +455,6 @@
       "original": {
         "owner": "nix-systems",
         "repo": "default",
-        "type": "github"
-      }
-    },
-    "toshy": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1792840193,
-        "narHash": "sha256-NtkxqA9TD/KOq48UnGGtsw7gcpccehvPgoWrg4t07Yo=",
-        "owner": "RedBearAK",
-        "repo": "Toshy",
-        "rev": "ac3dbfcdd6e7a11c95ea892c19fb5b1643f45a82",
-        "type": "github"
-      },
-      "original": {
-        "owner": "RedBearAK",
-        "repo": "Toshy",
         "type": "github"
       }
     },
