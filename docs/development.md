@@ -27,7 +27,7 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 | 命令 | 执行内容与副作用 |
 | --- | --- |
 | `just repo fmt` | 用 nixfmt-tree 格式化 Nix 文件，修改工作树 |
-| `just repo lint` | 依次运行 nixfmt 检查、nixf-diagnose、statix、ShellCheck 和 Git 空白检查 |
+| `just repo lint` | 依次运行模块布局检查、nixfmt 检查、nixf-diagnose、statix、ShellCheck 和 Git 空白检查 |
 | `just repo test` | 运行 `nix flake check`，构建已声明 checks，不使用 `--no-build`，不激活系统 |
 | `just os build` | 先运行 repo lint、repo test，再构建系统，不激活 |
 | `just os test` | 先运行 repo lint、repo test，再构建并经确认激活系统，不改变默认启动项；须经用户明确批准 |
