@@ -18,7 +18,7 @@
 - pstack 以固定快照移植到 Pi：上游正文在构建期经文本变换适配宿主，变换持有该版本的字面量，因此快照固定在 [包定义](../packages/pi-pstack/package.nix) 中而不随 `repo update` 移动。不变量、移植流程与内化台账见 [pstack 移植与内化](pstack-port.md)。
 - `modules/maintenance/` 是项目开发环境的模块边界，影响 devShell 的模块定义集中于此。direnv 监视此目录和环境依赖的本地工具源码，普通系统配置与应用数据不触发环境刷新。
 - Home Manager 只管理用户级配置，不管理应用。
-- [终端模块](../modules/personal/terminal.nix) 管理 direnv 与 fish；[agents 模块](../modules/agents/default.nix) 提供非交互 Bash 的环境加载入口 [bash-env.sh](../modules/agents/bash-env.sh)，并抑制代理命令的 direnv 状态日志（加载错误不受影响）。[Pi 模块](../modules/agents/pi/default.nix) 通过启动包装把 `BASH_ENV` 传给子进程，使用此入口，复用 direnv 授权和 nix-direnv 缓存，使每次命令按工作目录取得环境；不设置全局 `BASH_ENV`。环境加载不改变代理权限。
+- [终端模块](../modules/personal/terminal/default.nix) 管理 direnv 与 fish；[agents 模块](../modules/agents/default.nix) 提供非交互 Bash 的环境加载入口 [bash-env.sh](../modules/agents/bash-env.sh)，并抑制代理命令的 direnv 状态日志（加载错误不受影响）。[Pi 模块](../modules/agents/pi/default.nix) 通过启动包装把 `BASH_ENV` 传给子进程，使用此入口，复用 direnv 授权和 nix-direnv 缓存，使每次命令按工作目录取得环境；不设置全局 `BASH_ENV`。环境加载不改变代理权限。
 
 ## 文档与约束
 

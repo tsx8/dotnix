@@ -18,7 +18,7 @@
   dotnix.modules.home =
     { pkgs, ... }:
     {
-      xdg.configFile."emacs/init.el".source = ./emacs/init.el;
+      xdg.configFile."emacs/init.el".source = ./init.el;
 
       # Starting with the graphical session gives the daemon the Wayland
       # environment, so emacsclient opens a frame without a cold start.

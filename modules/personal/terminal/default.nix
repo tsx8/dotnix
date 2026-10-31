@@ -38,7 +38,7 @@ in
               set pane_tty (tmux display-message -p -t "$TMUX_PANE" '#{pane_tty}' 2>/dev/null)
           end
           if test -z "$pane_tty"; or test "$pane_tty" != (tty)
-              exec bash ${./terminal/tmux-auto.sh}
+              exec bash ${./tmux-auto.sh}
           end
       end
     '';
