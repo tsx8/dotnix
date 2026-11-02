@@ -43,7 +43,10 @@
         }
 
         dns {
-          ipversion_prefer: 4
+          # No ipversion_prefer here. With 6, dae replaces the A answer with an empty reply as soon as the
+          # AAAA is known, and clients that only ask for A retry instead of falling back: the Bilibili app
+          # issued 353 A queries for api.bilibili.com in ten minutes and failed to load media thumbnails.
+          # Both families are routable now (WAN v6 plus the hotspot's ULA), so clients pick for themselves.
 
           upstream {
             # Plaintext upstreams are only safe when dialed through the proxy tunnel, so the routing section
@@ -103,7 +106,7 @@
       networking = {
         useNetworkd = true;
         useDHCP = false;
-        enableIPv6 = false;
+        enableIPv6 = true;
         firewall.enable = false;
       };
 
