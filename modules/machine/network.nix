@@ -13,6 +13,9 @@
       lanEthernetInterface = "enp196s0";
       wifiInterface = "wlp194s0";
       lanAddress = "192.168.77.1";
+      # The campus hands out one /64 by RA and delegates no prefix, so hotspot clients get a ULA and
+      # leave through NAT66 to the WAN v6 address; that keeps their bulk traffic on the unmetered v6 path.
+      lanUla = "fd00:77::";
       campusDns = "202.112.128.50";
     in
     {
@@ -151,17 +154,27 @@
         matchConfig.Name = wanInterface;
         networkConfig = {
           DHCP = "ipv4";
-          LinkLocalAddressing = "ipv4";
+          # "ipv4" pins addr_gen_mode to none, which blocks the link-local address and therefore SLAAC.
+          # The campus hands out v6 by router advertisement only, so the WAN link needs v6 addressing.
+          LinkLocalAddressing = "ipv6";
+          IPv6AcceptRA = true;
         };
       };
 
       systemd.network.networks."30-${lanInterface}" = {
         matchConfig.Name = lanInterface;
-        address = [ "${lanAddress}/24" ];
+        address = [
+          "${lanAddress}/24"
+          "${lanUla}1/64"
+        ];
+        ipv6Prefixes = [ { Prefix = "${lanUla}/64"; } ];
         networkConfig = {
-          IPMasquerade = "ipv4";
+          IPMasquerade = "both";
           IPv4Forwarding = true;
-          LinkLocalAddressing = "ipv4";
+          IPv6Forwarding = true;
+          # Clients need a link-local address on this bridge to be reachable for the RA exchange.
+          LinkLocalAddressing = "ipv6";
+          IPv6SendRA = true;
         };
       };
 
