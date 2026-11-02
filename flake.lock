@@ -200,11 +200,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793285847,
-        "narHash": "sha256-yy/fjT0bPM7Qi1q1Y+xov+Igd2AxvtgJFBzJ/PI/cFE=",
+        "lastModified": 1793456298,
+        "narHash": "sha256-BN4iu3uxY/JXBSTRytmVrLrpwt1rnuTp8Se6WWbHnk0=",
         "owner": "oxcl",
         "repo": "nix-flake-helium-browser",
-        "rev": "c9f74b5dd1dabf2d6a6c5c5a0c6fa1d9af7ddf73",
+        "rev": "0a71a74d045e82124cb69f5c590bdfcf027d52ff",
         "type": "github"
       },
       "original": {
@@ -259,11 +259,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1793435943,
-        "narHash": "sha256-kl4L50m8mMMyQLjH2d46ljtdzR+9vlgpoDmOrpNV/SU=",
+        "lastModified": 1793512069,
+        "narHash": "sha256-i4UBJIugcPJxG4xKnlsypbTb8QfPX+kagQYF9oswO/c=",
         "owner": "numtide",
         "repo": "llm-agents.nix",
-        "rev": "b14f9d18b6d127221bd9f63817a40e1cca2b344b",
+        "rev": "8efcba308a6b12a92441cb4df624e484bad9e18a",
         "type": "github"
       },
       "original": {
@@ -343,11 +343,11 @@
     "obelisk-skill": {
       "flake": false,
       "locked": {
-        "lastModified": 1793326422,
-        "narHash": "sha256-Z0i033X/zunxkMZYB2PbhAHWYV9WCvrbKMinTBz+BeE=",
+        "lastModified": 1793528783,
+        "narHash": "sha256-Z0nw4J1qOrbh2VYErq2PpjibhZskW61FeNuaPF4Azvs=",
         "owner": "tommy0103",
         "repo": "obelisk-skill",
-        "rev": "db62981c9bb07124b960782c9f0d4e8b3bd5088d",
+        "rev": "e7c0e358c82a609d53f1f1045572dbc0fd965bfc",
         "type": "github"
       },
       "original": {
@@ -359,11 +359,11 @@
     "pi-packages": {
       "flake": false,
       "locked": {
-        "lastModified": 1793159720,
-        "narHash": "sha256-MBTU/vIGo1t0WNuP83Bt1ksAWO6249IyJXd9UUGBU7Q=",
+        "lastModified": 1793472654,
+        "narHash": "sha256-som/2sF/3WNHkaDIB0w3AoevLj/1YGJ3HmCKVVZeGAk=",
         "owner": "gotgenes",
         "repo": "pi-packages",
-        "rev": "98ee0a194da817a5248b2e93501d2a90aeebc0fa",
+        "rev": "52854c12d590142e61a4f6a6947be9084035300d",
         "type": "github"
       },
       "original": {
@@ -375,11 +375,11 @@
     "rime-frost": {
       "flake": false,
       "locked": {
-        "lastModified": 1793419888,
-        "narHash": "sha256-VLmf2Csigym/BX1b4yp8kX1Tsf38UTC1vxQvpO8Atd8=",
+        "lastModified": 1793506292,
+        "narHash": "sha256-iFBzgPx2yxVpqLlUgZl/cI5YSrFpFtd9T8lHIOsOc68=",
         "owner": "gaboolic",
         "repo": "rime-frost",
-        "rev": "c3290dff20671593d64bc3118c62a47df59dd62c",
+        "rev": "af22941caec0fb7c052893e1bf439b79a94e5fb2",
         "type": "github"
       },
       "original": {

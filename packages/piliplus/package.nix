@@ -15,13 +15,13 @@
 }:
 
 let
-  version = "2.1.6.2";
+  version = "2.2.0";
 
   src = fetchFromGitHub {
     owner = "bggRGjQaUbCoE";
     repo = "PiliPlus";
     tag = version;
-    hash = "sha256-PrXUQdEZUMNkTzaS7gGgQTrRWcF+4a0tFSpWqLwaubI=";
+    hash = "sha256-UffoFa/UwUeZij1vXw4oANd0HxnJN80pc6IRp8EBBqk=";
   };
 
   # Kept in sync with upstream CI (the common set in lib/scripts/patch.ps1 plus its Linux branch):
