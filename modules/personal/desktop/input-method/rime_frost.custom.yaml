@@ -10,7 +10,7 @@
 #   the candidate and appends the symbol)
 # - Remove all prefix/keyword trigger modes: u character decomposition, U Unicode input,
 #   R uppercase Chinese numerals, N Gregorian-to-Lunar conversion, V/v calculator, and rq/sj/xq/dt/ts/nl date/time lunar queries
-# - direct_uppercase.lua: Shift/CapsLock + letter joins the composition when one is open, otherwise commits the uppercase letter directly
+# - direct_uppercase.lua: in Chinese mode, Shift + letter joins the composition when one is open, otherwise commits the uppercase letter directly
 # - post_commit_reject.lua: after a candidate commits, consecutive Backspace deletes it fully; the next time the
 #   same code is typed, the candidate moves back one position (one-shot); the processor must come first to observe all keys
 patch:
@@ -58,19 +58,19 @@ patch:
 
   recognizer/patterns: {}
 
-  # ascii_composer reads the original default.yaml at runtime (the preset path skips the compiled patch),
-  # so noop must be written into the schema itself to take effect. If Caps_Lock were set to clear, the real
-  # CapsLock passed through during held-uppercase would be interpreted by rime as the CN/EN switch, leaving
-  # a stale English state where tapping only cycles between en/A; CapsLock handles caps lock only, and the
-  # CN/EN switch is left to tapping.
+  # Keep the switch policy in the schema; ascii_composer reads the unpatched default preset.
+  ascii_composer/good_old_caps_lock: true
   ascii_composer/switch_key:
-    Caps_Lock: noop
+    Caps_Lock: commit_code
+    Eisu_toggle: commit_code
     Control_L: noop
     Control_R: noop
     Shift_L: noop
     Shift_R: noop
 
-  key_binder/bindings: []
+  key_binder/bindings:
+    - { when: always, accept: Control+space, send: Eisu_toggle }
+    - { when: always, accept: Control+F24, set_option: ascii_mode }
 
   speller/alphabet: zyxwvutsrqponmlkjihgfedcbaZYXWVUTSRQPONMLKJIHGFEDCBA
 

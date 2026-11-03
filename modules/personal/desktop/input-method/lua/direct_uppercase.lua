@@ -1,6 +1,9 @@
 local function processor(key_event, env)
   local engine = env.engine
 
+  if engine.context:get_option("ascii_mode") then
+    return 2 -- kNoop
+  end
   if key_event:release() or key_event:ctrl() or key_event:alt() or key_event:super() then
     return 2 -- kNoop
   end

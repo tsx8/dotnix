@@ -60,14 +60,14 @@
           };
 
           settings.globalOptions = {
-            "Hotkey" = {
-              # Only the Control+space chord switches keyboard-us ↔ rime.
-              "EnumerateWithTriggerKeys" = "False";
+            "Behavior" = {
+              "ActiveByDefault" = "True";
+              "ShareInputState" = "All";
             };
 
-            # Key lists use numbered subsections; scalars are silently ignored
+            # Rime handles Control+space internally so its ASCII mode stays active.
             "Hotkey/TriggerKeys" = {
-              "0" = "Control+space";
+              "0" = "";
             };
 
             # Shift already commits uppercase directly; disable the AltTrigger temporary switch
