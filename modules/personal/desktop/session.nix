@@ -1,15 +1,11 @@
 {
   dotnix.modules.nixos = { pkgs, lib, ... }: {
-    # The defaults are VF variable fonts; switch to the static builds for compatibility with apps that
-    # cannot use variable fonts (e.g. QQ Music and Tencent Meeting, packaged with Electron 8)
-    nixpkgs.overlays = [
-      (_final: prev: {
-        noto-fonts-cjk-sans = prev.noto-fonts-cjk-sans.override { static = true; };
-        noto-fonts-cjk-serif = prev.noto-fonts-cjk-serif.override { static = true; };
-      })
-    ];
-
     fonts = {
+      # Noto's upstream default is VF variable fonts; register the static builds instead for apps
+      # that cannot use them (e.g. QQ Music and Tencent Meeting, built on Electron 8). The override
+      # must stay at this consumption site: a global overlay flips the font drv, and fonts.conf
+      # embeds font store paths, so poppler and the whole KDE closure would diverge from the
+      # binary cache and force repeated local rebuilds of the entire stack.
       packages = with pkgs; [
         (runCommand "pingfang-sc"
           {
@@ -25,8 +21,8 @@
             ln -s "$src" "$out/share/fonts/truetype/PingFang.ttc"
           ''
         )
-        noto-fonts-cjk-sans
-        noto-fonts-cjk-serif
+        (noto-fonts-cjk-sans.override { static = true; })
+        (noto-fonts-cjk-serif.override { static = true; })
       ];
 
       fontconfig.defaultFonts = {
