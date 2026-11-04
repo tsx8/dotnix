@@ -33,7 +33,7 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 | `just os test` | 先运行 repo lint、repo test，再构建并经确认激活系统，不改变默认启动项；须经用户明确批准 |
 | `just os switch [label]` | 经 `scripts/sh/os.sh` 构建并经确认激活系统、切换默认启动项，不自动运行 lint/test；须经用户明确批准 |
 | `nh os build-vm --hostname maco --no-update-lock-file --no-write-lock-file .#maco` | 构建可启动的系统 VM，不激活当前系统；用于验证 systemd、文件布局和激活脚本 |
-| `just repo update [输入名…]` | 依次更新 flake 输入、经 `packages/update.list` 用 nix-update 检查登记的包（随后重生成 piliplus 依赖 lock）、同步 WeChat 滚动产物、运行 lint、test；不传输入名则更新全部输入；逐节点显示状态，编排见 [scripts/sh/update.sh](../scripts/sh/update.sh) |
+| `just repo update [输入名…]` | 依次更新 flake 输入、经 `packages/update.list` 用 nix-update 检查登记的包（随后重生成 piliplus 依赖 lock）、运行 lint、test；不传输入名则更新全部输入；逐节点显示状态，编排见 [scripts/sh/update.sh](../scripts/sh/update.sh) |
 
 fmt、lint、test 在检查前拒绝未忽略、未跟踪文件，只列路径，不自动跟踪或删除；将应交付的文件精确 `git add`，临时文件放到仓库外，必要的忽略规则维护在 `.gitignore`。
 
@@ -84,10 +84,6 @@ systemd-run --user --unit=<name> --collect \
 瞬态单元不写 NixOS unit，也不替代对 unit 装配关系的检查；系统级 unit 和激活脚本先用 VM 或 `just os test`。
 
 验证按[临时验证与清理](#临时验证与清理)回收，不建立固定测试套件或常驻验证服务。
-
-## WeChat 滚动产物
-
-`just repo update` 在 pkg-update 后运行 [scripts/sh/update-wechat.sh](../scripts/sh/update-wechat.sh)：以官方下载地址的 Last-Modified 头为变更哨兵，无变化即空操作；有变化时经 nix 通道取权威哈希、从官方页取三位版本号，改写 `packages/wechat/package.nix`。腾讯静默覆盖但哨兵未变时，后续构建会因哈希失配失败，手动运行该脚本即可修复。
 
 ## 工作树 label
 
