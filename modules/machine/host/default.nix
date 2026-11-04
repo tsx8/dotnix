@@ -8,9 +8,11 @@
     ];
     nix.channel.enable = false;
 
-    # One derivation built with NIX_BUILD_CORES=24 fans out to 24 g++ at ~0.9 GiB each,
-    # which let a single build reach 26 GiB of RAM on this 29.7 GiB machine.
-    nix.settings.cores = 8;
+    # Two-layer resource control: build.slice owns foreground isolation (CPU weight) and the
+    # total memory ceiling (MemoryHigh); cores only sets per-derivation parallelism. 16 is the
+    # measured optimum under the 16G cap (plasma-workspace 465s vs 630s at 8); 24 fans past
+    # the cap into reclaim slowdown.
+    nix.settings.cores = 16;
 
     boot.loader = {
       systemd-boot = {
