@@ -10,6 +10,7 @@ lint: _source-ready
   @statix check --config modules/maintenance/development/statix.toml
   @just repo _tracked-files '*.sh' | xargs -0 -r shellcheck
   @git diff --check HEAD
+  @scripts/sh/overlay-advisory.sh
 
 test: _source-ready
   @nix flake check --no-update-lock-file --no-write-lock-file

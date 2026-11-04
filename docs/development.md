@@ -27,7 +27,7 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 | 命令 | 执行内容与副作用 |
 | --- | --- |
 | `just repo fmt` | 用 nixfmt-tree 格式化 Nix 文件，修改工作树 |
-| `just repo lint` | 依次运行模块布局检查、nixfmt 检查、nixf-diagnose、statix、ShellCheck 和 Git 空白检查 |
+| `just repo lint` | 依次运行模块布局检查、nixfmt 检查、nixf-diagnose、statix、ShellCheck 和 Git 空白检查，再提示有改动的全局 overlay 来源 |
 | `just repo test` | 运行 `nix flake check`，构建已声明 checks，不使用 `--no-build`，不激活系统 |
 | `just os build` | 先运行 repo lint、repo test，再构建系统，不激活 |
 | `just os test` | 先运行 repo lint、repo test，再构建并经确认激活系统，不改变默认启动项；须经用户明确批准 |
@@ -84,6 +84,49 @@ systemd-run --user --unit=<name> --collect \
 瞬态单元不写 NixOS unit，也不替代对 unit 装配关系的检查；系统级 unit 和激活脚本先用 VM 或 `just os test`。
 
 验证按[临时验证与清理](#临时验证与清理)回收，不建立固定测试套件或常驻验证服务。
+
+<a id="overlay-impact"></a>
+
+## Overlay 影响检查
+
+`just repo lint` 将当前实际装配的非空 overlay 来源与相对 HEAD 的改动文件取交集，只提醒有改动的来源模块，不判断 overlay 函数本身是否改变或是否会导致重建。提醒使用英文，最多列三个来源文件，其余只报数量；没有交集时静默，查询失败或超时只报告检查不可用。这项提醒不使 lint 失败，其他检查的错误仍正常阻断。
+
+检查不求值 HEAD 或系统构建，不计算依赖图；禁止 IFD，避免提醒触发隐式构建。它不覆盖仅上游输入变化、仅独立被导入文件变化等来源模块未改动的情况，也不为已移除的 overlay 提示。
+
+需要确定实际影响时，准备仅待检查 overlay 不同的两个配置状态，保持 `flake.lock` 和其他配置一致。不要直接把整个 HEAD 套上当前 lock；旧配置可能与新依赖接口不兼容。分别在两侧仓库根运行以下命令，将成功输出记录为 Bash 变量 `before_drv` 和 `after_drv`：
+
+```bash
+nix eval --raw --no-update-lock-file --no-write-lock-file \
+  --max-jobs 0 --builders '' --option substitute false \
+  .#nixosConfigurations.maco.config.system.build.toplevel.drvPath
+```
+
+系统求值可能涉及 IFD。上述命令只允许复用已有构建产物，不允许新构建或替代下载；缺少产物或任一侧求值失败时，比较不可用，不代表没有影响。不要为这项诊断自动启用构建。
+
+比较构建配方引用闭包，先只看数量：
+
+```bash
+(
+  set -euo pipefail
+  tmp="$(mktemp -d)"
+  trap 'rm -rf -- "$tmp"' EXIT
+  nix-store --query --requisites "$before_drv" | grep '\.drv$' | LC_ALL=C sort >"$tmp/before"
+  nix-store --query --requisites "$after_drv" | grep '\.drv$' | LC_ALL=C sort >"$tmp/after"
+  printf 'Added derivations: '
+  LC_ALL=C comm -13 "$tmp/before" "$tmp/after" | wc -l
+  printf 'Removed derivations: '
+  LC_ALL=C comm -23 "$tmp/before" "$tmp/after" | wc -l
+)
+```
+
+在清理临时目录前，可按需查看 `comm -13` 和 `comm -23` 的结果以定位具体 `.drv`。其中也包含配置生成等配方，不能将数量解释为需要编译的软件包数。需要追踪差异原因时，再使用当前 lock 对应的工具：
+
+```bash
+nix run --inputs-from . --no-update-lock-file --no-write-lock-file \
+  nixpkgs#nix-diff -- "$before_drv" "$after_drv"
+```
+
+此步骤可能下载或构建诊断工具本身，不构建被比较的系统；详细 diff 仅在主动诊断时展示。
 
 ## 工作树 label
 
