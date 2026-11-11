@@ -13,9 +13,6 @@
       lanEthernetInterface = "enp196s0";
       wifiInterface = "wlp194s0";
       lanAddress = "192.168.77.1";
-      # The campus hands out one /64 by RA and delegates no prefix, so hotspot clients get a ULA and
-      # leave through NAT66 to the WAN v6 address; that keeps their bulk traffic on the unmetered v6 path.
-      lanUla = "fd00:77::";
       campusDns = "202.112.128.50";
     in
     {
@@ -46,10 +43,7 @@
         }
 
         dns {
-          # No ipversion_prefer here. With 6, dae replaces the A answer with an empty reply as soon as the
-          # AAAA is known, and clients that only ask for A retry instead of falling back: the Bilibili app
-          # issued 353 A queries for api.bilibili.com in ten minutes and failed to load media thumbnails.
-          # Both families are routable now (WAN v6 plus the hotspot's ULA), so clients pick for themselves.
+          ipversion_prefer: 4
 
           upstream {
             # Plaintext upstreams are only safe when dialed through the proxy tunnel, so the routing section
@@ -109,7 +103,7 @@
       networking = {
         useNetworkd = true;
         useDHCP = false;
-        enableIPv6 = true;
+        enableIPv6 = false;
         firewall.enable = false;
       };
 
@@ -154,27 +148,17 @@
         matchConfig.Name = wanInterface;
         networkConfig = {
           DHCP = "ipv4";
-          # "ipv4" pins addr_gen_mode to none, which blocks the link-local address and therefore SLAAC.
-          # The campus hands out v6 by router advertisement only, so the WAN link needs v6 addressing.
-          LinkLocalAddressing = "ipv6";
-          IPv6AcceptRA = true;
+          LinkLocalAddressing = "ipv4";
         };
       };
 
       systemd.network.networks."30-${lanInterface}" = {
         matchConfig.Name = lanInterface;
-        address = [
-          "${lanAddress}/24"
-          "${lanUla}1/64"
-        ];
-        ipv6Prefixes = [ { Prefix = "${lanUla}/64"; } ];
+        address = [ "${lanAddress}/24" ];
         networkConfig = {
-          IPMasquerade = "both";
+          IPMasquerade = "ipv4";
           IPv4Forwarding = true;
-          IPv6Forwarding = true;
-          # Clients need a link-local address on this bridge to be reachable for the RA exchange.
-          LinkLocalAddressing = "ipv6";
-          IPv6SendRA = true;
+          LinkLocalAddressing = "ipv4";
         };
       };
 
@@ -276,27 +260,6 @@
       systemd.timers.buaa-login.timerConfig = lib.mkForce {
         Unit = "buaa-login.service";
         OnUnitInactiveSec = config.services.buaa-login.interval;
-      };
-
-      # The campus IPv6 path drops the occasional packet, and a lost SYN costs the caller a full
-      # 1 s RTO. Replaying the same SYN at 20 ms spacing cut stalls over 900 ms from 24% to 0% on
-      # this link; the copies keep the 5-tuple and ISN, so the server sees one attempt.
-      systemd.services.synspray = {
-        description = "Replay outgoing IPv6 SYN packets to ride out single-packet loss";
-        wantedBy = [ "multi-user.target" ];
-        after = [ "network.target" ];
-        serviceConfig = {
-          ExecStart = "${pkgs.python3}/bin/python3 ${./synspray.py} ${wanInterface} 7 0.020";
-          Restart = "on-failure";
-          RestartSec = 2;
-          AmbientCapabilities = [ "CAP_NET_RAW" ];
-          CapabilityBoundingSet = [ "CAP_NET_RAW" ];
-          DynamicUser = true;
-          NoNewPrivileges = true;
-          ProtectSystem = "strict";
-          ProtectHome = true;
-          PrivateTmp = true;
-        };
       };
 
     };

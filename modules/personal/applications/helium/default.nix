@@ -81,7 +81,6 @@
           "bdiifdefkgmcblbcghdlonllpjhhjgof" # KISS Translator
           "onnepejgdiojhiflfoemillegpgpabdm" # V2EX Polish
           "dhdgffkkebhmkfjojejmpbldmpobfkfo" # Tampermonkey
-          "ecanpcehffngcegjmadlcijfolapggal" # IPvFoo
         ];
       };
     };
