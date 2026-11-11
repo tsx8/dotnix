@@ -372,7 +372,6 @@ in
       # Pi does not write back model catalogs; pstack setup edits its repository source.
       # models.json: uses GPT long-context windows, not limited to the catalog's 272k pricing tier; unknown ids are ignored.
       home.file = {
-        ".pi/agent/AGENTS.md".source = ../AGENTS-md.txt;
         ".pi/agent/models.json".source = ./models.json;
         ".pi/agent/pstack-models.md".source = ./pstack-models.md;
       }
