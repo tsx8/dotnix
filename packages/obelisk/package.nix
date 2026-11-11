@@ -6,13 +6,15 @@
   stdenvNoCC,
 }:
 
-stdenvNoCC.mkDerivation {
+stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "obelisk";
-  version = "0.3.1";
+  version = "0.3.2";
 
+  # The URL must derive from version: nix-update rewrites only the version line, so a literal tarball
+  # name would keep fetching the old release while the package claims the new version.
   src = fetchurl {
-    url = "https://registry.npmjs.org/@obelisk-apps/cli/-/cli-0.2.6-rc.0.tgz";
-    hash = "sha256-XsPRoYR4c/62M8fGazDlXh81HUaJj+SJwxBBwfGwGhw=";
+    url = "https://registry.npmjs.org/@obelisk-apps/cli/-/cli-${finalAttrs.version}.tgz";
+    hash = "sha256-W0xh6gjCFIJ6hwGTP4MeP+VRgwNi6NbJZ9HcXUFg0qk=";
   };
 
   sourceRoot = "package";
@@ -44,4 +46,4 @@ stdenvNoCC.mkDerivation {
     mainProgram = "obelisk";
     platforms = lib.platforms.linux;
   };
-}
+})

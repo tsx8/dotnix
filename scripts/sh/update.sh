@@ -175,6 +175,14 @@ run_node() {
   local kind=$1 name=$2 retries=$3
   shift 3
   local log="$logs_dir/$name.log" rc_file="$logs_dir/$name.rc" tries=1 rc=0 i t0 tag
+  local before_version="" before_src=""
+  # nix-update rewrites only the version line. A src URL or rev that does not derive from version then
+  # keeps fetching the old artifact while the package claims the new version, and nix-update still
+  # reports success; capture the source derivation to reject that after the node runs.
+  if [[ $kind == pkg ]]; then
+    before_version=$(nix eval --raw ".#${name}.version" 2>/dev/null || true)
+    before_src=$(nix eval --raw ".#${name}.src.drvPath" 2>/dev/null || true)
+  fi
   ((retries > 0)) && tries=2
   ((is_tty)) || printf '%s: ' "$name"
   for ((i = 1; i <= tries; i++)); do
@@ -217,7 +225,22 @@ run_node() {
       printf '%s\n' "$(flake_change_summary "$logs_dir/flake-lock-before" "$logs_dir/flake-lock-after" "$log")"
       ;;
     pkg)
-      local m
+      local m after_version after_src
+      after_version=$(nix eval --raw ".#${name}.version" 2>/dev/null || true)
+      after_src=$(nix eval --raw ".#${name}.src.drvPath" 2>/dev/null || true)
+      if [[ -n $before_version && -n $before_src ]]; then
+        if [[ -z $after_version || -z $after_src ]]; then
+          printf 'FAILED (package does not evaluate after the update)\n'
+          failures+=("$name")
+          return 0
+        fi
+        if [[ $after_version != "$before_version" && $after_src == "$before_src" ]]; then
+          printf 'FAILED (version %s -> %s but the source did not move; make src derive from version)\n' \
+            "$before_version" "$after_version"
+          failures+=("$name")
+          return 0
+        fi
+      fi
       m="$(grep -oP 'Update \K.*(?= in )' "$log" | head -n1 || true)"
       if [[ -z "$m" ]]; then
         m="$(grep -oP 'Not updating version, already \K.*' "$log" | head -n1 || true)"
