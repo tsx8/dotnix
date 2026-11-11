@@ -14,11 +14,9 @@
     # the cap into reclaim slowdown.
     nix.settings.cores = 16;
 
-    # cache.nixos.org tops out at ~2.4 MB/s per connection via the proxy; the TUNA
-    # mirror (same store, same signing key) serves direct at ~49 MB/s. Official stays
-    # last as fallback; equal cache priority keeps the list order as preference.
+    # Use MirrorZ's mirror selection instead of a fixed mirror; retain the official cache as fallback.
     nix.settings.substituters = [
-      "https://mirrors.tuna.tsinghua.edu.cn/nix-channels/store"
+      "https://mirrors.cernet.edu.cn/nix-channels/store"
       "https://cache.nixos.org/"
     ];
 
