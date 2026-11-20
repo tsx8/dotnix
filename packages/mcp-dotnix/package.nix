@@ -1,7 +1,4 @@
-{
-  python3Packages,
-  fastmcp,
-}:
+{ python3Packages }:
 
 python3Packages.buildPythonApplication {
   pname = "mcp-dotnix";
@@ -14,9 +11,7 @@ python3Packages.buildPythonApplication {
     python3Packages.hatchling
   ];
 
-  dependencies = [
-    fastmcp
-  ];
+  dependencies = [ python3Packages.fastmcp ];
 
   pythonImportsCheck = [
     "mcp_dotnix.server"

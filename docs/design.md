@@ -32,7 +32,9 @@ NixOS 提供跨项目的应用、Nix 和 direnv。Home Manager 只管理用户�
 
 ## 项目 MCP
 
-`mcp-dotnix` 提供本机只读诊断。`mcp-nixos` 使用官方 flake 锁定的源码，由本仓库打包，使查询 flake 输入时不更新或写入 lock。两者可共用 FastMCP，但独立构建、独立启动，不替换全局 Python 包集，也不向 devShell 导出服务的 `PYTHONPATH`。
+`mcp-nixos` 使用锁定的上游构建配方；本仓库只加一处补丁，防止查询 flake 输入时改写或创建 `flake.lock`。若输入声明与 lock 不一致，Nix 仍可按声明临时解析，查询结果不一定来自磁盘上的 lock。
+
+`mcp-dotnix` 和 `mcp-deepseek-search` 复用 `mcp-nixos` 专属 Python 包集中的 FastMCP。三个服务独立构建、独立启动，不替换全局 Python 包集，也不向 devShell 导出服务的 `PYTHONPATH`。
 
 Pi 直接引用构建产物，不要求从 dotnix 目录启动。服务保留会话工作目录，便于查询当前项目。Pi 默认隐藏受管服务器的工具，只将选定工具设为 `deferred`，避免上游新增工具后自动暴露。工具筛选不限制 Bash 权限。
 

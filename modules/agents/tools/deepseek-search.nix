@@ -1,10 +1,8 @@
-{ config, inputs, ... }:
+{ config, ... }:
 {
-  perSystem = { pkgs, ... }: {
+  perSystem = { config, pkgs, ... }: {
     packages.mcp-deepseek-search = pkgs.callPackage ../../../packages/mcp-deepseek-search/package.nix {
-      fastmcp = pkgs.callPackage ../../../packages/fastmcp4/package.nix {
-        mcpNixosSrc = inputs.mcp-nixos;
-      };
+      python3Packages = config.packages.mcp-nixos.pythonPackages;
     };
   };
 

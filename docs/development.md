@@ -100,7 +100,7 @@ nix run --inputs-from . --no-update-lock-file --no-write-lock-file \
 
 ## MCP
 
-项目环境提供 `mcp-dotnix` 和 `mcp-nixos`。需要单独验证构建时运行 `nix build --no-link --no-update-lock-file --no-write-lock-file .#mcp-dotnix .#mcp-nixos`。在 Pi 中用 `/mcp` 查看或重连，也可用 `pi mcp list` 诊断。列表包括隐藏工具，能否调用要看暴露状态。仓库声明的工具和超时见 [Pi 配置](../modules/agents/pi/default.nix)。连接失败先检查配置的可执行路径。
+项目环境提供 `mcp-dotnix` 和 `mcp-nixos`。变更共享的 MCP 依赖后，运行 `nix build --no-link --no-update-lock-file --no-write-lock-file .#mcp-dotnix .#mcp-nixos .#mcp-deepseek-search`，再分别通过 stdio 初始化并列出工具。在 Pi 中用 `/mcp` 查看或重连，也可用 `pi mcp list` 诊断。列表包括隐藏工具，能否调用要看暴露状态。仓库声明的工具和超时见 [Pi 配置](../modules/agents/pi/default.nix)。连接失败先检查配置的可执行路径。
 
 要在激活前试用新产物，在项目 `.pi/mcp.json` 以同名服务器覆盖全局配置，使用产物的绝对路径。验证后撤销本次覆盖，保留项目原有配置。不要提交临时覆盖，也不要带入仓库检查。Pi 可回写全局 `~/.pi/agent/mcp.json`。应用 MCP 配置前先备份该文件。激活会合并受管字段，保留额外服务器和未声明字段；回滚系统 generation 不会还原已合并的用户文件。
 
