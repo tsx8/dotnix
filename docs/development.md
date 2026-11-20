@@ -2,100 +2,73 @@
 
 ## 项目环境
 
-交互终端进入项目后，direnv 加载已授权的 `.envrc`。首次使用或修改 `.envrc` 后，先审阅内容再执行 `direnv allow`。项目环境成功加载后可直接运行 `just` 等项目命令。
+交互终端进入仓库时由 direnv 加载环境。首次使用或 `.envrc` 变更后，先审阅文件，再运行 `direnv allow`。系统安装的 Pi 在默认 Bash 工具启动时按工作目录加载环境。确认加载成功、项目工具可用后直接运行命令，不只凭 `IN_NIX_SHELL` 判断。
 
-系统安装的 `pi` 入口使用非登录 Bash，通过 `BASH_ENV` 在每次命令启动时按工作目录加载环境。Pi 使用默认 Bash 工具；改用其他 `shellPath` 时不保证执行此入口。初始化不会自动授权 `.envrc`，未授权、已拒绝、语法错误或 direnv 报告加载失败时，项目命令不会执行。当前目录及其父目录都没有 `.envrc` 时，普通命令正常执行；新的 Bash 启动于项目之外时，会卸载继承的 direnv 环境。
-
-以环境加载结果和项目工具是否可用判断入口是否生效，不只看 `BASH_ENV` 或 `IN_NIX_SHELL` 变量；已有成功结果无需每次重复探测。自动入口配置变更需应用系统并重启对应代理。未配置自动入口的会话中，每次项目命令使用显式入口，例如：
+如果 `.envrc` 未授权、被拒绝或加载失败，先修复问题。若 `BASH_ENV` 阻塞了 Bash 启动，可用非登录 `/bin/sh` 诊断或修复，不在其中继续项目命令。本项目的 devShell 求值失败时不会退回旧缓存。加载环境不改写 `flake.lock`，也不自动检查或应用系统。只有会话未配置自动入口时，才为每条命令显式进入 devShell：
 
 ```bash
 nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 ```
 
-检测到 `.envrc` 未授权或加载失败时，先解决该状态，不用显式入口绕过。非登录 `/bin/sh` 不读取 `BASH_ENV`，可用于诊断和修复初始化，不应据此跳过项目环境继续检查。
+`--command` 的环境不延续到下一条独立命令。非登录 Bash 启动后再跨项目 `cd` 不会重载环境，请直接指定命令的工作目录，或使用 `direnv exec <目录> <命令>`。新 Bash 在项目外启动时会卸载继承的项目环境。改用其他 `shellPath` 不保证加载 Pi 的 Bash 入口；修改该入口后须先获批应用系统并重启对应代理。
 
-`--command` 只影响本次子进程，不会为下一次独立命令保留环境。Bash 启动后在同一条命令中跨项目 `cd` 不会重新加载环境，应直接指定目标工作目录，或使用 `direnv exec <目录> <命令>`。
-
-本项目环境求值失败时停止，不回退到旧缓存，加载不更新或写入 `flake.lock`。其他项目的 `.envrc` 若自行忽略错误，初始化入口无法将其识别为失败。需要更新输入时执行 `just repo update`。
-
-环境缓存失效时由 direnv 重新求值；加载环境不自动 fmt、lint、test、update 或应用系统。执行以当前会话实际权限为准；完全访问权限不取消 `.envrc` 授权、提权认证和项目操作边界。权限受阻时按当前环境允许的方式处理，不假定可以申请提权。
-
-影响 devShell 的模块定义放在 `modules/maintenance/`。新增开发环境的本地源码依赖时，同步更新 [.envrc](../.envrc) 的监视范围，使内容修改及文件增删都能触发刷新；普通系统配置与应用数据不触发环境刷新。新增 flake 可见文件先精确 `git add`，避免 Nix 与基于 Git 文件清单的检查漏掉文件。模块装配与环境职责见 [架构设计](design.md)。
+新增 devShell 的本地源码依赖时，同步更新 [.envrc](../.envrc) 的监视范围，包括目录中文件的增删。fmt、lint、test 都会拒绝未忽略的未跟踪文件。只对要交付的文件精确 `git add`，临时产物放到仓库外。
 
 ## 常用命令
 
-| 命令 | 执行内容与副作用 |
+| 命令 | 用途与副作用 |
 | --- | --- |
-| `just repo fmt` | 用 nixfmt-tree 格式化 Nix 文件，修改工作树 |
+| `just repo fmt` | 格式化 Nix 文件，修改工作树。 |
 | `just repo lint` | 检查模块布局、注释、格式、Nix 和 Shell 源码及 Git 空白错误。最后可能给出 [overlay 提醒](#overlay-impact)。 |
-| `just repo test` | 运行 `nix flake check`，构建已声明 checks，不使用 `--no-build`，不激活系统 |
-| `just os build` | 先运行 repo lint、repo test，再构建系统，不激活 |
-| `just os test` | 先运行 repo lint、repo test，再构建并经确认激活系统，不改变默认启动项；须经用户明确批准 |
-| `just os switch [label]` | 经 `scripts/sh/os.sh` 构建并经确认激活系统、切换默认启动项，不自动运行 lint/test；须经用户明确批准 |
-| `nh os build-vm --hostname maco --no-update-lock-file --no-write-lock-file .#maco` | 构建可启动的系统 VM，不激活当前系统；用于验证 systemd、文件布局和激活脚本 |
-| `just repo update [输入名…]` | 依次更新 flake 输入、经 `packages/update.list` 用 nix-update 检查登记的包（随后重生成 piliplus 依赖 lock）、运行 lint、test；不传输入名则更新全部输入；逐节点显示状态，编排见 [scripts/sh/update.sh](../scripts/sh/update.sh) |
+| `just repo test` | 运行 `nix flake check` 并构建已声明的 checks，不逐个构建包。 |
+| `just os build` | 先运行 lint 和 test，再构建系统，不激活。 |
+| `just os test` | 先运行 lint 和 test。经授权和确认后在**宿主**上激活，不更改默认启动项。 |
+| `just os switch [label]` | 经授权和确认后激活并更改默认启动项。**不自动运行 lint 或 test**，切换前须有适用于当前内容的检查结果。 |
+| `just repo update [输入名…]` | 更新指定的 flake 输入，不指定则更新全部。两种情况都会继续检查所有登记包、同步 PiliPlus 依赖锁并运行 lint 和 test。 |
+| `just repo pkg-update` | 只走包更新和 PiliPlus 依赖锁同步，不运行 flake 输入更新或最后的 lint 和 test。 |
 
-fmt、lint、test 在检查前拒绝未忽略、未跟踪文件，只列路径，不自动跟踪或删除；将应交付的文件精确 `git add`，临时文件放到仓库外，必要的忽略规则维护在 `.gitignore`。
+三个 `os` 命令使用项目的 nh，目标为 `.#maco`，不更新或写入 lock。构建至少预留 10 分钟。未指定非空 label 时，`switch` 取工作树 Git tree hash 的前 12 位，包括未暂存的改动和未忽略的新文件。计算期间不要并行修改仓库。[操作边界](../AGENTS.md#操作边界)同样适用于临时激活。
 
-`os switch` 切换前须有当前内容的适用检查结果；已通过 `os build` 且相关内容未变化时复用。单个节点失败不中断后续节点，网络类节点自动重试一次，已经完成的更新不回滚，失败时保留各节点完整日志并在末尾打印目录；GitHub API 令牌由 sops 渲染的用户级 nix.conf 提供（`modules/machine/identity/secrets.yaml` 的 `gh-auth-token`），避免匿名限额。T3 Code nightly 先在当前树的临时副本中选版并完成构建、版本与服务冒烟，然后才只替换 `packages/t3code-nightly/release.nix`；候选失败时保留原锁，只回写这一份固定输入。
+### 更新依赖
 
-纳入仓库的上游应尽量保持可随 `repo update` 滚动更新（flake 输入或 `packages/update.list`）。
+需要随 `repo update` 更新、但源码不由 flake 输入跟踪的远端包，登记到 [packages/update.list](../packages/update.list)。每行一个包属性，可附加 nix-update 参数。若碰到 GitHub 匿名限额，检查更新进程是否使用了 sops 为该用户渲染的 `nix.conf`。令牌对应 `gh-auth-token`，不要把明文加到更新命令。
 
-`just os build`、`just os test` 和 `just os switch` 均调用项目 nh，目标显式为 `.#maco`，并禁止更新/写入 lock。构建至少预留 10 分钟。`just repo test` 不构建每个 package；`test` 不等于 `build`，`build` 不证明系统运行正常。
+更新步骤失败后仍会执行后续步骤。网络更新步骤失败会重试一次，最终失败时打印日志目录，不撤销已成功的改动。T3 nightly 的更新单独验证候选版本，只有构建、版本和服务检查通过才替换 `packages/t3code-nightly/release.nix`。这不表示整次 `repo update` 可以回滚。
 
 ## 验证要求
 
-**注释检查。** lint 核对 Git 跟踪源码中的独占行、行尾和块注释，也检查补丁新增行及可识别的内嵌代码。Markdown、工具描述、shebang、ShellCheck 指令和密文不计入。新增或改写的注释报出路径和行号；删除时从 [comments.allow](../modules/maintenance/development/comments.allow) 移除报出的失效指纹。新文件没有额度。确须就地记录的理由逐条审阅，不整批刷新基线。
+按行为影响选检查。模型数据、配置或程序读取的文本，即使不是程序代码也可能改变行为。
 
-按实际影响选择验证，不能只按文件扩展名判断。被程序读取的文本、模型数据和环境配置属于行为修改；仅文档中的常驻指令和命令示例也须检查执行流程是否自洽。
-
-修改 Harness 时，按 [文档边界](../AGENTS.md#文档边界) 核对代码、注释和文档：可执行约束是否已有实现，局部理由是否紧邻代码，使用契约和架构说明是否与实现一致。仅局部实现变化不要求补写文档；接口、操作后果或跨组件职责变化时，更新对应说明。
-
-| 改动影响 | 必需验证 |
+| 改动 | 必需验证 |
 | --- | --- |
-| 讨论、设计、只读调查 | 取得支持结论的证据，不要求格式化或构建 |
-| 仅文档和常驻指令 | 核对[内容归属](../AGENTS.md#文档边界)、授权边界、命令调用链、路径及链接，运行 `git diff --check HEAD`；需要时做命令静态检查或 dry-run，不执行破坏性示例 |
-| 开发环境、脚本、工具、本地包等可执行行为 | `just repo fmt`、`just repo lint`、`just repo test`，并验证成功及必要失败路径；变更包须定向构建，不能用 flake check 代替 |
-| 系统配置或影响系统的依赖 | `just repo fmt` 后运行 `just os build`，复用其内置 lint/test，并补足构建未覆盖的必要行为验证 |
+| 讨论或只读调查 | 给出支持结论的证据，不要求格式化或构建。 |
+| 说明文档或常驻指令 | 核对[内容归属](../AGENTS.md#文档边界)、授权、路径、链接和命令调用链。运行 `git diff --check HEAD`。必要时做语法检查或 dry-run，不执行破坏性示例。 |
+| 开发环境、脚本、工具或包的可执行行为 | 运行 `just repo fmt`、`just repo lint` 和 `just repo test`。验证成功路径和必要的失败路径；改包还要验证该包确实能构建。 |
+| 系统配置或影响系统的依赖 | 运行 `just repo fmt` 和 `just os build`，复用构建中的 lint 和 test。补验构建未覆盖的行为或包。 |
 
-同时影响系统的开发工具、脚本或包走系统验证流程，并补足该对象的定向验证；已被系统构建覆盖的包无需重复构建。相同内容且条件仍适用的结果可复用，新修改、失败或证据缺口才补充检查。
+同一内容、相同条件下的结果可以复用。构建成功不能证明运行正常。交接时区分仓库声明、已激活系统、启动系统和当前会话的观测，不凭 store 链接不同推断必须重启。清理临时目录、测试仓库和命令替身，不提交验证报告或固定行为测试套件。
 
-系统安装、激活、回滚、重启、秘密操作和 push 按 [操作边界](../AGENTS.md#操作边界) 取得用户明确批准后，可由 Agent 执行。运行结论需要实际观察，Agent 可用只读诊断取证；仓库声明、当前激活系统、启动系统和会话工具可用性不能互相替代。系统链接不同本身不足以判断必须重启。按任务所需取证，已有适用证据无需重复全量诊断；报告须区分已完成检查、构建结果和未验证的运行行为。
+**注释检查。** lint 核对 Git 跟踪源码中的独占行、行尾和块注释，也检查补丁新增行及可识别的内嵌代码。Markdown、工具描述、shebang、ShellCheck 指令和密文不计入。新增或改写的注释报出路径和行号；删除时从 [comments.allow](../modules/maintenance/development/comments.allow) 移除报出的失效指纹。新文件没有额度。确须就地记录的理由逐条审阅，不整批刷新基线。
 
 ## 验证分层
 
-先按改动选择能证伪它的最小层，再决定是否需要激活宿主。`just os switch` 只做发布，不作为内循环。
+先选能证明目标行为的最小范围。只在缺少宿主证据时考虑激活。
 
-| 层 | 适用范围 | 验证入口 | 激活宿主 |
-| --- | --- | --- | --- |
-| 叶子产物 | MCP server、脚本、本地包 | `nix build`、直接运行、FastMCP Client | 否 |
-| 生成配置 | `mcp.json`、systemd unit、desktop entry、Home Manager 文件 | `just os build`、`nix eval`、`systemd-analyze verify` | 否 |
-| 用户会话 | Pi 与 MCP、用户级 systemd 服务 | 项目 `.pi/mcp.json`、`systemd-run --user` | 否 |
-| 系统行为 | systemd system unit、文件布局、网络、PAM、polkit | `nh os build-vm`、一次性 `nixosTest`，必要时 `just os test` | VM 否；`just os test` 是 |
-| 宿主发布 | boot、内核、GPU、显示管理器 | `just os switch` | 是，更新默认启动项 |
-
-`just os test` 会激活宿主，但不改变默认启动项；它是宿主上的金丝雀，不是沙箱。VM 不覆盖 GPU、显示管理器登录和真实浏览器状态，瞬态单元不验证 NixOS unit 的依赖和启动关系；这些缺口在上一层补证。
-
-用户级服务可用瞬态单元验证可执行文件与运行行为，启动命令使用绝对路径：
-
-```bash
-systemd-run --user --unit=<name> --collect \
-  <absolute-executable> <args>
-```
-
-瞬态单元不写 NixOS unit，也不替代对 unit 装配关系的检查；系统级 unit 和激活脚本先用 VM 或 `just os test`。
-
-验证按[临时验证与清理](#临时验证与清理)回收，不建立固定测试套件或常驻验证服务。
+| 要回答的问题 | 取证方法 |
+| --- | --- |
+| 包能否启动、MCP 工具能否调用？ | `nix build` 对应包，运行实际产物或用 FastMCP Client 调用。 |
+| 配置生成是否正确？ | 用 `nix eval` 或 `just os build` 检查生成文件、desktop entry 和 unit，必要时用 `systemd-analyze verify`。 |
+| Pi 和服务能否在用户会话协作？ | 用[项目 MCP 覆盖](#mcp)或 `systemd-run --user --collect` 加产物的绝对路径。瞬态单元不能验证声明的单元依赖。 |
+| 安装布局、激活脚本、网络或 systemd 行为是否正确？ | 构建并启动 VM，或使用一次性 `nixosTest`。构建 VM 的命令为 `nh os build-vm --hostname maco --no-update-lock-file --no-write-lock-file .#maco`。 |
+| 需要验证真实 GPU、登录会话或启动项吗？ | VM 不能替代这些观察。经批准后选择 `just os test` 临时激活；需要更改默认启动项才用 `just os switch`。 |
 
 <a id="overlay-impact"></a>
 
 ## Overlay 影响检查
 
-`just repo lint` 将当前实际装配的非空 overlay 来源与相对 HEAD 的改动文件取交集，只提醒有改动的来源模块，不判断 overlay 函数本身是否改变或是否会导致重建。提醒使用英文，最多列三个来源文件，其余只报数量；没有交集时静默，查询失败或超时只报告检查不可用。这项提醒不使 lint 失败，其他检查的错误仍正常阻断。
+lint 提醒的是相对 HEAD 改动过、且当前仍提供非空全局 overlay 的模块。它不比较依赖图，不触发 IFD 构建。输入单独更新、导入文件单独变更或已删除的 overlay 都可能不在提示中。查询失败或超时只报检查不可用，不阻断其他检查。
 
-检查不求值 HEAD 或系统构建，不计算依赖图；禁止 IFD，避免提醒触发隐式构建。它不覆盖仅上游输入变化、仅独立被导入文件变化等来源模块未改动的情况，也不为已移除的 overlay 提示。
-
-需要确定实际影响时，准备仅待检查 overlay 不同的两个配置状态，保持 `flake.lock` 和其他配置一致。不要直接把整个 HEAD 套上当前 lock；旧配置可能与新依赖接口不兼容。分别在两侧仓库根运行以下命令，将成功输出记录为 Bash 变量 `before_drv` 和 `after_drv`：
+要隔离一个 overlay 的影响，准备两个只差该 overlay 的工作树，使用相同的 `flake.lock`。不要把旧 HEAD 强配新 lock。在两侧仓库根目录分别运行：
 
 ```bash
 nix eval --raw --no-update-lock-file --no-write-lock-file \
@@ -103,56 +76,32 @@ nix eval --raw --no-update-lock-file --no-write-lock-file \
   .#nixosConfigurations.maco.config.system.build.toplevel.drvPath
 ```
 
-系统求值可能涉及 IFD。上述命令只允许复用已有构建产物，不允许新构建或替代下载；缺少产物或任一侧求值失败时，比较不可用，不代表没有影响。不要为这项诊断自动启用构建。
-
-比较构建配方引用闭包，先只看数量：
+任一侧求值失败都表示无法比较。若缺少已有构建产物，停止诊断，不放开构建或替代下载。将成功输出的两个路径分别赋给同一 Bash 会话中的 `before_drv` 和 `after_drv`，再比较构建配方的引用闭包：
 
 ```bash
 (
   set -euo pipefail
+  export LC_ALL=C
   tmp="$(mktemp -d)"
   trap 'rm -rf -- "$tmp"' EXIT
-  nix-store --query --requisites "$before_drv" | grep '\.drv$' | LC_ALL=C sort >"$tmp/before"
-  nix-store --query --requisites "$after_drv" | grep '\.drv$' | LC_ALL=C sort >"$tmp/after"
-  printf 'Added derivations: '
-  LC_ALL=C comm -13 "$tmp/before" "$tmp/after" | wc -l
-  printf 'Removed derivations: '
-  LC_ALL=C comm -23 "$tmp/before" "$tmp/after" | wc -l
+  nix-store -qR "$before_drv" | grep '\.drv$' | sort >"$tmp/before"
+  nix-store -qR "$after_drv" | grep '\.drv$' | sort >"$tmp/after"
+  printf 'Added derivations: '; comm -13 "$tmp/before" "$tmp/after" | wc -l
+  printf 'Removed derivations: '; comm -23 "$tmp/before" "$tmp/after" | wc -l
 )
 ```
 
-在清理临时目录前，可按需查看 `comm -13` 和 `comm -23` 的结果以定位具体 `.drv`。其中也包含配置生成等配方，不能将数量解释为需要编译的软件包数。需要追踪差异原因时，再使用当前 lock 对应的工具：
+这是配方数量，不是需要编译的软件包数。若要看具体差异，可运行以下命令。它可能下载或构建诊断工具，不构建被比较的系统。
 
 ```bash
 nix run --inputs-from . --no-update-lock-file --no-write-lock-file \
   nixpkgs#nix-diff -- "$before_drv" "$after_drv"
 ```
 
-此步骤可能下载或构建诊断工具本身，不构建被比较的系统；详细 diff 仅在主动诊断时展示。
-
-## 工作树 label
-
-`just os switch` 未传入非空 label 时，用 [scripts/sh/worktree-label.sh](../scripts/sh/worktree-label.sh) 计算当前工作树 Git tree hash 前 12 位。该结果包含已跟踪文件的当前内容、删除、模式与符号链接变化以及未忽略的新文件，忽略的未跟踪文件不参与。计算不改变真实暂存区和工作树；操作期间不要并行修改仓库。
-
-## 临时验证与清理
-
-配置行为修改按改动面和证据缺口选择临时验证，可使用临时目录、独立测试仓库、命令替身或协议调用，执行成功路径和必要失败路径。审查结果后清理本次不再需要的临时产物，在交付说明中报告证据和未验证项。不保留固定行为测试套件、临时测试框架或报告目录。仓库只保留服务自身需要的源代码。
-
 ## MCP
 
-- 项目环境提供 `mcp-dotnix` 和 `mcp-nixos` 两个命令，职责和依赖隔离见 [架构设计](design.md#项目-mcp)。
+项目环境提供 `mcp-dotnix` 和 `mcp-nixos`。需要单独验证构建时运行 `nix build --no-link --no-update-lock-file --no-write-lock-file .#mcp-dotnix .#mcp-nixos`。在 Pi 中用 `/mcp` 查看或重连，也可用 `pi mcp list` 诊断。列表包括隐藏工具，能否调用要看暴露状态。仓库声明的工具和超时见 [Pi 配置](../modules/agents/pi/default.nix)。连接失败先检查配置的可执行路径。
 
-- 首次使用前可预构建；服务已可用时无需重复：
+要在激活前试用新产物，在项目 `.pi/mcp.json` 以同名服务器覆盖全局配置，使用产物的绝对路径。验证后撤销本次覆盖，保留项目原有配置。不要提交临时覆盖，也不要带入仓库检查。Pi 可回写全局 `~/.pi/agent/mcp.json`。应用 MCP 配置前先备份该文件。激活会合并受管字段，保留额外服务器和未声明字段；回滚系统 generation 不会还原已合并的用户文件。
 
-```bash
-nix build --no-link --no-update-lock-file --no-write-lock-file .#mcp-dotnix .#mcp-nixos
-```
-
-- Pi 内建 MCP 读取全局 `~/.pi/agent/mcp.json`，同样使用系统构建的固定可执行路径。对本仓库声明的服务器，指定工具设为 deferred，可由工具搜索加载或从 codemode 调用，其余工具不可达。交互会话中用 `/mcp` 检查、启停或重连，也可用 `pi mcp list` 检查连接与工具暴露状态。列表仍会显示服务器提供的隐藏工具，是否可调用以暴露状态为准。连接失败不影响基础编码工具。
-- Pi 额外接入系统安装的 `mcp-deepseek-search`，提供公开网页搜索与抓取，不限定当前模型。联网 Key 由 sops 管理，通过 `just secrets edit` 维护 `deepseek-search`，与模型 provider 的凭据独立。首次配置或轮换后，应用系统并重启 Pi；不要将明文 Key 写入 `mcp.json`。
-- `mcp-deepseek-search` 连接成功不证明远端认证有效。查询、原始问题、可选定位 IP 和目标 URL 会发送给 DeepSeek，结果及计费规则见 [Search & Fetch 官方指南](https://api-docs.deepseek.com/guides/search)。调用失败不自动重试；不使用本地浏览器登录态。
-- Pi 全局 MCP 文件可由 `/mcp` 回写；系统激活重申声明的启动与暴露配置，保留未声明字段（包括启用状态）及额外服务器。项目 `.pi/mcp.json` 的同名条目可以覆盖全局配置。
-- 开发尚未激活的 MCP server 时，可临时在项目 `.pi/mcp.json` 中用同名条目覆盖全局配置，把 `command`、`args` 和所需环境变量改为 `nix build` 产物。它只验证 server 与 Pi 的集成；用完立即删除，不提交，运行仓库检查前移除。系统 `mcp.json` 的最终结果仍由 `just os test` 或 `switch` 验证。
-- 应用前备份 Pi 的可写 MCP 配置，再运行 `just os switch` 并重启或重连 Pi。回退时须同时恢复用户配置，系统 generation 回滚不能撤销已合并的配置。
-- `mcp-dotnix` 与 `mcp-nixos` 的请求超时为 120 秒，包含连接初始化。
-- 启动失败时检查用户级配置中的可执行路径是否存在；`required = false`，服务器不可用时客户端会报告，Agent 不应编造查询结果。
+`mcp-deepseek-search` 使用独立的 sops 密钥 `deepseek-search`，不使用模型凭据或浏览器登录态。获准后用 `just secrets edit` 配置或轮换，应用系统后重连服务，不把明文写入 `mcp.json`。搜索词、可选的原始问题和定位 IP、抓取的目标 URL 会发送给 DeepSeek。连接成功不证明远端认证有效，调用失败不自动重试。计费见 [Search & Fetch 官方指南](https://api-docs.deepseek.com/guides/search)。

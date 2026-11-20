@@ -1,30 +1,24 @@
 # 开发 Harness 架构设计
 
-本文记录支撑仓库开发与维护的 Harness 架构设计决策，包括模块装配、开发环境、工具职责和验证分工；操作步骤见 [development.md](development.md)。
+安装步骤见[安装指南](install.md)，命令和检查方法见[日常开发与验证](development.md)。
 
 ## 配置组织
 
-- flake-parts 提供顶层模块系统，import-tree 递归导入 `modules/` 中的功能模块，排除 `*.data.nix` 数据文件。功能目录中的 `default.nix` 本身就是顶层模块，不重复导入已经扫描到的文件。
-- 功能按机器运行、个人使用、配置维护、代理能力组织；系统配置与 Home Manager 配置共同归属功能，专属数据与配置放在同一目录。简单功能保留单文件。`modules/agents/` 内分三类：代理本体（pi）、代理工具（`tools/`，如 obelisk：包发布与接入接线）、代理技能（装配在域根模块，外部技能装到 `~/.agents/skills/`；随 Pi 包发布的技能留在包内）；跨代理的共享设施（全局指令、环境入口）同在域根。
-- `dotnix.modules.nixos` 和 `dotnix.modules.home` 以 `deferredModule` 合并各功能的贡献；`assembly.nix` 将它们装配为唯一的 `nixosConfigurations.maco`。
-- `dotnix.host` 保存当前单机的名称、平台和账户绑定，供功能共享；路径等派生信息仍从系统与用户配置读取，避免形成第二份配置来源。
-- 本地包的构建定义与源码归 `packages/<name>/`，由所属功能发布 flake 输出或接线，不参加模块自动导入。
-- Just 模块与 Shell 实现分别位于 `scripts/just/` 和 `scripts/sh/`，配方从仓库根执行。安装生成的硬件报告归主机功能，声明式磁盘布局归存储功能；共享加密文件归身份功能，具体秘密声明归消费者。
-- 存储布局由 `modules/machine/storage/layout.data.nix` 的原生 disko 声明提供，`system` 必需、`data` 可选。NixOS 消费完整布局，`diskoConfigurations` 为每个角色提供单盘操作配置；安装脚本只选择角色，不改写设备绑定，也不把其他磁盘在场作为前提。备份从同一系统配置读取设备关系。完整的运行布局不等于一次操作的擦盘范围。
+[flake.nix](../flake.nix) 用 flake-parts 组织输出，用 import-tree 导入 `modules/` 下的功能模块。简单功能用单个 Nix 文件。有专属数据或脚本时，使用同名目录和 `default.nix`，不再从别处重复导入。以 `.data.nix` 结尾的数据文件由使用方显式导入。
+
+同一功能可以同时向 `dotnix.modules.nixos` 和 `dotnix.modules.home` 提供配置。[装配模块](../modules/maintenance/assembly.nix) 用 `deferredModule` 合并贡献，再把 Home Manager 接入系统。共享的主机、平台和账户来自 `dotnix.host`，不另建一份用户目录或系统路径表。包的构建定义放在 `packages/`，由使用它的功能发布，不参加模块扫描。
+
+安装和运行共用[磁盘布局](../modules/machine/storage/layout.data.nix)。系统和备份需要知道盘之间的关系，擦盘却只能针对用户选中的设备。因此 `diskoConfigurations` 为每个角色暴露单盘配置，安装脚本不改写完整布局，也不要求另一块盘在场。共享密文归身份模块，哪些秘密要部署、由谁读取，归各自的使用方。
 
 ## 工具边界
 
-- 系统提供跨项目通用工具和加载项目环境所需的 Nix、direnv；仓库专属命令、检查工具及开发使用的 MCP 由 [项目环境模块](../modules/maintenance/development/default.nix) 供应。项目工具随仓库锁定版本，避免依赖宿主机上的另一套版本。
-- `modules/maintenance/` 是项目开发环境的模块边界，影响 devShell 的模块定义集中于此。direnv 监视此目录和环境依赖的本地工具源码，普通系统配置与应用数据不触发环境刷新。
-- Home Manager 只管理用户级配置，不管理应用。
-- [终端模块](../modules/personal/terminal/default.nix) 管理 direnv 与 fish；[agents 模块](../modules/agents/default.nix) 提供非交互 Bash 的环境加载入口 [bash-env.sh](../modules/agents/bash-env.sh)，并抑制代理命令的 direnv 状态日志（加载错误不受影响）。[Pi 模块](../modules/agents/pi/default.nix) 通过启动包装把 `BASH_ENV` 传给子进程，使用此入口，复用 direnv 授权和 nix-direnv 缓存，使每次命令按工作目录取得环境；不设置全局 `BASH_ENV`。环境加载不改变代理权限。
+NixOS 提供跨项目的应用、Nix 和 direnv。Home Manager 只管理用户配置，保留生成会话变量所需的包。[devShell](../modules/maintenance/development/default.nix) 单独导入 nixpkgs，为项目命令锁定依赖，不继承系统的包许可策略。direnv 只监视开发环境及其本地依赖，修改桌面配置不应触发环境重建。
+
+交互式 fish 有 direnv 钩子，代理启动的非登录 Bash 没有。因此 [Pi 的启动脚本](../modules/agents/pi/default.nix) 为子进程设置 `BASH_ENV`，复用相同的 direnv 授权和缓存，不改变其他程序的 shell 环境。[加载脚本](../modules/agents/bash-env.sh) 隐去状态日志，保留错误。外部共享技能放在 `~/.agents/skills/`，不依赖某个代理安装扩展。
 
 ## 文档与约束
 
-- 安装操作在 `docs/install.md`，环境入口、命令和验证步骤在 `docs/development.md`，开发 Harness 的架构设计理由在本文；README 保留仓库概览、简短命令和文档入口。内容归属遵循 [AGENTS.md 的文档边界](../AGENTS.md#文档边界)。
-- 可执行约束由代码落实，局部理由紧邻实现，文档连接使用入口与跨组件设计。这样局部实现变化无需维护一份源码解说，使用者仍能在不读源码的情况下理解操作的前提、后果与限制；对外行为或架构取舍变化时，才同步相应文档。
-- 根 `AGENTS.md` 保留稳定项目约束、授权边界和必读文档入口，操作细节由引用文档维护；不使用额外 rules 文件。这些文档约束流程与授权，不能在技术上阻止绕过流程的命令。临时系统状态留在交接记录中，不写入常驻文档。
-- 不引入 CI、常驻后台服务或永久配置行为测试体系；验证由本地命令和临时验证承担。
+[AGENTS.md](../AGENTS.md#文档边界) 是常驻规则的入口。安装和开发指南按读者要完成的工作组织，跨组件的取舍记在本文。这样新增检查只需更新使用契约，不必在几份文档里同步检查器的实现。
 
 ### ADR：注释默认不增加
 
@@ -32,21 +26,15 @@
 
 ## 验证分工
 
-- 验证按实际影响和证据缺口选择，具体要求见 [development.md](development.md#验证要求)。纯文档检查内容和流程一致性；可执行行为仍需实际验证。已有结果在内容和条件仍适用时复用，避免重复检查。
-- flake 检查、包构建和运行观察覆盖不同问题，不能互相替代；命令覆盖范围见 [常用命令](development.md#常用命令)。
-- 配置行为的临时验证按需创建、执行、审查并清理，不保留固定套件。
-- lint 的 overlay 提醒只定位有改动的全局定义来源，不把全局定制判为错误；完整构建图比较留给[按需诊断](development.md#overlay-impact)，避免日常静态检查承担系统求值成本。
-- `os build` 验证系统配置可构建；安装和激活须经用户明确批准，获批后可由 Agent 执行，运行结论需相应实际观察。Agent 可通过只读诊断取证，安装或激活命令成功本身不代表所有功能已验证。
-- 系统是部署单元，不是验证单元。验证按叶子产物、生成配置、用户会话、系统行为和宿主发布分层，入口见[验证分层](development.md#验证分层)。
-- 叶子产物和生成配置在宿主外验证；用户级服务可用瞬态单元；系统行为用 VM 或 `os test`；`os switch` 只做最终发布。
-- `os test` 会激活宿主但不改变默认启动项，是宿主上的金丝雀，不是沙箱。VM 不覆盖 GPU、显示管理器登录和真实浏览器状态，瞬态单元不验证 NixOS unit 的装配关系；这些缺口在上一层补证。
-- 这套分层沿用[文档与约束](#文档与约束)的边界，不新增并行配置管理或常驻服务；开发覆盖不改变最终系统激活的验证责任。
+整机是部署单位，不是每个改动的测试环境。包能否构建、生成配置是否正确、服务在真实会话中是否可用，需要不同证据。按[验证分层](development.md#验证分层)就近取证，剩余问题确实依赖宿主时才考虑激活。本仓库用本地检查和一次性验证，不引入 CI、常驻验证服务或固定的配置行为测试套件。
+
+全局 overlay 可能影响远多于一个包。日常 lint 只提示哪些来源模块改动过，不把使用 overlay 判为错误。[比较构建配方](development.md#overlay-impact)留给需要判断影响范围时执行，避免每次 lint 都求值两套系统。
 
 ## 项目 MCP
 
-- `mcp-dotnix` 由本仓库维护；`mcp-nixos` 复用官方 flake，查询也须遵守仓库的 lock 保护约束。两个服务独立构建和运行，避免应用依赖相互污染，底层依赖由 Nix 复用。
-- Pi 使用原生用户级 MCP 配置，引用系统构建的固定可执行路径，不依赖仓库工作目录；服务继承会话目录，以便查询当前项目。客户端维护工具筛选与超时，不引入统一配置模型或同步脚本。
-- Pi 的 MCP 配置保持可写；系统激活合并声明字段，未声明的用户配置保留。本仓库对声明的 Pi MCP 服务器默认隐藏工具，只将指定工具设为 deferred，新增工具不会自动暴露。工具筛选不是对 Bash 工具的权限隔离。
+`mcp-dotnix` 提供本机只读诊断。`mcp-nixos` 使用官方 flake 锁定的源码，由本仓库打包，使查询 flake 输入时不更新或写入 lock。两者可共用 FastMCP，但独立构建、独立启动，不替换全局 Python 包集，也不向 devShell 导出服务的 `PYTHONPATH`。
+
+Pi 直接引用构建产物，不要求从 dotnix 目录启动。服务保留会话工作目录，便于查询当前项目。Pi 默认隐藏受管服务器的工具，只将选定工具设为 `deferred`，避免上游新增工具后自动暴露。工具筛选不限制 Bash 权限。
 
 ## ADR：共享代理环境与可写状态
 
@@ -60,4 +48,4 @@ flake 输入由 lock 跟踪。需要独立更新的远端包共用登记入口�
 
 ## 配置 label
 
-`os switch` 的默认 label 来自当前工作树 Git tree hash，使启动项能区分未提交修改；显式 label 仍然可用。它不是 HEAD 提交 hash，也不是系统闭包 hash。
+只用 HEAD 不能区分尚未提交的系统配置。`os switch` 用临时 Git 索引计算工作树的 tree hash，通过 `NIXOS_LABEL` 传给构建，不改动用户的暂存区。这个标记描述工作树，不是系统闭包的哈希。
