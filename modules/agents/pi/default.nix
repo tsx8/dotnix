@@ -327,10 +327,8 @@ in
           "zai-coding-cn/glm-5.3-flash"
           "zai-coding-cn/glm-5.3"
           "deepseek/deepseek-flash"
-          "openai/gpt-5.6-sol"
-          "openai/gpt-6.1-terra"
-          "openai/gpt-6.1-sol"
-          "openai/gpt-6-astra"
+          "openai/gpt-6.2-sol"
+          "openai/gpt-6.2-astra"
           "google/gemini-3.8-flash"
           "google/gemini-4-argon"
         ];
@@ -347,14 +345,8 @@ in
           "deepseek/deepseek-flash".reserveTokens = 632121;
           "zai-coding-cn/glm-5.3".reserveTokens = 632121;
           "zai-coding-cn/glm-5.3-flash".reserveTokens = 632121;
-          "zai-coding-cn/glm-5.3-highspeed".reserveTokens = 632121;
-          "openai/gpt-6-astra".reserveTokens = 663727;
-          "openai/gpt-6.1-sol".reserveTokens = 663727;
-          "openai/gpt-6-sol".reserveTokens = 663727;
-          "openai/gpt-6-luna".reserveTokens = 663727;
-          "openai/gpt-5.6-luna".reserveTokens = 663727;
-          "openai/gpt-5.6-terra".reserveTokens = 663727;
-          "openai/gpt-5.6-sol".reserveTokens = 663727;
+          "openai/gpt-6.2-sol".reserveTokens = 663727;
+          "openai/gpt-6.2-astra".reserveTokens = 663727;
           "google/gemini-3.8-flash".reserveTokens = 662827;
         };
       };

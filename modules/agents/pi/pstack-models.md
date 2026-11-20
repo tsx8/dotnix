@@ -15,8 +15,8 @@ why investigators: deepseek/deepseek-flash max
 why synthesizer: zai-coding-cn/glm-5.3 max
 reflect tooling: zai-coding-cn/glm-5.3 max
 reflect judgment, divergent, synthesizer: zai-coding-cn/glm-5.3 max
-arena runners: zai-coding-cn/glm-5.3 max, deepseek/deepseek-flash max, openai/gpt-6.1-sol max
-arena cross-judge pool: zai-coding-cn/glm-5.3 max, deepseek/deepseek-flash max, openai/gpt-6-astra max
+arena runners: zai-coding-cn/glm-5.3 max, deepseek/deepseek-flash max, openai/gpt-6.2-sol max
+arena cross-judge pool: zai-coding-cn/glm-5.3 max, deepseek/deepseek-flash max, openai/gpt-6.2-astra max
 swarm workers: zai-coding-cn/glm-5.3 max
-architect runners: zai-coding-cn/glm-5.3 max, openai/gpt-6.1-sol max
+architect runners: zai-coding-cn/glm-5.3 max, openai/gpt-6.2-sol max
 interrogate reviewers: zai-coding-cn/glm-5.3 max, deepseek/deepseek-flash max
