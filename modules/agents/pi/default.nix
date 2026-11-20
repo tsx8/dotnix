@@ -10,79 +10,20 @@ let
   resourceNames = [
     "subagents"
     "subagents-worktrees"
-    "ask-user"
     "todo"
-    "pstack"
   ];
   runtimePath = name: "/run/current-system/sw/share/pi/packages/${name}";
 
-  # The single source for agent names, bodies, tool groups, worktree membership, and the upstream
-  # Cursor-field combinations. The generated files, worktree list, and build-time call mapping all
-  # derive from this table; do not add a second name/mapping table elsewhere.
-  agentProfiles = {
-    pstack-general-purpose = {
-      description = "General-purpose pstack delegate. Inherits the parent identity and keeps ordinary tools and MCP in the current directory.";
-      body = null;
-      tools = "ordinary";
-      cursor = {
-        generalPurpose = true;
-        local = true;
-      };
-    };
-    pstack-readonly = {
-      description = "Read-only pstack investigator with read, grep, find, ls, and Code Mode. No shell, edit, write, or MCP.";
-      body = null;
-      tools = "readonly";
-      cursor = {
-        generalPurpose = true;
-        readonly = true;
-      };
-    };
-    pstack-general-purpose-worktree = {
-      description = "General-purpose pstack delegate that runs in an isolated git worktree and saves its changes to a rescue branch.";
-      body = null;
-      tools = "ordinary";
-      worktree = true;
-      cursor = {
-        generalPurpose = true;
-        cloud = true;
-      };
-    };
-    poteto-agent = {
-      description = "pstack code-writing delegate spawned by poteto-mode. Reads the full poteto-mode skill before working.";
-      body = "poteto-agent";
-      tools = "ordinary";
-      background = true;
-    };
-    poteto-agent-worktree = {
-      description = "poteto-agent variant that runs in an isolated git worktree and saves its changes to a rescue branch.";
-      body = "poteto-agent";
-      tools = "ordinary";
-      background = true;
-      worktree = true;
-    };
-    comment-sicko = {
-      description = "A deranged comment-hater that deletes narration and workaround comments and flags refactor targets.";
-      body = "comment-sicko";
-      tools = "ordinary";
-    };
-  };
-  agentProfileNames = builtins.attrNames agentProfiles;
-  profileFor =
-    field:
-    let
-      matches = builtins.filter (name: agentProfiles.${name}.cursor.${field} or false) agentProfileNames;
-    in
-    if matches == [ ] then
-      throw "pi agent profile table has no entry for cursor field '${field}'"
-    else
-      builtins.head matches;
-  agentProfileMap = {
-    generalPurpose = profileFor "generalPurpose";
-    readonly = profileFor "readonly";
-    cloud = profileFor "cloud";
-    local = profileFor "local";
-  };
+  # Paths managed by earlier generations. Activation removes them from writable user config instead of
+  # leaving them looking like packages the user added.
+  legacyPackagePaths = [
+    (runtimePath "ask-user")
+    (runtimePath "pstack")
+  ];
+  legacyWorktreeAgents = [
+    "pstack-general-purpose-worktree"
+    "poteto-agent-worktree"
+  ];
 in
 {
   dotnix.modules.nixos =
@@ -128,11 +69,7 @@ in
           piPackagesSrc = inputs.pi-packages;
           piSubagents = self'.packages.pi-subagents;
         };
-        pi-ask-user = pkgs.callPackage ../../../packages/pi-ask-user/package.nix { };
         pi-todo = pkgs.callPackage ../../../packages/pi-todo/package.nix { };
-        pi-pstack = pkgs.callPackage ../../../packages/pi-pstack/package.nix {
-          inherit agentProfileNames agentProfileMap;
-        };
       };
     };
 
@@ -145,9 +82,7 @@ in
     }:
     let
       mcpPackages = config.flake.packages.${pkgs.stdenv.hostPlatform.system};
-      pstack = config.flake.packages.${pkgs.stdenv.hostPlatform.system}.pi-pstack;
       packagePaths = map runtimePath resourceNames;
-      childExcludedPackages = lib.filter (path: !(lib.hasSuffix "/pstack" path)) packagePaths;
 
       mcpServers = {
         mcp-deepseek-search = {
@@ -229,89 +164,6 @@ in
           };
         };
       };
-      # A subagent loads an MCP server only when its tool allowlist names a tool from it. Derive those
-      # names from the declarations above instead of keeping a second server or permission list.
-      mcpToolNames = lib.concatLists (
-        lib.mapAttrsToList (
-          server: cfg:
-          map (tool: "mcp__${lib.replaceStrings [ "-" ] [ "_" ] server}__${tool}") (
-            lib.attrNames (cfg.toolExposure or { })
-          )
-        ) mcpServers
-      );
-      # Ordinary delegates keep the parent's engineering surface; readonly delegates get no shell,
-      # edit, write, or MCP. Code Mode is present in both because pstack uses it for structured work.
-      ordinaryTools = [
-        "read"
-        "bash"
-        "edit"
-        "write"
-        "grep"
-        "find"
-        "ls"
-        "codemode"
-        "tool_search"
-      ]
-      ++ mcpToolNames;
-      readonlyTools = [
-        "read"
-        "grep"
-        "find"
-        "ls"
-        "codemode"
-      ];
-      resolveBody =
-        body: if body == null then null else "${pstack}/share/pi/packages/pstack/agents/${body}.body.md";
-      resolveTools = tools: if tools == "ordinary" then ordinaryTools else readonlyTools;
-      agentProfilesResolved = lib.mapAttrs (
-        _: profile:
-        profile
-        // {
-          tools = resolveTools profile.tools;
-          body = resolveBody profile.body;
-        }
-      ) agentProfiles;
-      # Worktree profiles both opt into this provider list and carry the core-enforced
-      # `workspace: required` frontmatter, so a missing provider or unlisted agent type fails the run
-      # instead of falling back to the parent checkout.
-      worktreeAgents = lib.attrNames (
-        lib.filterAttrs (_: profile: profile.worktree or false) agentProfilesResolved
-      );
-      # Worktree isolation sets the child's cwd. This note states the boundary explicitly because a
-      # shell command can still leave that directory; the plugin is not an OS sandbox.
-      worktreeNote = pkgs.writeText "pi-worktree-note.md" ''
-        ## Pi worktree boundary
-
-        Your working directory is the isolated worktree created for this run. Keep it there, use relative paths, and do not `cd` to the parent checkout, create another worktree, or write into the parent checkout. If the task needs the parent checkout, stop and report it. This is a working-directory rule, not an OS sandbox.
-      '';
-      agents = pkgs.runCommand "pi-pstack-agents" { } (
-        ''
-          mkdir -p "$out"
-        ''
-        + lib.concatStrings (
-          lib.mapAttrsToList (
-            name: profile:
-            ''
-              cat > "$out/${name}.md" <<'PI_AGENT_EOF'
-              ---
-              description: ${profile.description}
-              ${lib.optionalString (profile.tools != null) "tools: ${lib.concatStringsSep ", " profile.tools}"}
-              prompt_mode: append
-              ${lib.optionalString (profile.background or false) "run_in_background: true"}
-              ${lib.optionalString (profile.worktree or false) "workspace: required"}
-              ---
-
-              PI_AGENT_EOF
-            ''
-            + lib.optionalString (profile.body != null) ''
-              cat ${profile.body} >> "$out/${name}.md"
-            ''
-            + lib.optionalString (profile.worktree or false) ''
-              cat ${worktreeNote} >> "$out/${name}.md"
-            ''
-          ) agentProfilesResolved
-        )
-      );
 
       # Only keys that differ from upstream defaults are declared; keys equal to the defaults stay out of the template.
       # Runtime keys such as lastChangelogVersion survive via the deep merge; declared keys are reasserted on every activation.
@@ -323,15 +175,6 @@ in
         defaultProjectTrust = "always";
         defaultProvider = "zai-coding-cn";
         defaultModel = "glm-5.3-flash";
-        enabledModels = [
-          "zai-coding-cn/glm-5.3-flash"
-          "zai-coding-cn/glm-5.3"
-          "deepseek/deepseek-flash"
-          "openai/gpt-6.2-sol"
-          "openai/gpt-6.2-astra"
-          "google/gemini-3.8-flash"
-          "google/gemini-4-argon"
-        ];
         defaultTools = [
           "+codemode"
           "+grep"
@@ -351,122 +194,183 @@ in
         };
       };
       declaredMcp = (pkgs.formats.json { }).generate "pi-declared-mcp.json" { inherit mcpServers; };
-      # Hand-edited subagent state: children must not load the parent-only delegation, questionnaire,
-      # and todo extensions, while pstack's skills stay available to them.
+      # Hand-edited subagent state: children must not load the parent-only delegation and todo extensions.
       declaredSubagents = (pkgs.formats.json { }).generate "pi-declared-subagents.json" {
-        excludedExtensionPackages = childExcludedPackages;
+        excludedExtensionPackages = packagePaths;
       };
-      declaredWorktrees = (pkgs.formats.json { }).generate "pi-declared-worktrees.json" {
-        inherit worktreeAgents;
-      };
+      declaredWorktrees = (pkgs.formats.json { }).generate "pi-declared-worktrees.json" { };
+
+      # Merge programs shared by several writable files. Local sources are compared by Pi-resolved
+      # identity so an object filter on a managed package keeps matching its source after a move.
+      identityHelpers = ''
+        def source_of: if type == "string" then . elif type == "object" then .source else . end;
+        def local_identity($base; $home):
+          source_of
+          | if type != "string" then .
+            elif test("^[A-Za-z][A-Za-z0-9+.-]*:") then .
+            elif startswith("/") or startswith("~/") or startswith("./") or startswith("../") or test("^[^:]+$") then
+              (if startswith("~/") then ($home + "/" + .[2:])
+               elif . == "~" then $home
+               elif startswith("/") then .
+               else ($base + "/" + .) end)
+              | split("/")
+              | reduce .[] as $part ([];
+                  if $part == "" or $part == "." then .
+                  elif $part == ".." then (if length > 0 then .[:-1] else . end)
+                  else . + [$part] end)
+              | "/" + join("/")
+            else . end;
+      '';
+      mergeObject = pkgs.writeText "pi-merge-object.jq" "$dynamic * $static";
+      mergeSettings = pkgs.writeText "pi-merge-settings.jq" ''
+        ${identityHelpers}
+        ($dynamic * $static)
+        | del(.enabledModels)
+        | if ($dynamic.packages | type) == "array" then
+            ($dynamic.packages
+              | map(select((local_identity($base; $home)) as $id | any($legacy[]; . == $id) | not))) as $user
+            | ($static.packages // []) as $system
+            # Keep object filters on the declared system source so excludedExtensionPackages still matches it.
+            | ([ $system[] as $src
+                 | (($user
+                     | map(select(local_identity($base; $home) == ($src | local_identity($base; $home))))
+                     | first) // $src)
+                 | if type == "object" then .source = $src else $src end ]) as $system_block
+            # Preserve non-system user extras in first-occurrence order after the system block.
+            | ($user
+                | reduce .[] as $item ([];
+                    ($item | local_identity($base; $home)) as $id
+                    | if any(.[]; local_identity($base; $home) == $id) then .
+                    elif any($system[]; local_identity($base; $home) == $id) then .
+                    else . + [$item] end)) as $extras
+            | .packages = ($system_block + $extras)
+          else .
+          end
+      '';
+      mergeSubagents = pkgs.writeText "pi-merge-subagents.jq" ''
+        ${identityHelpers}
+        ($dynamic * $static)
+        | if ($dynamic.excludedExtensionPackages | type) == "array" then
+            ($dynamic.excludedExtensionPackages
+              | map(select((local_identity($base; $home)) as $id | any($legacy[]; . == $id) | not))) as $kept
+            | ($static.excludedExtensionPackages // []) as $declared
+            | .excludedExtensionPackages = (
+                $kept
+                + [ $declared[] as $src
+                    | select(any($kept[]; local_identity($base; $home) == ($src | local_identity($base; $home))) | not)
+                    | $src ]
+              )
+          else .
+          end
+      '';
+      mergeWorktrees = pkgs.writeText "pi-merge-worktrees.jq" ''
+        ($dynamic * $static)
+        | if (.worktreeAgents | type) == "array" then
+            .worktreeAgents = [
+              .worktreeAgents[]
+              | select(. as $name | any($legacyWorktrees[]; . == $name) | not)
+            ]
+          else .
+          end
+      '';
+      managedConfigs = [
+        {
+          name = "settings.json";
+          static = declaredSettings;
+          filter = mergeSettings;
+        }
+        {
+          name = "mcp.json";
+          static = declaredMcp;
+          filter = mergeObject;
+        }
+        {
+          name = "subagents.json";
+          static = declaredSubagents;
+          filter = mergeSubagents;
+        }
+        {
+          name = "subagents-worktrees.json";
+          static = declaredWorktrees;
+          filter = mergeWorktrees;
+          create = false;
+        }
+      ];
     in
     {
-      # Pi does not write back model catalogs; pstack setup edits its repository source.
+      # Pi does not write back model catalogs.
       # models.json: uses GPT long-context windows, not limited to the catalog's 272k pricing tier; unknown ids are ignored.
-      home.file = {
-        ".pi/agent/models.json".source = ./models.json;
-        ".pi/agent/pstack-models.md".source = ./pstack-models.md;
-      }
-      // lib.mapAttrs' (
-        name: _: lib.nameValuePair ".pi/agent/agents/${name}.md" { source = "${agents}/${name}.md"; }
-      ) agentProfilesResolved;
+      home.file.".pi/agent/models.json".source = ./models.json;
 
       # /settings, /mcp, and /subagents:settings write back, so real writable files are kept; activation
       # reasserts declared keys and preserves other user settings.
-      home.activation.piSettings = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
-        merge_pi_config() (
-          set -euo pipefail
-          config_path="$1"
-          static_path="$2"
-          snapshot_path=
-          candidate_path=
-          trap '[[ -z "$snapshot_path" ]] || rm -f -- "$snapshot_path"; [[ -z "$candidate_path" ]] || rm -f -- "$candidate_path"' EXIT
+      home.activation.piSettings = lib.hm.dag.entryAfter [ "linkGeneration" ] (
+        ''
+          merge_pi_config() (
+            set -euo pipefail
+            config_path="$1"
+            static_path="$2"
+            filter_path="$3"
+            create="$4"
+            snapshot_path=
+            candidate_path=
+            trap '[[ -z "$snapshot_path" ]] || rm -f -- "$snapshot_path"; [[ -z "$candidate_path" ]] || rm -f -- "$candidate_path"' EXIT
 
-          if [[ -v DRY_RUN ]]; then
-            echo "Would merge declared Pi config into $config_path"
-            exit 0
-          fi
-          if [[ -L "$config_path" || ( -e "$config_path" && ( ! -f "$config_path" || ! -w "$config_path" ) ) ]]; then
-            echo "Pi config at '$config_path' must be a regular writable file" >&2
-            exit 1
-          fi
-
-          ${pkgs.coreutils}/bin/mkdir -p "$(${pkgs.coreutils}/bin/dirname "$config_path")" || exit 1
-          dynamic='{}'
-          if [[ -e "$config_path" ]]; then
-            snapshot_path="$(${pkgs.coreutils}/bin/mktemp "$config_path.snapshot.XXXXXX")" || exit 1
-            ${pkgs.coreutils}/bin/cp -p -- "$config_path" "$snapshot_path" || exit 1
-            if ! dynamic="$(${pkgs.jq}/bin/jq -e 'select(type == "object")' "$snapshot_path" 2>/dev/null)"; then
-              echo "Pi config at '$config_path' is not a JSON object; leaving the file unchanged" >&2
+            if [[ -v DRY_RUN ]]; then
+              echo "Would merge declared Pi config into $config_path"
+              exit 0
+            fi
+            if [[ ! -e "$config_path" && ! -L "$config_path" ]] && (( ! create )); then
+              exit 0
+            fi
+            if [[ -L "$config_path" || ( -e "$config_path" && ( ! -f "$config_path" || ! -w "$config_path" ) ) ]]; then
+              echo "Pi config at '$config_path' must be a regular writable file" >&2
               exit 1
             fi
-          fi
 
-          config_dir="$(${pkgs.coreutils}/bin/dirname "$config_path")"
-          # Reassert the five system packages but keep packages the user added through Pi.
-          if ! merged="$(${pkgs.jq}/bin/jq -n '
-            def source_of: if type == "string" then . elif type == "object" then .source else . end;
-            def local_identity($base; $home):
-              source_of
-              | if type != "string" then .
-                elif test("^[A-Za-z][A-Za-z0-9+.-]*:") then .
-                elif startswith("/") or startswith("~/") or startswith("./") or startswith("../") or test("^[^:]+$") then
-                  (if startswith("~/") then ($home + "/" + .[2:])
-                   elif . == "~" then $home
-                   elif startswith("/") then .
-                   else ($base + "/" + .) end)
-                  | split("/")
-                  | reduce .[] as $part ([];
-                      if $part == "" or $part == "." then .
-                      elif $part == ".." then (if length > 0 then .[:-1] else . end)
-                      else . + [$part] end)
-                  | "/" + join("/")
-                else . end;
-            ($dynamic * $static)
-            | if ($dynamic.packages | type) == "array" then
-                ($dynamic.packages) as $user
-                | ($static.packages // []) as $system
-                # Match local sources by Pi-resolved identity; keep the object filters on the
-                # declared system source so excludedExtensionPackages still matches it.
-                | ([ $system[] as $src
-                     | (($user
-                         | map(select(local_identity($base; $home) == ($src | local_identity($base; $home))))
-                         | first) // $src)
-                     | if type == "object" then .source = $src else $src end ]) as $system_block
-                # Preserve non-system user extras in first-occurrence order after the system block.
-                | ($user
-                    | reduce .[] as $item ([];
-                        ($item | local_identity($base; $home)) as $id
-                        | if any(.[]; local_identity($base; $home) == $id) then .
-                        elif any($system[]; local_identity($base; $home) == $id) then .
-                        else . + [$item] end)) as $extras
-                | .packages = ($system_block + $extras)
-              else .
-              end
-          ' --arg base "$config_dir" --arg home "$HOME" --argjson dynamic "$dynamic" --argjson static "$(${pkgs.coreutils}/bin/cat "$static_path")")"; then
-            echo "Merging Pi config for '$config_path' failed" >&2
-            exit 1
-          fi
+            ${pkgs.coreutils}/bin/mkdir -p "$(${pkgs.coreutils}/bin/dirname "$config_path")" || exit 1
+            dynamic='{}'
+            if [[ -e "$config_path" ]]; then
+              snapshot_path="$(${pkgs.coreutils}/bin/mktemp "$config_path.snapshot.XXXXXX")" || exit 1
+              ${pkgs.coreutils}/bin/cp -p -- "$config_path" "$snapshot_path" || exit 1
+              if ! dynamic="$(${pkgs.jq}/bin/jq -e 'select(type == "object")' "$snapshot_path" 2>/dev/null)"; then
+                echo "Pi config at '$config_path' is not a JSON object; leaving the file unchanged" >&2
+                exit 1
+              fi
+            fi
 
-          candidate_path="$(${pkgs.coreutils}/bin/mktemp "$config_path.candidate.XXXXXX")" || exit 1
-          printf '%s\n' "$merged" > "$candidate_path" || exit 1
-          if [[ -n "$snapshot_path" ]]; then
-            ${pkgs.coreutils}/bin/chmod --reference="$snapshot_path" -- "$candidate_path" || exit 1
-            if [[ -L "$config_path" ]] || ! ${pkgs.diffutils}/bin/cmp -s -- "$snapshot_path" "$config_path"; then
-              echo "Pi config at '$config_path' changed during activation; keeping the newer file" >&2
+            config_dir="$(${pkgs.coreutils}/bin/dirname "$config_path")"
+            if ! merged="$(${pkgs.jq}/bin/jq -n -f "$filter_path" \
+              --arg base "$config_dir" --arg home "$HOME" \
+              --argjson dynamic "$dynamic" \
+              --argjson static "$(${pkgs.coreutils}/bin/cat "$static_path")" \
+              --argjson legacy '${builtins.toJSON legacyPackagePaths}' \
+              --argjson legacyWorktrees '${builtins.toJSON legacyWorktreeAgents}')"; then
+              echo "Merging Pi config for '$config_path' failed" >&2
               exit 1
             fi
-          elif [[ -e "$config_path" || -L "$config_path" ]]; then
-            echo "Pi config at '$config_path' was created during activation; keeping the newer file" >&2
-            exit 1
-          fi
-          ${pkgs.coreutils}/bin/mv -f -- "$candidate_path" "$config_path" || exit 1
-          candidate_path=
-        )
-        merge_pi_config "$HOME/.pi/agent/settings.json" '${declaredSettings}' || exit 1
-        merge_pi_config "$HOME/.pi/agent/mcp.json" '${declaredMcp}' || exit 1
-        merge_pi_config "$HOME/.pi/agent/subagents.json" '${declaredSubagents}' || exit 1
-        merge_pi_config "$HOME/.pi/agent/subagents-worktrees.json" '${declaredWorktrees}' || exit 1
-      '';
+
+            candidate_path="$(${pkgs.coreutils}/bin/mktemp "$config_path.candidate.XXXXXX")" || exit 1
+            printf '%s\n' "$merged" > "$candidate_path" || exit 1
+            if [[ -n "$snapshot_path" ]]; then
+              ${pkgs.coreutils}/bin/chmod --reference="$snapshot_path" -- "$candidate_path" || exit 1
+              if [[ -L "$config_path" ]] || ! ${pkgs.diffutils}/bin/cmp -s -- "$snapshot_path" "$config_path"; then
+                echo "Pi config at '$config_path' changed during activation; keeping the newer file" >&2
+                exit 1
+              fi
+            elif [[ -e "$config_path" || -L "$config_path" ]]; then
+              echo "Pi config at '$config_path' was created during activation; keeping the newer file" >&2
+              exit 1
+            fi
+            ${pkgs.coreutils}/bin/mv -f -- "$candidate_path" "$config_path" || exit 1
+            candidate_path=
+          )
+        ''
+        + lib.concatMapStrings (cfg: ''
+          merge_pi_config "$HOME/.pi/agent/${cfg.name}" '${cfg.static}' '${cfg.filter}' ${
+            if cfg.create or true then "1" else "0"
+          } || exit 1
+        '') managedConfigs
+      );
     };
 }

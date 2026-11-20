@@ -170,6 +170,9 @@ render_status() {
   done
 }
 
+# t3code-nightly selects a release and validates a build in a staged copy before it replaces its own pin,
+# so it owns its prefetch and summary instead of the generic nix-update node.
+#
 # nix-update resolves flake attributes from the tree snapshot path that `nix flake metadata` reports,
 # but lazy trees (Nix >= 2.28) report that path without materializing it, so nix-update's separate
 # nix-instantiate process fails with "opening file ...-source: No such file or directory" on a dirty
@@ -178,6 +181,10 @@ render_status() {
 pkg_update() {
   local name=$1
   shift
+  if [[ $name == t3code-nightly ]]; then
+    scripts/sh/update-t3code-nightly.sh "$@"
+    return
+  fi
   nix flake prefetch --no-write-lock-file
   nix-update "$name" --flake --format "$@"
 }

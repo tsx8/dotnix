@@ -37,9 +37,9 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 
 fmt、lint、test 在检查前拒绝未忽略、未跟踪文件，只列路径，不自动跟踪或删除；将应交付的文件精确 `git add`，临时文件放到仓库外，必要的忽略规则维护在 `.gitignore`。
 
-`os switch` 切换前须有当前内容的适用检查结果；已通过 `os build` 且相关内容未变化时复用。单个节点失败不中断后续节点，网络类节点自动重试一次，已经完成的更新不回滚，失败时保留各节点完整日志并在末尾打印目录；GitHub API 令牌由 sops 渲染的用户级 nix.conf 提供（`modules/machine/identity/secrets.yaml` 的 `gh-auth-token`），避免匿名限额。
+`os switch` 切换前须有当前内容的适用检查结果；已通过 `os build` 且相关内容未变化时复用。单个节点失败不中断后续节点，网络类节点自动重试一次，已经完成的更新不回滚，失败时保留各节点完整日志并在末尾打印目录；GitHub API 令牌由 sops 渲染的用户级 nix.conf 提供（`modules/machine/identity/secrets.yaml` 的 `gh-auth-token`），避免匿名限额。T3 Code nightly 先在当前树的临时副本中选版并完成构建、版本与服务冒烟，然后才只替换 `packages/t3code-nightly/release.nix`；候选失败时保留原锁，只回写这一份固定输入。
 
-纳入仓库的上游应尽量保持可随 `repo update` 滚动更新（flake 输入或 `packages/update.list`）。pstack 是例外：其构建期文本变换固定了上游字面量，随 `repo update` 滚动会让无关更新导致构建失败，因此固定在包定义中，只在用户明确要求更新时按 [pstack 移植与内化](pstack-port.md) 的流程推进。
+纳入仓库的上游应尽量保持可随 `repo update` 滚动更新（flake 输入或 `packages/update.list`）。
 
 `just os build`、`just os test` 和 `just os switch` 均调用项目 nh，目标显式为 `.#maco`，并禁止更新/写入 lock。构建至少预留 10 分钟。`just repo test` 不构建每个 package；`test` 不等于 `build`，`build` 不证明系统运行正常。
 

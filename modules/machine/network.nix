@@ -113,6 +113,9 @@
           # must_* must not be used for :53 here: it would bypass DNS hijacking packet-wide, so campus-forged
           # answers (the NXDOMAIN for gemini.gstatic.com) would reach the client directly, bypassing dns split filtering
           pname(zerotier-one) -> direct
+          # Tailscale peers and STUN need direct UDP; the UDP/443 block below would otherwise swallow
+          # their traffic before the tailnet path exists.
+          l4proto(udp) && pname(tailscaled) -> direct
           # CS2 SDR is UDP. Proxied through the US exit its pings are measured from there and
           # matchmaking picks US servers; direct keeps the local path.
           l4proto(udp) && pname(cs2) -> direct
@@ -257,6 +260,13 @@
 
       systemd.services.hostapd.after = [ "systemd-networkd.service" ];
       systemd.services.dnsmasq.after = [ "systemd-networkd.service" ];
+
+      # The tailnet carries only the T3 Serve endpoint; campus DNS stays authoritative on maco.
+      services.tailscale = {
+        enable = true;
+        openFirewall = false;
+        extraSetFlags = [ "--accept-dns=false" ];
+      };
 
       services.dae = {
         enable = true;
