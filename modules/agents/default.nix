@@ -10,10 +10,7 @@
     environment.etc."direnv/config.toml".text = "";
   };
 
-  # Agent skill assembly point: the local skills/ tree and external flake inputs are installed alike into
-  # ~/.agents/skills/ (the standard Agent Skills location), without binding to a specific harness.
   dotnix.modules.home = {
-    home.file.".agents/skills/helium-use".source = ../../skills/helium-use;
     home.file.".agents/skills/obelisk".source = "${inputs.obelisk-skill}/skills/obelisk";
   };
 }

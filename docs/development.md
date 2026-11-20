@@ -66,7 +66,7 @@ fmt、lint、test 在检查前拒绝未忽略、未跟踪文件，只列路径�
 
 | 层 | 适用范围 | 验证入口 | 激活宿主 |
 | --- | --- | --- | --- |
-| 叶子产物 | MCP server、bex、脚本、本地包 | `nix build`、直接运行、FastMCP Client | 否 |
+| 叶子产物 | MCP server、脚本、本地包 | `nix build`、直接运行、FastMCP Client | 否 |
 | 生成配置 | `mcp.json`、systemd unit、desktop entry、Home Manager 文件 | `just os build`、`nix eval`、`systemd-analyze verify` | 否 |
 | 用户会话 | Pi 与 MCP、用户级 systemd 服务 | 项目 `.pi/mcp.json`、`systemd-run --user` | 否 |
 | 系统行为 | systemd system unit、文件布局、网络、PAM、polkit | `nh os build-vm`、一次性 `nixosTest`，必要时 `just os test` | VM 否；`just os test` 是 |
@@ -149,7 +149,6 @@ nix build --no-link --no-update-lock-file --no-write-lock-file .#mcp-dotnix .#mc
 - Pi 内建 MCP 读取全局 `~/.pi/agent/mcp.json`，同样使用系统构建的固定可执行路径。对本仓库声明的服务器，指定工具设为 deferred，可由工具搜索加载或从 codemode 调用，其余工具不可达。交互会话中用 `/mcp` 检查、启停或重连，也可用 `pi mcp list` 检查连接与工具暴露状态。列表仍会显示服务器提供的隐藏工具，是否可调用以暴露状态为准。连接失败不影响基础编码工具。
 - Pi 额外接入系统安装的 `mcp-deepseek-search`，提供公开网页搜索与抓取，不限定当前模型。联网 Key 由 sops 管理，通过 `just secrets edit` 维护 `deepseek-search`，与模型 provider 的凭据独立。首次配置或轮换后，应用系统并重启 Pi；不要将明文 Key 写入 `mcp.json`。
 - `mcp-deepseek-search` 连接成功不证明远端认证有效。查询、原始问题、可选定位 IP 和目标 URL 会发送给 DeepSeek，结果及计费规则见 [Search & Fetch 官方指南](https://api-docs.deepseek.com/guides/search)。调用失败不自动重试；不使用本地浏览器登录态。
-- `mcp-bex` 把系统固定的 `bex` CLI 封装为 stdio 服务器，代理经其工具操作隐藏标签页、驻留任务与人工交接；人类专用通道（`-t`、`shot`、`BEX_UNRESTRICTED`）不经 MCP 暴露，浏览器策略仍由 CLI 执行。行为契约见 helium-use 技能。
 - Pi 全局 MCP 文件可由 `/mcp` 回写；系统激活重申声明的启动与暴露配置，保留未声明字段（包括启用状态）及额外服务器。项目 `.pi/mcp.json` 的同名条目可以覆盖全局配置。
 - 开发尚未激活的 MCP server 时，可临时在项目 `.pi/mcp.json` 中用同名条目覆盖全局配置，把 `command`、`args` 和所需环境变量改为 `nix build` 产物。它只验证 server 与 Pi 的集成；用完立即删除，不提交，运行仓库检查前移除。系统 `mcp.json` 的最终结果仍由 `just os test` 或 `switch` 验证。
 - `run_privileged(program, args, cwd, reason, impact)` 在执行 root 命令前要求 KDE 标准 polkit 认证，每次调用独立认证，不保留授权。程序与目录须为绝对路径，参数按数组传递，不展开 shell 语法。`reason` 和 `impact` 说明提权原因、影响对象与预期变化，并在认证前写入 journal（`journalctl -t mcp-dotnix`），不进入 polkit 对话框，也不另行定制认证窗口。密码由系统认证代理处理，MCP 不接收密码。同账户其他程序也可向固定入口发起认证请求。命令环境由 pkexec 过滤，入口设置系统 PATH，stdin 关闭；输出每路最多返回 32 KiB，并尽力脱敏；模型侧得到可读文本，脚本侧拿到 `exit_code`、`stdout`、`stderr`、`truncated`、`timed_out`、`outcome_unknown` 结构化字段。
