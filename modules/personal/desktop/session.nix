@@ -1,38 +1,10 @@
 {
-  dotnix.modules.nixos = { pkgs, lib, ... }: {
-    fonts = {
-      # Noto's upstream default is VF variable fonts; register the static builds instead for apps
-      # that cannot use them (e.g. QQ Music and Tencent Meeting, built on Electron 8). The override
-      # must stay at this consumption site: a global overlay flips the font drv, and fonts.conf
-      # embeds font store paths, so poppler and the whole KDE closure would diverge from the
-      # binary cache and force repeated local rebuilds of the entire stack.
-      packages = with pkgs; [
-        (runCommand "pingfang-sc"
-          {
-            src = requireFile {
-              name = "PingFang.ttc";
-              sha256 = "6bccdb1a967b2ae7e856927eb559591b2ce05656b0d4ad2764b9c9429f12c0b7";
-              message = "Run nix-store --add-fixed sha256 /path/to/PingFang.ttc with the original font file.";
-            };
-          }
-          ''
-            # Keep a store reference to the original font so the system closure protects the build input from GC.
-            install -d "$out/share/fonts/truetype"
-            ln -s "$src" "$out/share/fonts/truetype/PingFang.ttc"
-          ''
-        )
-        (noto-fonts-cjk-sans.override { static = true; })
-        (noto-fonts-cjk-serif.override { static = true; })
-      ];
-
-      fontconfig.defaultFonts = {
-        sansSerif = [
-          "PingFang SC"
-          "Noto Sans CJK SC"
-        ];
-        serif = lib.mkAfter [ "Noto Serif CJK SC" ];
-      };
-    };
+  dotnix.modules.nixos = { pkgs, ... }: {
+    # Old Electron needs static fonts; a global override would invalidate cached KDE dependencies.
+    fonts.packages = with pkgs; [
+      (noto-fonts-cjk-sans.override { static = true; })
+      (noto-fonts-cjk-serif.override { static = true; })
+    ];
 
     services.xserver.enable = true;
     services.displayManager.sddm.enable = true;
@@ -56,22 +28,15 @@
     };
   };
 
-  dotnix.modules.home =
-    let
-      normalFont = "PingFang SC,10,-1,5,400,0,0,0,0,0";
-      smallFont = "PingFang SC,8,-1,5,400,0,0,0,0,0";
-    in
-    {
-      # Write keys individually to preserve KDE-managed theme, color, and other settings.
-      qt.kde.settings.kdeglobals = {
-        General = {
-          font = normalFont;
-          menuFont = normalFont;
-          toolBarFont = normalFont;
-          taskbarFont = normalFont;
-          smallestReadableFont = smallFont;
-        };
-        WM.activeFont = normalFont;
-      };
+  # Home Manager leaves omitted KConfig keys on disk; null restores Plasma's defaults.
+  dotnix.modules.home.qt.kde.settings.kdeglobals = {
+    General = {
+      font = null;
+      menuFont = null;
+      toolBarFont = null;
+      taskbarFont = null;
+      smallestReadableFont = null;
     };
+    WM.activeFont = null;
+  };
 }
