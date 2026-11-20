@@ -4,15 +4,12 @@ from fastmcp import FastMCP
 from fastmcp.tools import ToolResult
 from mcp.types import ToolAnnotations
 
-from mcp_dotnix import core, privileged
+from mcp_dotnix import core
 
 mcp = FastMCP(
     "mcp-dotnix",
     instructions=(
-        "NixOS diagnostics and polkit-authenticated privileged execution for dotnix. "
-        "Diagnostic tools are read-only. Each run_privileged call requires "
-        "desktop polkit authentication before root execution. "
-        "Clients should not add a separate approval prompt. "
+        "Read-only NixOS diagnostics for dotnix. "
         "Output is best-effort redacted and may still contain sensitive data."
     ),
 )
@@ -46,27 +43,6 @@ def _journal_text(result: core.JournalResult) -> str:
             f"{entry['timestamp'] or '-'} {entry['identifier'] or '-'}: {entry['message']}"
         )
     return "\n".join(lines)
-
-
-def _privileged_text(result: privileged.PrivilegedResult) -> str:
-    status = (
-        "timed out before exit"
-        if result["timed_out"]
-        else f"exit code: {result['exit_code']}"
-    )
-    parts = [
-        status,
-        "stdout:\n" + (result["stdout"].rstrip("\n") or "(empty)"),
-        "stderr:\n" + (result["stderr"].rstrip("\n") or "(empty)"),
-    ]
-    if result["timed_out"]:
-        parts.append(
-            "outcome unknown: pkexec was killed; a privileged child may still be running; "
-            "verify system state before retrying"
-        )
-    if result["truncated"]:
-        parts.append(f"output truncated at {privileged.OUTPUT_LIMIT} bytes per stream")
-    return "\n\n".join(parts)
 
 
 @mcp.tool(name="system_status", annotations=_read_only)
@@ -121,52 +97,6 @@ def network_status() -> core.NetworkStatusResult:
 def nixos_generations(limit: int = 20) -> core.GenerationResult:
     """List recent NixOS system generations from read-only profile links."""
     return core.nixos_generations(limit)
-
-
-@mcp.tool(
-    name="run_privileged",
-    annotations=ToolAnnotations(
-        readOnlyHint=False, destructiveHint=True, idempotentHint=False, openWorldHint=True,
-    ),
-)
-def run_privileged(
-    program: str,
-    args: list[str],
-    cwd: str,
-    reason: str,
-    impact: str,
-    timeout: int = privileged.DEFAULT_TIMEOUT,
-) -> privileged.PrivilegedResult:
-    """Run a command as root after desktop polkit authentication, returning its exit code and output.
-
-    Use absolute program and cwd paths. Arguments are passed without shell expansion.
-    Each call requires authentication; authorization is not retained.
-    Requires the NixOS pkexec wrapper and the dedicated entry's polkit rule.
-    Fails if authentication is unavailable; no terminal authentication or sudo fallback.
-    Command stdin is closed; pkexec filters the environment and the entry sets a system PATH.
-    The server stops waiting after timeout seconds and kills pkexec; a privileged child
-    may continue, so a timeout is reported as outcome unknown. Client cancellation also
-    does not guarantee the command has stopped.
-    Existing restrictions on system activation, secrets and other operations apply.
-    The request reason and impact are recorded in the journal under the mcp-dotnix tag.
-
-    Args:
-        program: Absolute path of the program to run as root.
-        args: Exact arguments passed to the program.
-        cwd: Absolute working directory.
-        reason: Explain why this operation needs root privileges.
-        impact: Describe affected files, services or system state and expected changes.
-        timeout: Server-side wait limit in seconds (1-600), including authentication.
-            Defaults to 600; lower it only for commands known to finish quickly.
-    """
-    if not reason.strip() or not impact.strip():
-        raise ValueError("reason and impact must explain the privilege request")
-    if not 1 <= timeout <= privileged.MAX_TIMEOUT:
-        raise ValueError(
-            f"timeout must be between 1 and {privileged.MAX_TIMEOUT} seconds"
-        )
-    result = privileged.run_privileged(program, args, cwd, reason, impact, timeout)
-    return ToolResult(content=_privileged_text(result), structured_content=result)
 
 
 def main() -> None:

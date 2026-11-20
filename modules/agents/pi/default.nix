@@ -61,11 +61,10 @@
             "PYTHONPATH"
             (lib.getExe mcpPackages.mcp-dotnix)
           ];
-          description = "Local NixOS diagnostics and root command execution with desktop polkit authentication for each call.";
+          description = "Read-only local NixOS diagnostics.";
           exposure = "hidden";
-          timeout = 600;
+          timeout = 120;
           toolExposure = {
-            run_privileged = "deferred";
             system_status = "deferred";
             unit_status = "deferred";
             unit_journal = "deferred";

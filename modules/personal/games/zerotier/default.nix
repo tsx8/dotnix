@@ -81,8 +81,7 @@ in
 
       systemd.services.zerotierone.wantedBy = lib.mkForce [ ];
 
-      # Allow only the local active desktop user to start/stop this unit without a password; on no match,
-      # return nothing and fall back to the existing policies, leaving the MCP privilege rules untouched
+      security.polkit.enable = true;
       security.polkit.extraConfig = ''
         polkit.addRule(function(action, subject) {
           if (action.id !== "org.freedesktop.systemd1.manage-units") return;
