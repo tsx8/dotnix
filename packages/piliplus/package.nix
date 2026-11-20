@@ -15,13 +15,13 @@
 }:
 
 let
-  version = "2.2.0.2";
+  version = "2.2.1";
 
   src = fetchFromGitHub {
     owner = "bggRGjQaUbCoE";
     repo = "PiliPlus";
     tag = version;
-    hash = "sha256-UuJ3kmYqXGZ9HOii1oCvecm12SNwjrnpOzvhnETSihA=";
+    hash = "sha256-IhW0TKDf7Pfr7zD65SEF3eXzKwrkvBLX+7XhWEyiyD8=";
   };
 
   # Kept in sync with upstream CI (the common set in lib/scripts/patch.ps1 plus its Linux branch):
@@ -35,6 +35,7 @@ let
     "fab.patch"
     "image_anim.patch"
     "layout_builder.patch"
+    "media_query.patch"
     "modal_barrier.patch"
     "mouse_cursor.patch"
     "navigation_drawer.patch"
