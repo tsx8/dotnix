@@ -170,6 +170,18 @@ render_status() {
   done
 }
 
+# nix-update resolves flake attributes from the tree snapshot path that `nix flake metadata` reports,
+# but lazy trees (Nix >= 2.28) report that path without materializing it, so nix-update's separate
+# nix-instantiate process fails with "opening file ...-source: No such file or directory" on a dirty
+# tree (upstream nix-update#687). Prefetch forces the store copy; --no-write-lock-file keeps pkg mode
+# from touching the lock, which only the flake node may change.
+pkg_update() {
+  local name=$1
+  shift
+  nix flake prefetch --no-write-lock-file
+  nix-update "$name" --flake --format "$@"
+}
+
 # run_node <flake|pkg|plain> <display name> <retries> <command…>
 run_node() {
   local kind=$1 name=$2 retries=$3
@@ -263,7 +275,7 @@ fi
 while read -r name extra || [[ -n "${name:-}" ]]; do
   [[ -z "$name" || "$name" == \#* ]] && continue
   # shellcheck disable=SC2086
-  run_node pkg "$name" 1 nix-update "$name" --flake --format $extra
+  run_node pkg "$name" 1 pkg_update "$name" $extra
 done < packages/update.list
 
 run_node plain "piliplus lock" 1 scripts/sh/sync-piliplus-locks.sh
