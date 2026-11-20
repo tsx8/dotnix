@@ -5,7 +5,7 @@ modules/agents/pi/default.nix	210bc5b1493c3abc	53ba77ce10d63c99	dd0071fc29bce17b
 modules/agents/t3code/default.nix	f1c9ce15bcd01c5d
 modules/machine/host/default.nix	2bb30deffd55aded	2e0330433897023f	3a9a306cb0b2c3c9
 modules/machine/identity/default.nix	2e1fc2374f50e133	4ec7de1e127d88b2
-modules/machine/network.nix	05c52f1dfbf452bf	12f10001dd485892	2f42ae405d4f2e2c	4fd5dfa4c23a6c6d	60d986dbce44a810	6d0f5078ea962c12	7d8815a63a2e33a2	b6d68b3ae6a90ce4	d28bb94e54214fef	ebec9dcea5130829	f205837abd5fc7f5	f67c1d4983279877
+modules/machine/network.nix	05c52f1dfbf452bf	12f10001dd485892	2f42ae405d4f2e2c	4fd5dfa4c23a6c6d	60d986dbce44a810	7d8815a63a2e33a2	b6d68b3ae6a90ce4	d28bb94e54214fef	ebec9dcea5130829	f67c1d4983279877
 modules/machine/storage/backup.py	15e8b2bb0d1426b7	4102c95e3289642f	e9492e68e1551f39
 modules/machine/storage/default.nix	8bf23aaac927be32
 modules/personal/applications/kitty.nix	032cca1b019c67a7	55168bacf06f2817	ac4d9136eb14b839	be766ee3a6be5bc9

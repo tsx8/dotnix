@@ -104,8 +104,6 @@
         routing {
           # A must_* rule on port 53 would bypass split DNS even for forged campus answers.
           pname(zerotier-one) -> direct
-          # Peer and STUN packets must match before the UDP/443 block.
-          l4proto(udp) && pname(tailscaled) -> direct
           # A proxied ping makes matchmaking choose servers near the exit instead of the player.
           l4proto(udp) && pname(cs2) -> direct
           dip(224.0.0.0/3) -> direct
@@ -248,13 +246,6 @@
 
       systemd.services.hostapd.after = [ "systemd-networkd.service" ];
       systemd.services.dnsmasq.after = [ "systemd-networkd.service" ];
-
-      # Keep campus DNS authoritative when the tailnet is connected.
-      services.tailscale = {
-        enable = true;
-        openFirewall = false;
-        extraSetFlags = [ "--accept-dns=false" ];
-      };
 
       services.dae = {
         enable = true;
