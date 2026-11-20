@@ -5,6 +5,7 @@ fmt: _source-ready
 
 lint: _source-ready
   @scripts/sh/module-layout.sh
+  @check-comments
   @just repo _tracked-files '*.nix' | xargs -0 -r nix fmt -- --no-cache --fail-on-change
   @just repo _tracked-files '*.nix' | xargs -0 -r nix run .#nixf-diagnose --
   @statix check --config modules/maintenance/development/statix.toml

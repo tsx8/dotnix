@@ -1,0 +1,31 @@
+.gitattributes	342783d3bd3f41bb
+modules/agents/bash-env.sh	593af9881fcf5f75	e7e980ec53d5c56a
+modules/agents/default.nix	92649038574618f8
+modules/agents/pi/default.nix	210bc5b1493c3abc	53ba77ce10d63c99	dd0071fc29bce17b	e61c7d8e2252afbc
+modules/agents/t3code/default.nix	f1c9ce15bcd01c5d
+modules/machine/host/default.nix	2bb30deffd55aded	2e0330433897023f	3a9a306cb0b2c3c9
+modules/machine/identity/default.nix	2e1fc2374f50e133	4ec7de1e127d88b2
+modules/machine/network.nix	05c52f1dfbf452bf	12f10001dd485892	2f42ae405d4f2e2c	4fd5dfa4c23a6c6d	60d986dbce44a810	6d0f5078ea962c12	7d8815a63a2e33a2	b6d68b3ae6a90ce4	d28bb94e54214fef	ebec9dcea5130829	f205837abd5fc7f5	f67c1d4983279877
+modules/machine/storage/backup.py	15e8b2bb0d1426b7	4102c95e3289642f	e9492e68e1551f39
+modules/machine/storage/default.nix	8bf23aaac927be32
+modules/personal/applications/kitty.nix	032cca1b019c67a7	55168bacf06f2817	ac4d9136eb14b839	be766ee3a6be5bc9
+modules/personal/desktop/input-method/default.custom.yaml	bfa4c647551c1729
+modules/personal/desktop/input-method/default.nix	1ab8e4784d16f9c2	38aadb4178ec5ef7	511c8dbef33d16f9	79308d706362e015	9547ca5123e83dfa	95f556f5d458edf1	bd401a0206bf725f	d713615a7e9bb299
+modules/personal/desktop/input-method/lua/post_commit_reject.lua	2762a3bd6bdb74ea	3e830147a78b5b65	deb5a0930eeed5ce
+modules/personal/desktop/input-method/rime-editing-order.patch	0d373d5cf5b95105	5aef0e1bed2b85f9	e9ed6d11b98c0d12
+modules/personal/desktop/input-method/rime_frost.custom.yaml	40c9b122ed5018a6	85297c50b66da334
+modules/personal/desktop/keyboard.nix	17c88790be6e9256	a34d43cea6f568ff	e82f072c3bbb8bd7
+modules/personal/desktop/session.nix	2f1ca2e3787da3b7	3f367982b0fa3b50	8e88c93ac94982ae
+modules/personal/games/zerotier/default.nix	2836421489956cb1	de593d122f0401a7
+modules/personal/terminal/default.nix	14a7f593c23c65e0	5c377961837fbf37	6fc9d4aaf63e63f6	7a0cbc7cf1a965b8	86f8ece11fad5e61	91e8ca9689a2edf9	9769c87035afb900	c8deb19dd36d11a4	dce63e0fcbed1f25
+modules/personal/terminal/tmux-auto.sh	1feb73f275f1db3e	8e64016c306dd1cd
+packages/mcp-deepseek-search/server.py	213511da84249dd8
+packages/obelisk/package.nix	2bfef561ede31d6e
+packages/piliplus/package.nix	30af79415e173150	6faf1197a0c106bb	f187a626f6470f70
+packages/simple-live-app/package.nix	e177c88da6895a8c
+packages/update.list	1d2bddb6d3069fa2
+scripts/just/repo.just	f1434e4a54dd36b1
+scripts/sh/disk.sh	b4053f694478cbca
+scripts/sh/overlay-advisory.sh	30af5dea6fb3b78f
+scripts/sh/sync-piliplus-locks.sh	8bfbfab3f4a68d37
+scripts/sh/update.sh	6b2a8b4f6baed7c2	78b9f77a8cee55dd	f064f85f473c30a0

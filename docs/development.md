@@ -27,7 +27,7 @@ nix develop --no-update-lock-file --no-write-lock-file --command just repo lint
 | 命令 | 执行内容与副作用 |
 | --- | --- |
 | `just repo fmt` | 用 nixfmt-tree 格式化 Nix 文件，修改工作树 |
-| `just repo lint` | 依次运行模块布局检查、nixfmt 检查、nixf-diagnose、statix、ShellCheck 和 Git 空白检查，再提示有改动的全局 overlay 来源 |
+| `just repo lint` | 检查模块布局、注释、格式、Nix 和 Shell 源码及 Git 空白错误。最后可能给出 [overlay 提醒](#overlay-impact)。 |
 | `just repo test` | 运行 `nix flake check`，构建已声明 checks，不使用 `--no-build`，不激活系统 |
 | `just os build` | 先运行 repo lint、repo test，再构建系统，不激活 |
 | `just os test` | 先运行 repo lint、repo test，再构建并经确认激活系统，不改变默认启动项；须经用户明确批准 |
@@ -44,6 +44,8 @@ fmt、lint、test 在检查前拒绝未忽略、未跟踪文件，只列路径�
 `just os build`、`just os test` 和 `just os switch` 均调用项目 nh，目标显式为 `.#maco`，并禁止更新/写入 lock。构建至少预留 10 分钟。`just repo test` 不构建每个 package；`test` 不等于 `build`，`build` 不证明系统运行正常。
 
 ## 验证要求
+
+**注释检查。** lint 核对 Git 跟踪源码中的独占行、行尾和块注释，也检查补丁新增行及可识别的内嵌代码。Markdown、工具描述、shebang、ShellCheck 指令和密文不计入。新增或改写的注释报出路径和行号；删除时从 [comments.allow](../modules/maintenance/development/comments.allow) 移除报出的失效指纹。新文件没有额度。确须就地记录的理由逐条审阅，不整批刷新基线。
 
 按实际影响选择验证，不能只按文件扩展名判断。被程序读取的文本、模型数据和环境配置属于行为修改；仅文档中的常驻指令和命令示例也须检查执行流程是否自洽。
 
