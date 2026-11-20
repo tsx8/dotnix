@@ -3,5 +3,4 @@
 # obelisk's npm latest is an rc channel version, so unstable version numbers must be allowed.
 t3code-nightly
 obelisk --version=unstable
-pi-todo
 piliplus

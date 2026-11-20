@@ -55,13 +55,6 @@
       flake = false;
     };
 
-    # Upstreams of agent plugins/skills and source-built apps ship no flake; the locked revision
-    # stays in flake.lock and repo update advances it.
-    pi-packages = {
-      url = "github:gotgenes/pi-packages";
-      flake = false;
-    };
-
     obelisk-skill = {
       url = "github:tommy0103/obelisk-skill";
       flake = false;

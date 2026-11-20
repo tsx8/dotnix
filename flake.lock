@@ -373,22 +373,6 @@
         "type": "github"
       }
     },
-    "pi-packages": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1795069676,
-        "narHash": "sha256-eWEKyTx8RF/vE8KS2/t4e5eiBkyjCjnlpntO2WQtjZI=",
-        "owner": "gotgenes",
-        "repo": "pi-packages",
-        "rev": "87ea4b9cacccc3f6cd0c79ea98b8aeb6155003f3",
-        "type": "github"
-      },
-      "original": {
-        "owner": "gotgenes",
-        "repo": "pi-packages",
-        "type": "github"
-      }
-    },
     "rime-frost": {
       "flake": false,
       "locked": {
@@ -418,7 +402,6 @@
         "mcp-nixos": "mcp-nixos",
         "nixpkgs": "nixpkgs",
         "obelisk-skill": "obelisk-skill",
-        "pi-packages": "pi-packages",
         "rime-frost": "rime-frost",
         "simple-live-app": "simple-live-app",
         "sops-nix": "sops-nix"
