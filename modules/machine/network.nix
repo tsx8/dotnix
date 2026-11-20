@@ -24,6 +24,37 @@
       hardware.facter.detected.dhcp.enable = false;
       environment.systemPackages = [ pkgs.iw ];
 
+      # The proxy node is ~150 ms away and reorders packets. BBR tolerates that
+      # path better than cubic; the buffers cover its BDP without changing the
+      # latency-sensitive receive path. eno1 also drops bursts at its default
+      # 256-entry RX ring, so the ring is raised before dae starts.
+      boot.kernelModules = [ "tcp_bbr" ];
+      boot.kernel.sysctl = {
+        "net.ipv4.tcp_congestion_control" = "bbr";
+        "net.ipv4.tcp_mtu_probing" = 1;
+        "net.ipv4.tcp_slow_start_after_idle" = 0;
+        "net.ipv4.tcp_tw_reuse" = 1;
+        "net.ipv4.tcp_fastopen" = 3;
+        "net.core.netdev_max_backlog" = 16384;
+        "net.core.rmem_max" = 33554432;
+        "net.core.wmem_max" = 16777216;
+        "net.ipv4.tcp_rmem" = "4096 131072 33554432";
+        "net.ipv4.tcp_wmem" = "4096 262144 16777216";
+      };
+
+      systemd.services.network-ring-tuning = {
+        description = "Raise eno1 ring buffers";
+        after = [ "sys-subsystem-net-devices-eno1.device" ];
+        requires = [ "sys-subsystem-net-devices-eno1.device" ];
+        before = [ "dae.service" ];
+        wantedBy = [ "multi-user.target" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+        };
+        script = "${pkgs.ethtool}/bin/ethtool -G eno1 rx 4096 tx 4096";
+      };
+
       sops.secrets = {
         dae-nodes = { };
         dae-node-ip = { };
