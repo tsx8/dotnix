@@ -68,8 +68,7 @@ in
         server = {
           enable = true;
           extraArgs = [
-            "--host"
-            "127.0.0.1"
+            "--lan"
             "--port"
             "3773"
             "--no-browser"
