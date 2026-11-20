@@ -1,12 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Orchestration entry for just repo update / pkg-update. One node's failure does not stop later nodes;
-# network-kind nodes retry once automatically. At the end, failed nodes are summarized and the full log
-# directory is kept, or removed when everything succeeded. On a TTY the status line refreshes in place
-# while running (tail of the current activity, or spinner+elapsed when silent); without a TTY it degrades
-# to static output.
-
 usage() { echo "usage: $0 pkg | all [flake-input...]" >&2; }
 
 if [[ ${1:-} != "pkg" && ${1:-} != "all" ]]; then
@@ -35,8 +29,7 @@ cleanup() { ((keep_logs)) || rm -rf -- "$logs_dir"; }
 trap cleanup EXIT
 on_int() {
   keep_logs=1
-  # Terminal Ctrl-C hits the whole foreground process group; a lone INT to this script never reaches the
-  # backgrounded subshell, so kill it here as a backstop.
+  # An INT sent only to this process does not reach the background node.
   if [[ -n "$child_pid" ]]; then
     kill "$child_pid" 2>/dev/null || true
   fi
@@ -45,9 +38,6 @@ on_int() {
 }
 trap on_int INT
 
-# Noise reduction: drop nix-update's command echo and upstream probing lines, and the body of nix's
-# cached-version warnings; compress Python tracebacks to the final exception line. The remaining lines are
-# the node's key log. The same rule set serves both the final summary and the runtime activity line.
 filter_stream() {
   grep -vE \
     -e '^\$ ' \
@@ -78,7 +68,6 @@ filter_log() { filter_stream <"$1" | grep -v '^$' || true; }
 show_tail() { filter_log "$1" | tail -n 12 | sed 's/^/  /'; }
 show_details() { filter_log "$1" | head -n 8 | sed 's/^/  /'; }
 
-# Compare only the rev/lastModified resolved for root inputs; follows entries are already reflected in their source inputs.
 flake_snapshot() {
   jq -r '
     .nodes as $nodes
@@ -100,9 +89,6 @@ update_flake() {
   return "$rc"
 }
 
-# Structured summary for the flake node: join the before/after snapshots by input name and print old→new
-# per input; newly added inputs are listed separately; revs truncate to 7 chars and lastModified seconds
-# become dates.
 flake_change_summary() {
   local before=$1 after=$2 log=$3
   local moved added n desc stale
@@ -133,8 +119,7 @@ flake_change_summary() {
   if [[ -n "$added" ]]; then printf '%s\n' "$added"; fi
 }
 
-# Child output goes to disk and an rc file is written at the end; the render loop uses the rc file as the
-# completion signal — kill -0 must not decide liveness (unreaped zombies also pass that probe).
+# Unreaped children also pass kill -0; use the exit-code file to detect completion.
 run_logged() {
   local log=$1 rc_file=$2
   shift 2
@@ -143,7 +128,6 @@ run_logged() {
   printf '%d\n' "$node_rc" >"$rc_file"
 }
 
-# TTY status line: show a readable log tail when present, else spinner+elapsed; refresh in place.
 render_status() {
   local name=$1 log=$2 t0=$3 tag=$4 rc_file=$5
   local frame=0 cols avail line status
@@ -170,14 +154,6 @@ render_status() {
   done
 }
 
-# t3code-nightly selects a release and validates a build in a staged copy before it replaces its own pin,
-# so it owns its prefetch and summary instead of the generic nix-update node.
-#
-# nix-update resolves flake attributes from the tree snapshot path that `nix flake metadata` reports,
-# but lazy trees (Nix >= 2.28) report that path without materializing it, so nix-update's separate
-# nix-instantiate process fails with "opening file ...-source: No such file or directory" on a dirty
-# tree (upstream nix-update#687). Prefetch forces the store copy; --no-write-lock-file keeps pkg mode
-# from touching the lock, which only the flake node may change.
 pkg_update() {
   local name=$1
   shift
@@ -189,15 +165,11 @@ pkg_update() {
   nix-update "$name" --flake --format "$@"
 }
 
-# run_node <flake|pkg|plain> <display name> <retries> <command…>
 run_node() {
   local kind=$1 name=$2 retries=$3
   shift 3
   local log="$logs_dir/$name.log" rc_file="$logs_dir/$name.rc" tries=1 rc=0 i t0 tag
   local before_version="" before_src=""
-  # nix-update rewrites only the version line. A src URL or rev that does not derive from version then
-  # keeps fetching the old artifact while the package claims the new version, and nix-update still
-  # reports success; capture the source derivation to reject that after the node runs.
   if [[ $kind == pkg ]]; then
     before_version=$(nix eval --raw ".#${name}.version" 2>/dev/null || true)
     before_src=$(nix eval --raw ".#${name}.src.drvPath" 2>/dev/null || true)
@@ -234,7 +206,7 @@ run_node() {
   fi
   case $kind in
     flake)
-      # nix only warns on nonexistent input names; silently skipping would let a typo produce no update.
+      # Nix warns rather than failing on an unknown input.
       if grep -q "does not match any input of this flake" "$log"; then
         printf 'FAILED (unknown flake input)\n'
         grep -oP "warning: '\K[^']+(?=' does not match)" "$log" | sed 's/^/  /' || true

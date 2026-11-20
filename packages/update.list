@@ -1,6 +1,4 @@
-# One per line: <flake package attribute> [extra nix-update args]; lines starting with # are comments.
-# Consumed by just repo pkg-update; remote-source packages not shaped as flake inputs are registered here.
-# obelisk's npm latest is an rc channel version, so unstable version numbers must be allowed.
+# Obelisk's npm latest can point to a release candidate.
 t3code-nightly
 obelisk --version=unstable
 piliplus

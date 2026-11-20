@@ -24,10 +24,7 @@ let
     hash = "sha256-IhW0TKDf7Pfr7zD65SEF3eXzKwrkvBLX+7XhWEyiyD8=";
   };
 
-  # Kept in sync with upstream CI (the common set in lib/scripts/patch.ps1 plus its Linux branch):
-  # patch the Flutter framework and material_ui before building (expose internal APIs, fix selection
-  # behavior, etc.), otherwise types the app source references, such as StandardBottomSheet and
-  # TabBarState, do not exist. The patch files roll with the source tag and need no separately maintained version.
+  # Match lib/scripts/patch.ps1 from the source tag: the app uses APIs absent from stock Flutter.
   frameworkPatches = map (name: "${src}/lib/scripts/${name}") [
     "double_tap_gesture.patch"
     "draggable_scrollable_sheet.patch"
@@ -108,8 +105,7 @@ flutter.buildFlutterApplication {
         '';
       };
 
-    # media_kit_libs_video transitively depends on pub.dev's media_kit_libs_linux, whose CMake downloads
-    # mimalloc online by default; switch to the shared library from nixpkgs.
+    # Link the packaged mimalloc so CMake does not download it inside the sandbox.
     media_kit_libs_linux =
       {
         version,
@@ -132,9 +128,7 @@ flutter.buildFlutterApplication {
       };
   };
 
-  # cnativeapi's build hook invokes pkg-config directly for gtk+-3.0/x11/xi, and the Flutter build's child
-  # process environment does not carry the PKG_CONFIG_PATH accumulated by stdenv; preBuild pins the full
-  # search path into a wrapper placed ahead on PATH.
+  # Flutter's cnativeapi hook drops PKG_CONFIG_PATH in its child environment.
   preBuild = ''
     mkdir -p "$NIX_BUILD_TOP/pkgconfig-bin"
     makeWrapper "$(command -v pkg-config)" "$NIX_BUILD_TOP/pkgconfig-bin/pkg-config" \

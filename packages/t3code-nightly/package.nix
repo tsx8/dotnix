@@ -3,7 +3,6 @@ let
   release = import ./release.nix;
   inherit (release) version;
   appName = "T3 Code (Nightly)";
-  # Keep llm-agents’ package scope and its upstream build hooks.
   package = t3code.unwrapped.override (previous: {
     fetchFromGitHub =
       args:

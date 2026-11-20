@@ -1,10 +1,4 @@
-# Align with macOS Simplified Pinyin behavior
-#
-# Differences from upstream:
-# - Clear the email/url/underscore recognizer patterns
-# - "/" commits a half-width / directly without showing candidates
-# - Complete the half-width punctuation mapping of Apple Simplified Pinyin
-# - Clear the schema switcher hotkeys
+# Match macOS Simplified Pinyin punctuation and recognizers.
 patch:
   recognizer/patterns: {}
 

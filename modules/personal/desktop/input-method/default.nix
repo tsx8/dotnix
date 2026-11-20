@@ -7,7 +7,7 @@
           ./rime-editing-order.patch
         ];
         postPatch = (old.postPatch or "") + ''
-          # Keep the declarative config entry points, but stop exposing Rime runtime actions in the tray menu.
+          # Rime is deployed declaratively; hide the competing tray actions.
           sed -i \
             -e '/imAction_->setMenu/d' \
             -e '/registerAction("fcitx-rime-separator"/,/);/d' \
@@ -70,7 +70,7 @@
               "0" = "";
             };
 
-            # Shift already commits uppercase directly; disable the AltTrigger temporary switch
+            # Shift is reserved for direct uppercase input.
             "Hotkey/AltTriggerKeys" = {
               "0" = "";
             };
@@ -82,7 +82,7 @@
               globalSection = { };
               sections.TriggerKey."0" = "";
             };
-            # Match macOS: commit the raw pinyin when switching away (default commits Chinese)
+            # Match macOS when leaving a composition.
             rime.globalSection.SwitchInputMethodBehavior = "Commit raw input";
           };
         };
@@ -159,7 +159,7 @@
         run mkdir -p ${lib.escapeShellArg rimeBuildDir}
 
         if [[ -v rimeDataChanged ]]; then
-          # Nix Store mtimes are normalized, so librime's incremental timestamp check cannot be relied on.
+          # Normalized store mtimes cannot invalidate the librime build cache.
           run rm -rf ${lib.escapeShellArg rimeBuildDir}
           run mkdir -p ${lib.escapeShellArg rimeBuildDir}
 

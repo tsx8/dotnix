@@ -16,9 +16,6 @@ in
       secrets.user-passwd-hash.neededForUsers = true;
     };
 
-    # Anonymous GitHub API access allows 60 requests/h; flake input resolution exhausts it easily and then
-    # silently reuses cached versions for the whole batch. The token is rendered into the user-level nix.conf
-    # for every nix command running as this user; the raw secret is root-only, only the rendered artifact is user-readable.
     sops.secrets.gh-auth-token = { };
     sops.templates."nix.conf" = {
       content = ''
@@ -27,15 +24,13 @@ in
       owner = userName;
     };
 
-    # VPS access key stays in sops under /run/secrets; ~/.ssh links to it below so the directory
-    # keeps a single owner (sops-install-secrets creates parent directories as root).
+    # Creating ~/.ssh via sops would leave parent directories owned by root.
     sops.secrets.ssh-dmit = {
       owner = userName;
       mode = "0400";
     };
 
-    # The address stays a sops placeholder so it never reaches the store, which rules out
-    # programs.ssh: that module writes its config, address included, into a store path.
+    # A Home Manager SSH config would copy the private address into the Nix store.
     sops.templates."ssh-config".content = ''
       Host dmit
         HostName ${config.sops.placeholder.dae-node-ip}
@@ -69,7 +64,6 @@ in
   dotnix.modules.home = { config, ... }: {
     home.file.".config/sops/age/keys.txt".source =
       config.lib.file.mkOutOfStoreSymlink "/var/lib/sops-nix/key.txt";
-    # Points to the sops-nix rendered artifact; the symlink stays out of the store so no secret lands in plaintext config.
     home.file.".config/nix/nix.conf".source =
       config.lib.file.mkOutOfStoreSymlink "/run/secrets/rendered/nix.conf";
     home.file.".ssh/config".source =

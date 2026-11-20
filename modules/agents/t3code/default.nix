@@ -4,7 +4,6 @@
   ...
 }:
 let
-  # Flake outputs captured before the inner NixOS/Home Manager modules shadow `config`.
   packagesFor = system: config.flake.packages.${system};
 in
 {
@@ -26,7 +25,7 @@ in
         t3Pkg
         t3Pkg.desktop
       ];
-      # T3 serves the phone while nobody is logged into KDE; this also starts the user's other default.target services.
+      # Linger serves the phone before KDE login and starts other user default.target units too.
       users.users.${config.dotnix.host.userName}.linger = true;
     };
 
@@ -78,8 +77,6 @@ in
         };
       };
 
-      # linger starts the user manager before login, where systemd's own PATH has no git, shell, or
-      # project tools. Give the service the session PATH instead of relying on a desktop login.
       systemd.user.services.t3code.Service.Environment = [
         "PATH=${
           lib.concatStringsSep ":" [
@@ -94,8 +91,6 @@ in
         }"
       ];
 
-      # The desktop app loads its bundled UI and pairs with the service instead of starting a second server.
-      # This HM version has no option for desktop-settings.json, so merge the one key with the generated merger.
       home.activation.t3codeDesktopSettings = lib.hm.dag.entryAfter [ "linkGeneration" ] (
         lib.hm.generators.mkImpureConfigMerger {
           inherit pkgs;

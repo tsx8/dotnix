@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# import-tree imports every .nix file under modules/, so a module and the files it owns
-# share one path: either a single <name>.nix or <name>/default.nix. Keeping <name>.nix
-# beside <name>/ splits the feature across two sibling paths and leaves the directory
-# without an entry point.
 set -euo pipefail
 
 repo_root="$(

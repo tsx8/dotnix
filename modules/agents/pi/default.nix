@@ -82,7 +82,7 @@
             "PYTHONPATH"
             (lib.getExe mcpPackages.mcp-nixos)
           ];
-          # Upstream never disables FastMCP's banner, which triggers a PyPI version check at startup.
+          # The FastMCP banner checks PyPI during startup.
           env.FASTMCP_SHOW_SERVER_BANNER = "false";
           description = "Query Nix packages, options, documentation, and flake inputs.";
           exposure = "hidden";
@@ -94,8 +94,6 @@
         };
       };
 
-      # Only keys that differ from upstream defaults are declared; keys equal to the defaults stay out of the template.
-      # Runtime keys such as lastChangelogVersion survive via the deep merge; declared keys are reasserted on every activation.
       declaredSettings = (pkgs.formats.json { }).generate "pi-declared-settings.json" {
         showCacheMissNotices = true;
         collapseChangelog = true;
@@ -109,9 +107,7 @@
           "+grep"
           "+find"
         ];
-        # Proactive compaction threshold at contextWindow/e (ChatGPT/Codex auto_compact semantics):
-        # reserveTokens = contextWindow − floor(contextWindow/e);
-        # codex-family windows take 1,050,000 as overridden by models.json.
+        # Compact at about contextWindow/e used tokens; reserve the rest of the model window.
         compaction.modelOverrides = {
           "deepseek/deepseek-flash".reserveTokens = 632121;
           "zai-coding-cn/glm-5.3".reserveTokens = 632121;
@@ -142,12 +138,9 @@
       ];
     in
     {
-      # Pi does not write back model catalogs.
-      # models.json: uses GPT long-context windows, not limited to the catalog's 272k pricing tier; unknown ids are ignored.
+      # Use the GPT context window, not the smaller pricing tier.
       home.file.".pi/agent/models.json".source = ./models.json;
 
-      # /settings and /mcp write back, so real writable files are kept; activation reasserts declared
-      # keys and preserves other user settings.
       home.activation.piSettings = lib.hm.dag.entryAfter [ "linkGeneration" ] (
         ''
           merge_pi_config() (

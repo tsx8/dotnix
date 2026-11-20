@@ -11,7 +11,7 @@ in
     };
 
     users.users.${userName}.shell = pkgs.fish;
-    # Terminal programs such as pi rely on wl-copy for the Wayland clipboard; nothing else on this machine provides it
+    # Pi needs wl-copy in Wayland sessions.
     environment.systemPackages = with pkgs; [
       curl
       wget
@@ -27,10 +27,7 @@ in
       enable = true;
     };
 
-    # A new terminal opens a tmux session, not a window: tmux keeps the current
-    # window per session, so one terminal per window would make terminals share
-    # navigation. A window spawned from inside tmux inherits TMUX without owning a
-    # pane, so the pane's tty decides whether this shell really sits in one.
+    # A new terminal can inherit TMUX without owning a pane; compare the actual ttys.
     programs.fish.interactiveShellInit = ''
       if not set -q TMUX_AUTO_SKIP; and test "$TERM" != dumb
           set -l pane_tty
@@ -43,45 +40,34 @@ in
       end
     '';
 
-    # Emacs and pi press C-b constantly, so a C-b prefix fires in the middle of editing;
-    # C-] only costs nvim's tag jump, and pressing it twice passes the key through.
+    # C-b conflicts with editing in Emacs and Pi.
     programs.tmux = {
       enable = true;
-      # tmux is a system package; the module would add a second, user-level copy.
       package = null;
       prefix = "C-]";
-      # Preserve tmux's own defaults: the module would write "screen" and a 12-hour clock.
+      # Home Manager would otherwise select screen and a 12-hour clock.
       terminal = "tmux-256color";
       clock24 = true;
       # The module would move the socket under /run/user, which drops it on logout.
       secureSocket = false;
-      # tmux is the terminal layer now, so the wheel is the only way to reach
-      # scrollback and clicking is how the second pane gets focus.
       mouse = true;
-      # Konsole's own scrollback is no longer in play; the default is a day of work.
       historyLimit = 50000;
       extraConfig = ''
-        # kitty handles OSC 52, so copies reach the clipboard without a helper command.
+        # Kitty accepts OSC 52 copies without a clipboard helper.
         set -s set-clipboard on
-        # pi needs modified Enter from the outer terminal, and kitty is the only
-        # installed terminal that reports it; CSI-u is the format pi documents.
+        # Use CSI-u so Pi can distinguish modified Enter inside tmux.
         set -g extended-keys on
         set -g extended-keys-format csi-u
-        # kitty reports truecolor; declare it so tmux forwards direct-color SGR.
         set -as terminal-features 'xterm*:RGB'
-        # The title is the only place that shows which session a terminal holds.
         set -g set-titles on
         set -g set-titles-string '#S:#W'
-        # A long-lived server keeps the environment from login, so refresh what GUI
-        # and agent tools read before each new pane.
+        # New panes need current desktop and agent sockets, not those from server startup.
         set -g update-environment "DISPLAY WAYLAND_DISPLAY XAUTHORITY SSH_AUTH_SOCK SSH_CONNECTION SSH_AGENT_PID XDG_RUNTIME_DIR DBUS_SESSION_BUS_ADDRESS"
-        # Sessions replace windows as what a terminal opens, so a new session needs a key.
         bind N new-session
       '';
     };
 
-    # The fish module enables man caches by default (for apropos completions), but home.packages carries no
-    # man pages (repo principle); mandb produces nothing for an empty directory and the build fails, so disable it explicitly
+    # With no user packages there are no man pages for mandb to index.
     programs.man.generateCaches = false;
   };
 }

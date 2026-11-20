@@ -10,10 +10,7 @@
     services.displayManager.sddm.enable = true;
     services.desktopManager.plasma6.enable = true;
 
-    # baloo starts before kwin creates the Wayland socket, and a user unit keeps the environment
-    # captured at start, so the Qt indexer extractors would abort for lack of a QPA platform.
-    # The unit itself comes from the baloo package via XDG_DATA_DIRS, so a full unit file here
-    # would shadow it; the drop-in extends the packaged unit instead.
+    # Baloo can start before the Wayland socket; extend its packaged unit rather than shadow it.
     systemd.user.services."kde-baloo" = {
       overrideStrategy = "asDropin";
       environment.QT_QPA_PLATFORM = "offscreen";

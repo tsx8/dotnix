@@ -18,7 +18,6 @@ assert lib.assertMsg (
   !hasData || disks.system.device != disks.data.device
 ) "System and data roles must refer to different disks.";
 {
-  # The full layout serves the runtime config; the disk-wiping entry may only use the role-isolated configs.
   flake.diskoConfigurations = builtins.mapAttrs (role: disk: {
     disko.devices.disk.${role} = disk;
   }) disks;
@@ -32,7 +31,7 @@ assert lib.assertMsg (
       fileSystems = [ "/" ] ++ lib.optional hasData "/data";
     };
 
-    # Reject writes from regular users while unmounted; no data subdirectories are created inside the placeholder directories.
+    # Unmounted placeholders must not accept user data meant for another filesystem.
     systemd.tmpfiles.rules = [
       "d /mnt/btrfs 0700 root root -"
       "d /mnt/btrfs/firebat 0700 root root -"

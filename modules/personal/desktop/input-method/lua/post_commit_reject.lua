@@ -1,13 +1,8 @@
--- post-commit rejection: after a committed candidate is fully deleted with Backspace, swap it with the
--- next candidate the next time the same code is typed (one-shot).
--- State is a module-level single slot: librime-lua has no notifier component, so the processor detects
--- a just-committed candidate via commit_history changes; processor and filter cannot share per-engine state,
--- hence the global single slot.
+-- The processor and filter have separate environments but must share the pending rejection.
 
 local kNoop = 2
 local kBackSpace = 0xFF08
 
--- Record types of committed candidates; punct/raw/thru (punctuation, raw input, unprocessed keys) are ignored
 local WORD_TYPES = {
   phrase = true,
   user_phrase = true,
@@ -18,7 +13,6 @@ local WORD_TYPES = {
   simplified = true,
 }
 
--- Modifier keys ignored when pressed alone; they do not cancel an in-progress deletion
 local MODIFIER_KEYS = {
   [0xFFE1] = true,
   [0xFFE2] = true,
@@ -35,7 +29,7 @@ local MODIFIER_KEYS = {
 }
 
 local state = {
-  phase = "idle", -- idle | deleting | rejected
+  phase = "idle",
   code = nil,
   text = nil,
   deleted = 0,
@@ -63,8 +57,7 @@ local function processor(key_event, env)
   local composing = ctx:is_composing()
   local now_input = ctx.input
 
-  -- The processor sees the input from before the key press: within a composition, an "input + letter"
-  -- press predicts the full code, covering commits via candidate click/number key (no key follows)
+  -- A click can commit without another key event; cache the code the current key will produce.
   if composing and not (key_event:ctrl() or key_event:alt() or key_event:super()) then
     if is_plain_letter(kc) then
       state.composing_input = now_input .. string.char(kc)
@@ -73,7 +66,6 @@ local function processor(key_event, env)
     end
   end
 
-  -- A candidate was just committed: history changed + last record is a word type + currently not composing
   local history = ctx.commit_history
   local now_repr = history:repr()
   local back = history:back()
@@ -104,7 +96,6 @@ local function processor(key_event, env)
         state.phase = "rejected"
       end
     elseif not MODIFIER_KEYS[kc] then
-      -- Another key before the deletion completed: cancel
       state.phase = "idle"
       state.code, state.text = nil, nil
       state.deleted, state.chars = 0, 0
@@ -135,7 +126,7 @@ local function reorder(translation, env)
     end
   end
 
-  -- Consume only when the swap succeeds: typing the same code in English and similar modes must not waste the rejection
+  -- A pass through an unrelated candidate list must not consume the pending rejection.
   if found and found < #list then
     list[found], list[found + 1] = list[found + 1], list[found]
     state.phase = "idle"

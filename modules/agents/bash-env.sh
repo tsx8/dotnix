@@ -14,8 +14,6 @@ _bash_load_direnv() {
   if [[ -n $rc ]]; then
     BASH_ENV='' "$BASH" -n -- "$rc" || return
   fi
-  # Empty DIRENV_LOG_FORMAT suppresses status logging without affecting load errors (logError bypasses this format);
-  # it is only read when a config file exists in ConfDir; /etc/direnv/config.toml deployed by the same module provides it.
   exports="$(BASH_ENV='' DIRENV_LOG_FORMAT='' @direnv@ export bash)" || return
   eval "$exports"
 }

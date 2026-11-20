@@ -24,10 +24,7 @@
       hardware.facter.detected.dhcp.enable = false;
       environment.systemPackages = [ pkgs.iw ];
 
-      # The proxy node is ~150 ms away and reorders packets. BBR tolerates that
-      # path better than cubic; the buffers cover its BDP without changing the
-      # latency-sensitive receive path. eno1 also drops bursts at its default
-      # 256-entry RX ring, so the ring is raised before dae starts.
+      # Tune for the high-delay, reordering uplink; the default eno1 RX ring also drops bursts.
       boot.kernelModules = [ "tcp_bbr" ];
       boot.kernel.sysctl = {
         "net.ipv4.tcp_congestion_control" = "bbr";
@@ -66,7 +63,7 @@
         global {
           lan_interface: ${lanInterface}
           wan_interface: ${wanInterface}
-          # Upstream demoted per-connection logs to debug/trace; info has none
+          # Per-connection diagnostics need debug or trace.
           log_level: trace
           allow_insecure: false
           auto_config_kernel_parameter: true
@@ -77,21 +74,16 @@
           ipversion_prefer: 4
 
           upstream {
-            # Plaintext upstreams are only safe when dialed through the proxy tunnel, so the routing section
-            # must not add direct rules matching them; node/subscription hostnames must keep resolving via
-            # buaadns (fallback), or the proxy that googledns depends on cannot bootstrap.
+            # Bootstrap the proxy via campus DNS; send the public plaintext resolver through the tunnel.
             buaadns: 'udp://${campusDns}:53'
             googledns: 'tcp://8.8.8.8:53'
           }
 
           routing {
             request {
-              # Reject HTTPS records: browsers can use them to discover DoH and bypass this split,
-              # and ECH would hide the SNI from dial_mode sniffing
+              # DoH discovery bypasses split DNS; ECH hides the name used for routing.
               qtype(https) -> reject
-              # Campus DNS forges answers for blocked domains (fake A records for gstatic,
-              # NXDOMAIN for gemini.gstatic.com); foreign domains on the list must be
-              # resolved via googledns through the proxy
+              # Campus DNS returns forged addresses or NXDOMAIN for some foreign domains.
               qname(geosite:geolocation-!cn) -> googledns
               fallback: buaadns
             }
@@ -110,23 +102,19 @@
         }
 
         routing {
-          # must_* must not be used for :53 here: it would bypass DNS hijacking packet-wide, so campus-forged
-          # answers (the NXDOMAIN for gemini.gstatic.com) would reach the client directly, bypassing dns split filtering
+          # A must_* rule on port 53 would bypass split DNS even for forged campus answers.
           pname(zerotier-one) -> direct
-          # Tailscale peers and STUN need direct UDP; the UDP/443 block below would otherwise swallow
-          # their traffic before the tailnet path exists.
+          # Peer and STUN packets must match before the UDP/443 block.
           l4proto(udp) && pname(tailscaled) -> direct
-          # CS2 SDR is UDP. Proxied through the US exit its pings are measured from there and
-          # matchmaking picks US servers; direct keeps the local path.
+          # A proxied ping makes matchmaking choose servers near the exit instead of the player.
           l4proto(udp) && pname(cs2) -> direct
           dip(224.0.0.0/3) -> direct
           l4proto(udp) && dport(443) -> block
-          # The node's own address must not be proxied through the node (SSH would loop through it)
+          # Routing the node through itself would loop.
           dip(${config.sops.placeholder.dae-node-ip}/32) -> direct
           dip(geoip:private) -> direct
           dip(geoip:cn) -> direct
           domain(geosite:cn) -> direct
-          # Reach the panel without the tunnel.
           domain(suffix:dmit.io) -> direct
           fallback: proxy
         }
@@ -261,7 +249,7 @@
       systemd.services.hostapd.after = [ "systemd-networkd.service" ];
       systemd.services.dnsmasq.after = [ "systemd-networkd.service" ];
 
-      # The tailnet carries only the T3 Serve endpoint; campus DNS stays authoritative on maco.
+      # Keep campus DNS authoritative when the tailnet is connected.
       services.tailscale = {
         enable = true;
         openFirewall = false;
@@ -278,9 +266,7 @@
         openFirewall.enable = false;
       };
 
-      # dae depends on campus auth, so it is ordered after buaa-login inside the boot transaction.
-      # Starting dae from buaa-login's OnSuccess instead would resurrect a manually stopped dae on
-      # every periodic login run.
+      # OnSuccess would restart a manually stopped dae at every periodic login.
       systemd.services.dae = {
         wantedBy = lib.mkForce [ "multi-user.target" ];
         wants = [ "buaa-login.service" ];
@@ -295,8 +281,7 @@
         interface = wanInterface;
       };
 
-      # The upstream module leaves buaa-login out of the boot transaction and wakes it through the timer's
-      # OnBootSec. Pulling it at boot instead keeps the login ahead of dae without a second run 30 s later.
+      # Start at boot before dae without repeating the login on the upstream OnBootSec timer.
       systemd.services.buaa-login.wantedBy = lib.mkForce [ "multi-user.target" ];
       systemd.timers.buaa-login.timerConfig = lib.mkForce {
         Unit = "buaa-login.service";

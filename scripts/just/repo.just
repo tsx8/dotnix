@@ -15,15 +15,14 @@ lint: _source-ready
 test: _source-ready
   @nix flake check --no-update-lock-file --no-write-lock-file
 
-# Read packages/update.list line by line and use nix-update to check and update remote-source packages
-# not shaped as flake inputs; node order, retries, and failure summary live in scripts/sh/update.sh.
+[doc('Update the non-flake packages registered in packages/update.list.')]
 pkg-update:
   scripts/sh/update.sh pkg
 
 update *inputs:
   scripts/sh/update.sh all {{inputs}}
 
-# The Git index still lists worktree-deleted paths until their deletions are staged; broken symlinks are still handed to the checker to report.
+# Check broken symlinks, but not unstaged deletions still present in the index.
 _tracked-files PATTERN:
   @git ls-files -z -- {{quote(PATTERN)}} | \
     xargs -0 -r sh -c 'for path; do if [ -e "$path" ] || [ -L "$path" ]; then printf "%s\0" "$path"; fi; done' sh

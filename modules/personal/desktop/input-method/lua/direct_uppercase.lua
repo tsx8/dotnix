@@ -1,14 +1,16 @@
+local kAccepted, kNoop = 1, 2
+
 local function processor(key_event, env)
   local engine = env.engine
 
   if engine.context:get_option("ascii_mode") then
-    return 2 -- kNoop
+    return kNoop
   end
   if key_event:release() or key_event:ctrl() or key_event:alt() or key_event:super() then
-    return 2 -- kNoop
+    return kNoop
   end
   if not (key_event:shift() or key_event:caps()) then
-    return 2
+    return kNoop
   end
 
   local ch = key_event.keycode
@@ -18,7 +20,7 @@ local function processor(key_event, env)
   elseif ch >= 0x61 and ch <= 0x7A then
     upper = string.char(ch - 0x20)
   else
-    return 2
+    return kNoop
   end
 
   if engine.context:is_composing() then
@@ -26,7 +28,7 @@ local function processor(key_event, env)
   else
     engine:commit_text(upper)
   end
-  return 1 -- kAccepted
+  return kAccepted
 end
 
 return processor

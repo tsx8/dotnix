@@ -1,20 +1,6 @@
-# Align with macOS Simplified Pinyin behavior (a patch on top of rime_frost.schema.yaml).
-#
-# Differences from upstream:
-# - Remove ; for selecting the second candidate (; commits directly as plain punctuation)
-# - Remove the ` prefix for single-character reverse lookup and the / prefix for symbol input
-#   (` / commit directly as plain punctuation)
-# - Remove [ ] for selecting characters from a word ([ ] are plain punctuation; within a composition
-#   they commit the candidate and append the symbol)
-# - Remove the word-segmentation role of ' (' is plain punctuation; within a composition it commits
-#   the candidate and appends the symbol)
-# - Remove all prefix/keyword trigger modes: u character decomposition, U Unicode input,
-#   R uppercase Chinese numerals, N Gregorian-to-Lunar conversion, V/v calculator, and rq/sj/xq/dt/ts/nl date/time lunar queries
-# - direct_uppercase.lua: in Chinese mode, Shift + letter joins the composition when one is open, otherwise commits the uppercase letter directly
-# - post_commit_reject.lua: after a candidate commits, consecutive Backspace deletes it fully; the next time the
-#   same code is typed, the candidate moves back one position (one-shot); the processor must come first to observe all keys
 patch:
   engine/processors:
+    # Observe every key before another processor can consume it.
     - lua_processor@*post_commit_reject*processor
     - lua_processor@*direct_uppercase
     - ascii_composer

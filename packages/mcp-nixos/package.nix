@@ -1,6 +1,3 @@
-# Packaged in-repo from the upstream flake source: upstream's own package output builds
-# through its fastmcp4 package-set extension, which recurses on nixpkgs revisions that ship
-# python mcp >= 2. Building here with the shared vendored fastmcp 4 keeps one python set.
 {
   lib,
   python3Packages,
@@ -17,7 +14,6 @@ python3Packages.buildPythonApplication {
 
   src = mcpNixosSrc;
 
-  # Upstream calls nix flake archive when querying flake inputs but omits the lock protection flags.
   postPatch = ''
     substituteInPlace mcp_nixos/sources/flake_inputs.py \
       --replace-fail \

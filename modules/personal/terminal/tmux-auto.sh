@@ -1,12 +1,7 @@
 #!/usr/bin/env bash
-# One tmux session per terminal. Runs from fish's interactive init: attach to the
-# last detached session, or start a new one. A new terminal must not join a session
-# that a client already shows, because tmux keeps the current window per session,
-# so two clients would move together.
+# Clients in the same session share their current window; attach only to detached sessions.
 set -uo pipefail
 
-# Sessions are terminals, so they accumulate; abandoned shells are collected at
-# startup. The age is overridable so the rule can be exercised without waiting.
 GC_AGE=${TMUX_AUTO_GC_AGE:-86400}
 SHELLS='fish|bash|zsh|sh|dash'
 FORMAT=$'#{session_attached}\t#{session_activity}\t#{session_created}\t#{session_name}'
@@ -28,8 +23,7 @@ gc() {
     [[ $attached == 0 ]] || continue
     [[ $name != "$target" ]] || continue
     ((now - activity > GC_AGE)) || continue
-    # A single window with a single pane is a terminal that ran one command and was
-    # closed. Anything with more panes is a layout someone built on purpose.
+    # Preserve multi-pane layouts even when every pane is running a shell.
     panes=$(tmux list-panes -s -t "$name" -F '#{pane_current_command}' 2>/dev/null)
     count=$(printf '%s\n' "$panes" | grep -c . || true)
     [[ $count == 1 ]] || continue
@@ -55,7 +49,6 @@ fallback() {
 }
 
 attach_session() {
-  # A clean exit here means the user detached, so the terminal has nothing left to do.
   if tmux attach -t "$1"; then
     exit 0
   fi

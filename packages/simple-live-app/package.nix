@@ -11,12 +11,10 @@
 
 flutter347.buildFlutterApplication {
   pname = "simple-live-app";
-  # Upstream master no longer gets version tags; the version comes from the pubspec description of the pinned
-  # commit, and rev tracking is left to the flake input.
+  # Upstream no longer tags releases; keep the display version in sync with the pinned pubspec.
   version = "1.11.7";
 
   src = appSrc;
-  # A directory-typed src unpacks under the source/ prefix.
   sourceRoot = "source/simple_live_app";
   pubspecLock = lib.importJSON ./pubspec.lock.json;
   gitHashes = {

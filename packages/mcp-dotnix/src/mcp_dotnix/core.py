@@ -417,7 +417,6 @@ def _journal_entry(raw: str) -> JournalEntry | None:
         return None
     if not isinstance(decoded, dict):
         return None
-    # JSON object keys are always strings; only the values remain dynamic.
     value = cast(JsonObject, decoded)
 
     timestamp = None

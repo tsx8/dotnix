@@ -1,5 +1,4 @@
 modules/machine/identity/recovery-key.age binary
 
-# Unified diffs prefix unchanged blank lines with a space, and context from tab-indented
-# upstream files starts with a space before a tab.
+# Patch context carries significant leading and trailing whitespace.
 *.patch whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab

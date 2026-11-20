@@ -6,9 +6,7 @@ in
   dotnix.modules.nixos =
     { lib, pkgs, ... }:
     let
-      # ZeroTier online toggle: start/stop the single service passwordlessly via systemd D-Bus + polkit.
-      # Not sudo/pkexec/zerotier-cli stop — the upstream unit has Restart=always, so a CLI self-exit gets restarted;
-      # a failed notification must not be misread as a failed systemd operation
+      # Stop the unit, not the daemon: Restart=always would relaunch a daemon that exits.
       zerotier-control = pkgs.writeShellApplication {
         name = "zerotier-control";
         runtimeInputs = [
@@ -66,9 +64,7 @@ in
       };
     in
     {
-      # On-demand virtual network for BG3 online play: the systemd service does not start at boot; the KDE
-      # launchers start/stop it passwordlessly. Network membership and moon runtime state live in
-      # /var/lib/zerotier-one; moons/ is a backup of the moon file
+      # Start the game network on demand rather than at boot.
       environment.systemPackages = [
         zerotier-start
         zerotier-stop

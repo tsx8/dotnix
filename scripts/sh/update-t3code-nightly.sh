@@ -1,13 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Update the T3 Code nightly pin as a transaction. nix-update runs only in a writable copy of the
-# current tree; the working tree's release file changes only after that candidate builds and reports
-# the pinned version from its own binaries and service. A failed candidate leaves the old pin intact.
-
-# The candidate carries .envrc but no direnv authorization; an inherited hook would fail in every
-# child process that starts there and contaminate the JSON and hash output. A caller's Git environment
-# would also redirect the temporary baseline away from $git_dir.
 unset BASH_ENV DIRENV_DIR DIRENV_FILE DIRENV_DIFF DIRENV_WATCHES GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -39,9 +32,6 @@ die() {
   exit 1
 }
 
-# One updater per tree; the package edit and the promotion must not interleave with another run.
-# A PID inside the lock directory lets the next run clear a claim whose owner was killed, rather than
-# leaving the package blocked until someone removes a stale file.
 claim="$lock_dir.$$"
 mkdir -p -- "$claim" || die "cannot create $claim"
 printf '%s\n' "$$" >"$claim/pid" || die "cannot write $claim/pid"
@@ -74,8 +64,6 @@ mkdir -p "$candidate"
 cp -a "$snapshot/." "$candidate/"
 chmod -R u+w -- "$candidate"
 
-# Keep nix-update's Git diff baseline outside the tree: a .git directory would turn the candidate into
-# a Git flake and hand nix-build lazy store paths that do not exist after each edit.
 git_dir="$tmp/git"
 git init -q --bare "$git_dir"
 GIT_DIR="$git_dir" GIT_WORK_TREE="$candidate" git add -A
@@ -114,7 +102,6 @@ desktop=$(jq -r '.[0].outputs.desktop' <<<"$build_json")
 smoke_home="$tmp/home"
 smoke_t3_home="$tmp/t3home"
 mkdir -p "$smoke_home" "$smoke_t3_home"
-# A temporary HOME would make the inherited BASH_ENV direnv hook fail before the app starts.
 smoke_env=(
   env -u BASH_ENV -u DIRENV_DIR -u DIRENV_FILE -u DIRENV_DIFF -u DIRENV_WATCHES
   HOME="$smoke_home" T3CODE_HOME="$smoke_t3_home"
@@ -172,7 +159,6 @@ for _ in {1..20}; do
 done
 (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null && die "candidate service still listens on port $port"
 
-# Promote only after the candidate and the tree it was based on are both still the ones validated.
 [[ "$(sha256sum "$release_rel" | cut -d' ' -f1)" == "$before_release" ]] ||
   die "$release_rel changed during the update; keeping the newer file"
 [[ "$(sha256sum "$adapter_rel" | cut -d' ' -f1)" == "$before_adapter" ]] ||

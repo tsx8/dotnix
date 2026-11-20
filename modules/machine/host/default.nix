@@ -8,13 +8,9 @@
     ];
     nix.channel.enable = false;
 
-    # Two-layer resource control: build.slice owns foreground isolation (CPU weight) and the
-    # total memory ceiling (MemoryHigh); cores only sets per-derivation parallelism. 16 is the
-    # measured optimum under the 16G cap (plasma-workspace 465s vs 630s at 8); 24 fans past
-    # the cap into reclaim slowdown.
+    # Within the 16 GiB build slice, more than 16 compiler jobs slowed builds through reclaim.
     nix.settings.cores = 16;
 
-    # Use MirrorZ's mirror selection instead of a fixed mirror; retain the official cache as fallback.
     nix.settings.substituters = [
       "https://mirrors.cernet.edu.cn/nix-channels/store"
       "https://cache.nixos.org/"
@@ -29,8 +25,6 @@
       efi.canTouchEfiVariables = true;
     };
 
-    # system.nixos.label = "nixos"; donot enable this, use NIXOS_LABEL instead
-
     nix.gc = {
       automatic = true;
       dates = "weekly";
@@ -40,8 +34,7 @@
     boot.kernelPackages = pkgs.linuxPackages_latest;
     hardware.facter.reportPath = ./facter.json;
 
-    # A power event loses the last minutes of journal entries at the default 5 min sync
-    # window, which is the evidence separating a system hang from a power cut.
+    # Keep the last seconds of journal evidence across a sudden power cut.
     services.journald.settings.Journal.SyncIntervalSec = "1s";
 
     systemd.sleep.settings.Sleep = {
@@ -51,8 +44,7 @@
       AllowSuspendThenHibernate = false;
     };
 
-    # Builds yield to the interactive session only under contention, and their reclaim
-    # stays in this cgroup instead of pushing the whole machine into zram.
+    # Confine build reclaim to this slice rather than pushing the desktop into zram.
     systemd.slices.build = {
       description = "Bulk Nix builds that must not starve the interactive session";
       wantedBy = [ "slices.target" ];

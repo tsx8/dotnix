@@ -5,8 +5,7 @@
       builtins.replaceStrings [ "@direnv@" "@jq@" ] [ "${pkgs.direnv}/bin/direnv" "${pkgs.jq}/bin/jq" ]
         (builtins.readFile ./bash-env.sh);
 
-    # direnv only reads DIRENV_LOG_FORMAT when a config file exists in ConfDir;
-    # an empty file suffices. TOML cannot express disabling logging, so bash-env.sh implements it with an empty value.
+    # direnv ignores DIRENV_LOG_FORMAT unless a config file exists.
     environment.etc."direnv/config.toml".text = "";
   };
 

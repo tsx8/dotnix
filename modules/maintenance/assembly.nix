@@ -42,7 +42,6 @@ in
 
   config = {
     perSystem = { system, ... }: {
-      # perSystem evaluation is independent of the NixOS config; it likewise allows unfree by default.
       _module.args.pkgs = import inputs.nixpkgs {
         inherit system;
         config.allowUnfree = true;
@@ -77,7 +76,6 @@ in
     dotnix.modules.home = { config, lib, ... }: {
       home.stateVersion = "26.05";
 
-      # Forbid installing apps into the user environment while keeping the Home Manager generated session variables.
       home.packages = lib.mkForce [ config.home.sessionVariablesPackage ];
     };
   };

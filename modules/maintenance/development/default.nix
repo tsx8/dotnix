@@ -2,7 +2,6 @@
   perSystem =
     { pkgs, config, ... }:
     let
-      # The two apps have separate Python dependencies; only their commands are exposed so PYTHONPATH does not leak into the whole shell.
       mcpDotnixCli = pkgs.writeShellScriptBin "mcp-dotnix" ''
         unset PYTHONPATH
         exec "${config.packages.mcp-dotnix}/bin/mcp-dotnix" "$@"

@@ -9,11 +9,17 @@
         "--ozone-platform-hint=auto"
         "--enable-wayland-ime=true"
       ];
-      policies.ExtensionInstallForcelist = [
-        "bdiifdefkgmcblbcghdlonllpjhhjgof" # KISS Translator
-        "onnepejgdiojhiflfoemillegpgpabdm" # V2EX Polish
-        "dhdgffkkebhmkfjojejmpbldmpobfkfo" # Tampermonkey
-      ];
+      policies.ExtensionInstallForcelist =
+        let
+          kissTranslator = "bdiifdefkgmcblbcghdlonllpjhhjgof";
+          v2exPolish = "onnepejgdiojhiflfoemillegpgpabdm";
+          tampermonkey = "dhdgffkkebhmkfjojejmpbldmpobfkfo";
+        in
+        [
+          kissTranslator
+          v2exPolish
+          tampermonkey
+        ];
     };
   };
 }
