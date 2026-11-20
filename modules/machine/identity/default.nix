@@ -7,12 +7,6 @@ in
   dotnix.modules.nixos = { config, pkgs, ... }: {
     imports = [ inputs.sops-nix.nixosModules.sops ];
 
-    # nixpkgs dropped the EOL buildGo125Module, but sops-nix upstream still hardcodes it to build
-    # sops-install-secrets; alias the current builder as a stopgap and drop this once upstream migrates.
-    nixpkgs.overlays = [
-      (_: prev: { buildGo125Module = prev.buildGoModule; })
-    ];
-
     sops = {
       defaultSopsFile = ./secrets.yaml;
       age = {
